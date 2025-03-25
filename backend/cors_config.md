@@ -39,3 +39,35 @@ After updating the CORS settings, test the connection from your Vercel deploymen
 ## Security Note
 
 In production, you should only allow specific domains to access your API, rather than using wildcards like `*`. 
+
+## Testing API Connection
+
+Add the following code to the frontend to test API connection:
+
+```javascript
+async function testApi() {
+  try {
+    const response = await fetch('https://hr-self-service.onrender.com/api/chat-public', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: "Hello, this is a test",
+        session_id: "test-session",
+        user_id: "test-user"
+      })
+    });
+    
+    const data = await response.json();
+    console.log("API test result:", data);
+    return data;
+  } catch (error) {
+    console.error("API test failed:", error);
+    return null;
+  }
+}
+
+// Run the test
+testApi();
+```

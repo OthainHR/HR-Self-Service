@@ -7,7 +7,7 @@ import os
 app = FastAPI()
 
 # Get allowed origins from environment variable or use default
-cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://hr-self-service.vercel.app,https://hr-self-service-inky.vercel.app,https://hr-self-service-4qxrfztg7-othainhrs-projects.vercel.app")
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app/,https://hr-self-service-git-main-othainhrs-projects.vercel.app/,https://hr-self-service-cpra97jbe-othainhrs-projects.vercel.app/")
 origins = cors_origins_str.split(",")
 
 # Add CORS middleware with proper origins

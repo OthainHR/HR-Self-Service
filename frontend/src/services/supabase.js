@@ -5,12 +5,47 @@ import { v4 as uuidv4 } from 'uuid';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase URL or key not found in environment variables.');
-  throw new Error('Missing Supabase configuration. Please check your environment variables.');
-}
+let supabase;
+try {
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Supabase URL or key not found in environment variables.');
+    throw new Error('Missing Supabase configuration. Please check your environment variables.');
+  }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+  console.log(`Initializing Supabase with URL: ${supabaseUrl.substring(0, 30)}...`);
+  supabase = createClient(supabaseUrl, supabaseKey);
+  console.log('Supabase client created successfully');
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error);
+  // Create a dummy client for fallback behavior
+  supabase = {
+    auth: {
+      getUser: async () => ({ data: { user: null } }),
+      signIn: async () => { throw new Error('Supabase not initialized') },
+      signOut: async () => { throw new Error('Supabase not initialized') }
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          order: () => ({ data: null, error: new Error('Supabase not initialized') })
+        }),
+        textSearch: () => ({ data: null, error: new Error('Supabase not initialized') }),
+        ilike: () => ({ data: null, error: new Error('Supabase not initialized') })
+      }),
+      insert: () => ({
+        select: () => ({
+          single: () => ({ data: null, error: new Error('Supabase not initialized') })
+        })
+      }),
+      delete: () => ({
+        eq: () => ({ error: new Error('Supabase not initialized') })
+      }),
+      update: () => ({
+        eq: () => ({ error: new Error('Supabase not initialized') })
+      })
+    })
+  };
+}
 
 // Export the supabase client for direct use
 export { supabase };
@@ -836,180 +871,4 @@ const supabaseService = {
   
   // Search for documents - simplified to only use direct document search
   searchDocuments: async (query, topK = 5) => {
-    console.log(`======== SIMPLE DOCUMENT SEARCH ========`);
-    console.log(`Searching for "${query}" with topK=${topK}`);
-    
-    try {
-      // Get all documents directly
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*')
-        .limit(50); // Get more docs for client-side filtering
-        
-      if (error) {
-        console.error('Error fetching documents:', error);
-        console.log('Error details:', error);
-        throw error;
-      }
-      
-      console.log(`Retrieved ${data?.length || 0} total documents`);
-      
-      // Now do client-side filtering based on text content
-      if (data && data.length > 0) {
-        // Convert query to lowercase for case-insensitive matching
-        const queryLower = query.toLowerCase();
-        
-        // Filter documents that contain the query string
-        const filteredDocs = data.filter(doc => 
-          doc.text && doc.text.toLowerCase().includes(queryLower)
-        );
-        
-        console.log(`After client-side filtering, found ${filteredDocs.length} matching documents`);
-        
-        if (filteredDocs.length > 0) {
-          // Sort by a simple relevance calculation - count of query occurrences
-          const scoredDocs = filteredDocs.map(doc => {
-            // Count occurrences (case insensitive)
-            const textLower = doc.text.toLowerCase();
-            const occurrences = (textLower.split(queryLower).length - 1);
-            const score = Math.min(occurrences / 10, 1.0); // Normalize score to 0-1
-            
-            return {
-              ...doc,
-              occurrences,
-              score: 0.5 + (score * 0.5) // Score between 0.5 and 1.0
-            };
-          });
-          
-          // Sort by score (highest first)
-          scoredDocs.sort((a, b) => b.score - a.score);
-          
-          // Take only the top K results
-          const results = scoredDocs.slice(0, topK);
-          
-          console.log(`Final top ${results.length} results:`, 
-            results.map(r => ({id: r.id, score: r.score, occurrences: r.occurrences}))
-          );
-          
-          // Format results
-          const formattedResults = results.map(doc => ({
-            id: doc.id,
-            text: doc.text,
-            title: doc.metadata?.title || 'Unknown',
-            source: doc.metadata?.source || 'Unknown',
-            category: doc.metadata?.category || 'general',
-            score: doc.score || 0.6,
-            relevance_score: doc.score || 0.6,
-            occurrences: doc.occurrences
-          }));
-          
-          console.log('Success! Returning formatted results');
-          console.log('======== SIMPLE SEARCH COMPLETE ========');
-          return formattedResults;
-        }
-      }
-      
-      console.log('No matches found');
-      console.log('======== SIMPLE SEARCH COMPLETE ========');
-      return [];
-    } catch (error) {
-      console.error('Error in simple search:', error);
-      console.log('======== SIMPLE SEARCH FAILED ========');
-      return [];
-    }
-  }
-};
-
-// Helper function containing the original search logic with fallbacks
-async function searchWithFallbacks(query, topK) {
-  console.log('Executing fallback search methods for query:', query);
-  
-  try {
-    // Try text search using Supabase's textSearch function first
-    try {
-      console.log('Attempting text search with textSearch function...');
-      const textSearchStart = performance.now();
-      
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*')
-        .textSearch('text', query)
-        .limit(topK);
-        
-      const textSearchEnd = performance.now();
-      console.log(`textSearch completed in ${(textSearchEnd - textSearchStart).toFixed(2)}ms`);
-      
-      if (error) {
-        console.error('Text search error:', error);
-        throw error;
-      }
-      
-      if (data && data.length > 0) {
-        console.log(`Found ${data.length} results with textSearch`);
-        
-        // Format results
-        const formattedResults = data.map(doc => ({
-          id: doc.id,
-          text: doc.text,
-          title: doc.metadata?.title || 'Unknown',
-          source: doc.metadata?.source || 'Unknown',
-          category: doc.metadata?.category || 'general',
-          score: 0.7,
-          relevance_score: 0.7
-        }));
-        
-        console.log('======== SUPABASE SEARCH DEBUG END ========');
-        return formattedResults;
-      } else {
-        console.log('No results with textSearch, falling back to ilike');
-        throw new Error('No results with textSearch');
-      }
-    } catch (textSearchError) {
-      // Fall back to ilike search
-      console.log('Falling back to ilike search:', textSearchError.message);
-      
-      const iLikeStart = performance.now();
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*')
-        .ilike('text', `%${query}%`)
-        .limit(topK);
-      const iLikeEnd = performance.now();
-      
-      console.log(`ilike search completed in ${(iLikeEnd - iLikeStart).toFixed(2)}ms`);
-        
-      if (error) {
-        console.error('Supabase ilike search error:', error);
-        throw error;
-      }
-      
-      if (data && data.length > 0) {
-        console.log(`Found ${data.length} results with ilike search`);
-        
-        // Format results
-        const formattedResults = data.map(doc => ({
-          id: doc.id,
-          text: doc.text,
-          title: doc.metadata?.title || 'Unknown',
-          source: doc.metadata?.source || 'Unknown',
-          category: doc.metadata?.category || 'general',
-          score: 0.5,
-          relevance_score: 0.5
-        }));
-        
-        console.log('======== SUPABASE SEARCH DEBUG END ========');
-        return formattedResults;
-      } else {
-        console.log('No results found with any search method');
-        console.log('======== SUPABASE SEARCH DEBUG END ========');
-        return [];
-      }
-    }
-  } catch (error) {
-    console.error('All search methods failed:', error);
-    console.log('======== SUPABASE SEARCH DEBUG END ========');
-    return [];
-  }
-}
-
-export default supabaseService; 
+    console.log(`
