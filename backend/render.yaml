@@ -2,9 +2,9 @@ services:
   - type: web
     name: hr-chatbot-backend
     env: python
-    rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: gunicorn -c gunicorn_config.py
+    rootDir: .
+    buildCommand: cd backend && pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120 --keep-alive 5 --log-level info
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
