@@ -177,6 +177,12 @@ export const chatApi = {
     try {
       console.log('Sending message for session:', sessionId);
       
+      // Check if this is a local session
+      if (sessionId && sessionId.toString().startsWith('local-')) {
+        console.log('Using local session - generating fallback response');
+        return generateFallbackResponse(content);
+      }
+      
       // No need to ensure test token, we'll use the standard token
       
       try {
