@@ -11,3 +11,4 @@ python-dotenv==1.0.0
 supabase==2.4.0
 numpy==1.26.4
 gunicorn==21.2.0
+email-validator==2.1.0
