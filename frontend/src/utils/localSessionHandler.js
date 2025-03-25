@@ -5,6 +5,8 @@
  * and connect them to the backend API without Supabase.
  */
 
+import { chatApi } from '../services/api';
+
 // API URL from environment variables or default to Render deployment
 const API_URL = process.env.REACT_APP_API_URL || 
                 process.env.NEXT_PUBLIC_BACKEND_URL || 
@@ -176,12 +178,12 @@ export const initLocalSessionHandler = () => {
     setTimeout(() => {
       // Try to find the API module
       try {
-        // If the API module is directly accessible, patch it
-        if (window.chatApi && window.chatApi.sendMessage) {
+        // If chatApi is imported directly, patch it
+        if (chatApi && typeof chatApi.sendMessage === 'function') {
           console.log('[LocalSessionHandler] Found chat API, patching sendMessage');
-          const originalSendMessage = window.chatApi.sendMessage;
+          const originalSendMessage = chatApi.sendMessage;
           
-          window.chatApi.sendMessage = async (sessionId, message) => {
+          chatApi.sendMessage = async (sessionId, message) => {
             // If it's a local session, use our handler
             if (sessionId && sessionId.startsWith('local-')) {
               console.log('[LocalSessionHandler] Intercepting local session message');
@@ -191,6 +193,10 @@ export const initLocalSessionHandler = () => {
             // Otherwise, use the original handler
             return originalSendMessage(sessionId, message);
           };
+          
+          // Make patched API available globally for easy testing
+          window.patchedChatApi = chatApi;
+          console.log('[LocalSessionHandler] Successfully patched sendMessage');
         } else {
           console.warn('[LocalSessionHandler] Could not find API module to patch');
         }
