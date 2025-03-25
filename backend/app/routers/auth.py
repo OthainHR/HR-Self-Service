@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import Token, User, UserCreate
 from app.services import auth_service
-from app.utils.auth_utils import get_current_active_user
+from app.utils.auth_utils import get_current_active_user, create_access_token
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -28,14 +29,16 @@ async def login_for_access_token(
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Add a public test login endpoint for testing without authentication
+# Add a test token endpoint that doesn't require authentication
 @router.get("/test-token", response_model=Token)
 async def get_test_token():
     """Get a test token for development purposes without requiring authentication."""
-    # Generate a test token for a fake user
-    test_token = auth_service.get_test_token()
-    
-    return {"access_token": test_token, "token_type": "bearer"}
+    # Create a test token that expires in 24 hours
+    access_token = create_access_token(
+        data={"sub": "test-user", "role": "admin"},
+        expires_delta=timedelta(hours=24)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/register", response_model=User)
 async def register_user(
