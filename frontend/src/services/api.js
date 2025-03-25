@@ -6,9 +6,12 @@ const getStoredToken = () => localStorage.getItem('auth_token');
 const setStoredToken = (token) => localStorage.setItem('auth_token', token);
 const removeStoredToken = () => localStorage.removeItem('auth_token');
 
+// Get the backend URL from environment variables
+const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com';
+
 // Create an axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_URL,
   withCredentials: false, // Disable credentials to avoid CORS issues
   headers: {
     'Content-Type': 'application/json',
@@ -76,7 +79,7 @@ export const authApi = {
 export const checkServerAvailable = async () => {
   try {
     // Try a simple root endpoint request
-    const response = await fetch('http://localhost:8000/');
+    const response = await fetch(`${API_URL}/`);
     return response.ok;
   } catch (error) {
     console.error('Server connection error:', error);
@@ -128,14 +131,35 @@ export const chatApi = {
     }
   },
 
-  // Get chat messages for a specific session
+  // Get messages for a specific session
   getSessionMessages: async (sessionId) => {
     try {
       console.log('Getting messages for session from Supabase:', sessionId);
-      const data = await supabaseService.chat.getSessionMessages(sessionId);
-      return data;
+      
+      // Check if this is a local session
+      if (sessionId && sessionId.toString().startsWith('local-')) {
+        console.log('Using local session - returning empty messages array');
+        return { messages: [] };
+      }
+      
+      try {
+        // Try to get messages from Supabase via supabaseService
+        const response = await supabaseService.chat.getSessionMessages(sessionId);
+        return response;
+      } catch (supabaseError) {
+        console.error('Error fetching session messages from Supabase:', supabaseError);
+        
+        // Fallback to local storage for message history
+        try {
+          const localMessages = JSON.parse(localStorage.getItem(`session_messages_${sessionId}`) || '[]');
+          return { messages: localMessages };
+        } catch (storageError) {
+          console.error('Error retrieving local message history:', storageError);
+          return { messages: [] };
+        }
+      }
     } catch (error) {
-      console.error('Error fetching session messages from Supabase:', error);
+      console.error('Error in getSessionMessages:', error);
       return { messages: [] };
     }
   },
@@ -458,7 +482,7 @@ export const knowledgeApi = {
         // If authentication fails, try the test endpoint
         console.log('Using test upload endpoint');
         try {
-          const testResponse = await fetch('http://localhost:8000/knowledge/test-upload', {
+          const testResponse = await fetch(`${API_URL}/knowledge/test-upload`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -545,8 +569,7 @@ export const knowledgeApi = {
 // Add a specific function to directly get a test token
 export const getAndSetTestToken = async () => {
   try {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-    const response = await fetch(`${apiUrl}/api/auth/test-token`);
+    const response = await fetch(`${API_URL}/api/auth/test-token`);
     const data = await response.json();
     if (data.access_token) {
       localStorage.setItem('auth_token', data.access_token);
