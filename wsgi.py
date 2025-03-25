@@ -1,4 +1,4 @@
-from app import app as application
+from server import application
 
 # This file provides a standard WSGI entry point for Gunicorn
 

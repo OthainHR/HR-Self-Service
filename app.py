@@ -2,16 +2,26 @@ import sys
 import os
 
 # Add the backend directory to the path
-sys.path.insert(0, os.path.abspath("backend"))
+backend_dir = os.path.abspath("backend")
+sys.path.insert(0, backend_dir)
 
-# Import the app from the main module in the backend directory
+# Create a special Python path configuration to handle the app directory
+# This is important to avoid namespace conflicts
+sys.path.insert(0, os.path.join(backend_dir, "app"))
+
+# Debug information
+print(f"Python path: {sys.path}")
+print(f"Current directory: {os.getcwd()}")
+print(f"Files in current directory: {os.listdir('.')}")
+print(f"Files in backend directory: {os.listdir('backend')}")
+print(f"Files in backend/app directory: {os.listdir('backend/app')}")
+
+# Now import the FastAPI app
 try:
-    from backend.main import app as application
+    import main
+    application = main.app
 except ImportError as e:
-    print(f"Error importing backend.main: {e}")
-    print(f"Current directory: {os.getcwd()}")
-    print(f"Files in current directory: {os.listdir('.')}")
-    print(f"Files in backend directory: {os.listdir('backend')}")
+    print(f"Error importing main: {e}")
     raise
 
 # For WSGI compatibility
