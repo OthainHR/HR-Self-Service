@@ -1,0 +1,9 @@
+{
+  "short_name": "HR Chatbot",
+  "name": "HR Chatbot - Your AI-powered HR assistant",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#3f51b5",
+  "background_color": "#ffffff"
+} 
