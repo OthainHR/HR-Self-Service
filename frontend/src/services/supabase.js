@@ -890,4 +890,4 @@ const supabaseService = {
 };
 
 // Export the supabase service
-export { supabaseService };
+export default supabaseService;
