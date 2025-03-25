@@ -13,6 +13,35 @@ router = APIRouter()
 class SessionMessageRequest(BaseModel):
     content: str
 
+# Add the public chat endpoint
+@router.post("/public", response_model=ChatResponse)
+async def chat_public(request: ChatRequest):
+    """
+    Process a chat message and get a response without requiring authentication.
+    
+    This public endpoint can be used by the frontend when the user is not authenticated.
+    It provides the same functionality as the authenticated endpoint but doesn't
+    require a JWT token.
+    """
+    # Process the chat request directly without checking authentication
+    try:
+        # Validate user ID - use guest ID if not provided
+        if not request.user_id:
+            request.user_id = f"guest-{request.session_id}"
+            
+        # Process the request
+        response = chat_service.process_chat_request(request)
+        return response
+    except Exception as e:
+        # Log the error
+        print(f"Error in chat_public endpoint: {str(e)}")
+        
+        # Return a friendly error message
+        error_response = ChatResponse(
+            response="I'm sorry, I encountered an error processing your request. Please try again later."
+        )
+        return error_response
+    
 # Add test routes first to ensure they're matched before the authenticated routes
 # Get test sessions (no auth)
 @router.get("/sessions/test", response_model=dict)
