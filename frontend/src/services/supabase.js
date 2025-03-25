@@ -871,4 +871,23 @@ const supabaseService = {
   
   // Search for documents - simplified to only use direct document search
   searchDocuments: async (query, topK = 5) => {
-    console.log(`
+    console.log(`Searching documents with query: ${query}, topK: ${topK}`);
+    
+    try {
+      console.log('Direct search not supported, use backend API');
+      throw new Error('Direct search not supported');
+    } catch (error) {
+      console.error('Error in Supabase searchDocuments:', error);
+      
+      // Return a specific error object that indicates we should fall back to API
+      return { 
+        success: false, 
+        error: error.message, 
+        fallbackToApi: true 
+      };
+    }
+  },
+};
+
+// Export the supabase service
+export { supabaseService };
