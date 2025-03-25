@@ -2,8 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Supabase client
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://sethhceiojxrevvpzupf.supabase.co';
-const supabaseKey = process.env.REACT_APP_SUPABASE_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjU0NzIwMCwiZXhwIjoyMDU4MTIzMjAwfQ.kWECke7HMjCTOB9GHtfoLUW1rkX5Fxq_vRiUJriUUJw';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Supabase URL or key not found in environment variables.');
+  throw new Error('Missing Supabase configuration. Please check your environment variables.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
