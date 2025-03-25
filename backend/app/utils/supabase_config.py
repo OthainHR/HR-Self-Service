@@ -13,17 +13,29 @@ def initialize_supabase() -> Client:
     try:
         # Get Supabase URL and API key from environment variables
         supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_API_KEY")
+        supabase_key = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_API_KEY")
         
         if not supabase_url or not supabase_key:
             print(f"Error: Supabase URL or API key not found in environment variables.")
             print(f"SUPABASE_URL: {'Set' if supabase_url else 'Not set'}")
-            print(f"SUPABASE_API_KEY: {'Set' if supabase_key else 'Not set'}")
+            print(f"SUPABASE_KEY: {'Set' if supabase_key else 'Not set'}")
             return None
         
         # Create Supabase client
         print(f"Initializing Supabase client with URL: {supabase_url}")
-        client = create_client(supabase_url, supabase_key)
+        
+        # Try to create with current version of Supabase client
+        try:
+            # Without proxy parameter (for newer versions)
+            client = create_client(supabase_url, supabase_key)
+        except TypeError as e:
+            # Handle version incompatibility
+            if "proxy" in str(e):
+                print("Using older version of Supabase client")
+                from supabase._sync.client import SyncClient
+                client = SyncClient(supabase_url, supabase_key)
+            else:
+                raise
         
         # Test the connection by making a simple query
         try:
