@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+// Initialize Supabase client - support both REACT_APP and NEXT_PUBLIC prefixes
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase URL or key not found in environment variables.');
@@ -40,8 +40,8 @@ const getUserId = async () => {
   return `guest-${guestId}`;
 };
 
-// Get the API URL from environment variables
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Get the API URL from environment variables - support both prefixes
+const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // Generate UUIDs for message IDs
 function generateUUID() {
