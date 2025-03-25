@@ -1,5 +1,7 @@
+# This is the main FastAPI application module (main:app)
+# For WSGI/Gunicorn deployments, this should be imported as "main:app"
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -14,15 +16,16 @@ init_db()
 
 app = FastAPI(title="HR Chatbot API")
 
-# Configure CORS - more permissive for development
+# Get CORS origins from environment variable
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=86400,
 )
 
 # Add a debug middleware to log authentication headers
