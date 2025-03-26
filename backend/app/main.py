@@ -1,35 +1,43 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, chat, knowledge
-from app.utils.openai_utils import USE_MOCK_EMBEDDINGS
-import os
+from app.routers import chat, auth, knowledge
+from app.core.config import settings
 
-app = FastAPI()
+app = FastAPI(
+    title="HR Self Service API",
+    description="API for HR Self Service Chatbot",
+    version="1.0.0"
+)
 
-# Get allowed origins from environment variable or use default
-cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app/,https://hr-self-service-git-main-othainhrs-projects.vercel.app/,https://hr-self-service-cpra97jbe-othainhrs-projects.vercel.app/")
-origins = cors_origins_str.split(",")
+# List of allowed origins
+origins = [
+    "http://localhost:3000",          # React dev server
+    "https://othain-hr-self-service.vercel.app",  # Production domain
+]
 
-# Add CORS middleware with proper origins
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Use the configured origins
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routers
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(chat.router, prefix="/chat", tags=["Chat"])
-app.include_router(knowledge.router, prefix="/knowledge", tags=["Knowledge"])
-
-# Add API prefix router for frontend compatibility
-app.include_router(chat.router, prefix="/api/chat", tags=["API"])
+# Include routers
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the HR Chatbot API"}
+async def root():
+    """Root endpoint to verify API is running"""
+    return {
+        "message": "HR Self Service API is running",
+        "version": "1.0.0",
+        "docs_url": "/docs",
+        "redoc_url": "/redoc"
+    }
 
 # API status endpoint
 @app.get("/api/status")
