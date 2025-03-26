@@ -63,7 +63,7 @@ async def get_mock_embeddings_status():
     }
 
 # Add a public test endpoint for chat
-@app.post("/api/chat-public")
+@app.post("/api/chat/public")
 async def public_chat_endpoint(request: Request):
     """A public chat endpoint that doesn't require authentication."""
     # Parse the request body
