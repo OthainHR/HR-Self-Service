@@ -442,8 +442,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             </Box>
           </Fade>
         ) : (
-          messages.map((message) => (
-            <MessageItem key={message.id} message={message} />
+          messages.map((message, index) => (
+            <MessageItem
+              key={message.id || `msg-${index}-${Date.now()}`}
+              message={message}
+              isLast={index === messages.length - 1}
+            />
           ))
         )}
         <div ref={messagesEndRef} />

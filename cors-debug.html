@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HR Chatbot API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>HR Chatbot API Test</h1>
+    
+    <h2>Test Direct API Call</h2>
+    <div>
+        <button class="test-button" onclick="testDirectApi()">Test Direct API</button>
+        <div id="directApiResult" class="result">Results will appear here...</div>
+    </div>
+    
+    <h2>Test Public API</h2>
+    <div>
+        <button class="test-button" onclick="testPublicApi()">Test Public API</button>
+        <div id="publicApiResult" class="result">Results will appear here...</div>
+    </div>
+    
+    <h2>Test CORS Proxies</h2>
+    <div>
+        <button class="test-button" onclick="testCorsproxy()">Test CORS.io proxy</button>
+        <button class="test-button" onclick="testAllOrigins()">Test AllOrigins proxy</button>
+        <button class="test-button" onclick="testThingproxy()">Test ThingProxy</button>
+        <div id="proxyResult" class="result">Results will appear here...</div>
+    </div>
+    
+    <script>
+        const API_URL = 'https://hr-self-service.onrender.com';
+        
+        async function testDirectApi() {
+            const resultDiv = document.getElementById('directApiResult');
+            resultDiv.textContent = 'Testing direct API call...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello from the test page',
+                        session_id: `test-${Date.now()}`,
+                        user_id: 'test-user'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `Success! Response: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.textContent = `Error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testPublicApi() {
+            const resultDiv = document.getElementById('publicApiResult');
+            resultDiv.textContent = 'Testing public API call...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/chat/public`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello from the test page',
+                        session_id: `test-${Date.now()}`,
+                        user_id: 'test-user'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `Success! Response: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.textContent = `Error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testCorsproxy() {
+            const resultDiv = document.getElementById('proxyResult');
+            resultDiv.textContent = 'Testing CORS.io proxy...';
+            
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`${API_URL}/api/chat/public`)}`;
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello from the test page via CORS.io',
+                        session_id: `test-${Date.now()}`,
+                        user_id: 'test-user'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `CORS.io proxy success! Response: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.textContent = `CORS.io error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `CORS.io error: ${error.message}`;
+            }
+        }
+        
+        async function testAllOrigins() {
+            const resultDiv = document.getElementById('proxyResult');
+            resultDiv.textContent = 'Testing AllOrigins proxy...';
+            
+            try {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${API_URL}/api/chat/public`)}`;
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello from the test page via AllOrigins',
+                        session_id: `test-${Date.now()}`,
+                        user_id: 'test-user'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `AllOrigins proxy success! Response: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.textContent = `AllOrigins error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `AllOrigins error: ${error.message}`;
+            }
+        }
+        
+        async function testThingproxy() {
+            const resultDiv = document.getElementById('proxyResult');
+            resultDiv.textContent = 'Testing ThingProxy...';
+            
+            try {
+                const proxyUrl = `https://thingproxy.freeboard.io/fetch/${API_URL}/api/chat/public`;
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello from the test page via ThingProxy',
+                        session_id: `test-${Date.now()}`,
+                        user_id: 'test-user'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `ThingProxy success! Response: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.textContent = `ThingProxy error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `ThingProxy error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html> 

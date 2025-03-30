@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CssBaseline, Container } from '@mui/material';
+import { Box, CssBaseline, Container, CircularProgress } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
@@ -17,7 +17,7 @@ import Knowledge from './pages/Knowledge';
 
 
 // Context
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Create theme
 const theme = createTheme({
@@ -141,35 +141,52 @@ const theme = createTheme({
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  // Get state from useAuth
+  const { user, isLoading } = useAuth();
+  const isAuthenticated = !!user; // Derive boolean from user object
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    // Show a loading indicator while checking auth state
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
+  // Check the boolean state
+  if (!isAuthenticated) {
+    console.log('ProtectedRoute: Not authenticated, redirecting to login.');
+    return <Navigate to="/login" replace />; // Use replace to avoid login page in history
   }
 
+  // Render children if authenticated
   return children;
 };
 
 // Admin route component
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  // Get state from useAuth
+  const { user, isLoading } = useAuth();
+  const isAuthenticated = !!user;
+  
+  // Check user role from Supabase user metadata (adjust key as needed)
+  const isAdmin = user?.user_metadata?.role === 'admin'; 
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    // Show a loading indicator
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
+  // Check if authenticated
+  if (!isAuthenticated) {
+    console.log('AdminRoute: Not authenticated, redirecting to login.');
+    return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin()) {
-    return <Navigate to="/" />;
+  // Check if admin
+  if (!isAdmin) {
+    console.warn("AdminRoute: User is not an admin. Redirecting to chat.", user);
+    return <Navigate to="/chat" replace />; // Redirect non-admins to chat or home
   }
 
+  // Render children if authenticated admin
   return children;
 };
 

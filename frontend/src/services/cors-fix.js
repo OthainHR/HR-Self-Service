@@ -31,8 +31,7 @@
       withCredentials: false,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'Accept': 'application/json'
       }
     });
 

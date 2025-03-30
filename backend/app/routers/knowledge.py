@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services import knowledge_service
 from app.services.knowledge_service import Document
-from app.utils.auth_utils import get_current_active_user
+from app.utils.auth_utils import get_current_supabase_user
 from typing import List, Dict, Any, Optional
 import json
 import logging
@@ -14,23 +14,6 @@ import os
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Custom dependency to check for knowledge access permission
-async def require_knowledge_access(current_user = Depends(get_current_active_user)):
-    """Check if the user has knowledge:access permission"""
-    # Admin role always has access
-    if current_user.role == "admin":
-        return current_user
-    
-    # Check for explicit permission
-    if hasattr(current_user, 'permissions') and 'knowledge:access' in current_user.permissions:
-        return current_user
-    
-    # Deny access
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="You don't have permission to access knowledge base features"
-    )
 
 # Add a test endpoint that doesn't require authentication
 @router.post("/test-upload", response_model=Dict[str, str])
@@ -62,22 +45,25 @@ async def test_upload_document(
 @router.post("/documents")
 async def add_document(
     document: Document,
-    current_user = Depends(require_knowledge_access)
+    current_user: dict = Depends(get_current_supabase_user)
 ):
     """
     Add a document to the knowledge base.
     
     The document is processed, embedded, and stored in the vector store.
     """
-    # Print authentication info for debugging
-    print(f"Auth: User authenticated as: {current_user.username}, role: {current_user.role}")
+    # Get required info from the NEW user object (which is now a dict)
+    username = current_user.get('username')
+    role = current_user.get('role')
+    print(f"Auth: User authenticated as: {username}, role: {role}")
     
-    # Check if user has permission (only HR or admin)
-    if current_user.role not in ["hr", "admin"]:
-        print(f"Permission denied for user {current_user.username} with role {current_user.role}")
+    # Check permission based on the new user object's role
+    # Note: Ensure 'admin' role is correctly set in Supabase user_metadata
+    if role not in ["hr", "admin"]:
+        print(f"Permission denied for user {username} with role {role}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only HR administrators can add documents"
+            detail="Only HR administrators or admins can add documents"
         )
     
     # Print document details
@@ -101,7 +87,7 @@ async def add_document(
 @router.post("/upload", response_model=Dict[str, str])
 async def upload_document(
     document: Document,
-    current_user = Depends(require_knowledge_access)
+    current_user: dict = Depends(get_current_supabase_user)
 ):
     """Alias for add_document to match frontend expectations"""
     result = await add_document(document, current_user)
@@ -111,18 +97,19 @@ async def upload_document(
 async def upload_file(
     file: UploadFile = File(...),
     metadata: Optional[str] = Form("{}"),
-    current_user = Depends(require_knowledge_access)
+    current_user: dict = Depends(get_current_supabase_user)
 ):
     """
     Upload a file to the knowledge base.
     
     The file contents are processed, embedded, and stored in the vector store.
     """
-    # Check if user has permission (only HR or admin)
-    if current_user.role not in ["hr", "admin"]:
+    # Check permission based on the new user object's role
+    role = current_user.get('role')
+    if role not in ["hr", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only HR administrators can upload documents"
+            detail="Only HR administrators or admins can upload documents"
         )
     
     try:
@@ -163,7 +150,7 @@ async def upload_file(
 @router.get("/search", response_model=dict)
 async def search_knowledge(
     query: str,
-    current_user = Depends(require_knowledge_access),
+    current_user: dict = Depends(get_current_supabase_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -171,7 +158,14 @@ async def search_knowledge(
     
     The query is processed, embedded, and used to find similar documents.
     """
-    # Search for documents
+    # The dependency handles auth check. Now perform the search.
+    # Note: Permission checks might be needed here too depending on requirements
+    role = current_user.get('role')
+    print(f"Knowledge search initiated by user: {current_user.get('username')} role: {role}")
+    # Example permission check (optional)
+    # if role not in ["hr", "admin", "employee"]:
+    #    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied for search")
+        
     results = knowledge_service.search_documents(query, top_k=5)
     
     return results

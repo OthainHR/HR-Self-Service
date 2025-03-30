@@ -2,11 +2,12 @@ import React from 'react';
 import { Container, Typography, Paper, Box, Button, Grid } from '@mui/material';
 import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { currentUser, isAdmin } = useAuth();
+  const { user } = useAuth();
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   return (
     <Box
@@ -54,7 +55,7 @@ const Home = () => {
           >
             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
               Welcome to Othain HR Self-Service
-              {currentUser && `, ${currentUser.name || currentUser.email}`}
+              {user && `, ${user.name || user.email}`}
             </Typography>
             <Typography variant="body1" paragraph>
               Your interactive HR assistant designed to help with policies, benefits, and workplace questions.

@@ -26,10 +26,12 @@ import {
   Logout, 
   Home
 } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const NavBar = () => {
-  const { currentUser, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const isAuthenticated = !!user;
+  const isAdmin = user?.user_metadata?.role === 'admin';
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -52,10 +54,13 @@ const NavBar = () => {
   };
   
   // Handle logout
-  const handleLogout = () => {
-    logout();
-    handleClose();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
   
   // Toggle drawer
@@ -114,7 +119,7 @@ const NavBar = () => {
           />
         </ListItem>
         
-        {isAuthenticated() && (
+        {isAuthenticated && (
           <ListItem 
             component={RouterLink} 
             to="/chat" 
@@ -139,7 +144,7 @@ const NavBar = () => {
           </ListItem>
         )}
         
-        {isAuthenticated() && isAdmin() && (
+        {isAuthenticated && isAdmin && (
           <ListItem 
             component={RouterLink} 
             to="/knowledge" 
@@ -168,7 +173,7 @@ const NavBar = () => {
       <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.08)' }} />
       
       <List>
-        {isAuthenticated() ? (
+        {isAuthenticated ? (
           <ListItem 
             button 
             onClick={handleLogout}
@@ -322,7 +327,7 @@ const NavBar = () => {
               Home
             </Button>
             
-            {isAuthenticated() && (
+            {isAuthenticated && (
               <Button 
                 color="inherit" 
                 component={RouterLink} 
@@ -359,7 +364,7 @@ const NavBar = () => {
               </Button>
             )}
             
-            {isAuthenticated() && isAdmin() && (
+            {isAuthenticated && isAdmin && (
               <Button 
                 color="inherit" 
                 component={RouterLink} 
@@ -399,7 +404,7 @@ const NavBar = () => {
         )}
         
         {/* User menu */}
-        {isAuthenticated() ? (
+        {isAuthenticated ? (
           <div>
             <IconButton
               aria-label="account of current user"
@@ -453,7 +458,7 @@ const NavBar = () => {
                   color: 'primary.main'
                 }}
               >
-                {currentUser?.email || 'User'}
+                {user?.email || 'User'}
               </MenuItem>
               <MenuItem 
                 onClick={handleLogout}

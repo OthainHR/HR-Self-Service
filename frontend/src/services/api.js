@@ -1,585 +1,296 @@
 import axios from 'axios';
-import supabaseService from './supabase';
+// Import the Supabase client
+import { supabase } from './supabase'; // Assuming supabase.js exports the client
 
-// Token management
-const getStoredToken = () => localStorage.getItem('auth_token');
-const setStoredToken = (token) => localStorage.setItem('auth_token', token);
-const removeStoredToken = () => localStorage.removeItem('auth_token');
+// Use process.env consistently
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com';
+const API_URL = `${API_BASE_URL}/api`; // Ensure /api is included
 
-// Get the backend URL from environment variables
-const API_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com';
+console.log('API Service: Environment check', { API_URL, NODE_ENV: process.env.NODE_ENV, origin: window.location.origin });
 
-// Create an axios instance with base URL
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: false, // Disable credentials to avoid CORS issues
+// REMOVE Token management functions - Supabase handles this
+// const getToken = () => localStorage.getItem('authToken');
+// const setToken = (token) => localStorage.setItem('authToken', token);
+// const removeToken = () => localStorage.removeItem('authToken');
+// const getUserInfo = () => JSON.parse(localStorage.getItem('userInfo') || 'null');
+// const setUserInfo = (userInfo) => localStorage.setItem('userInfo', JSON.stringify(userInfo));
+// const removeUserInfo = () => localStorage.removeItem('userInfo');
+
+// Create an axios instance
+const axiosInstance = axios.create({
+  baseURL: API_URL, // Use the corrected base URL
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  },
 });
 
-// Add request interceptor to add token to all requests
-api.interceptors.request.use(
-  (config) => {
-    // Always try to get token, but don't block requests if missing
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Request interceptor to add the Supabase token
+axiosInstance.interceptors.request.use(
+  async (config) => { // Make interceptor async
+    // Get the current session from Supabase
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+        console.error("Error getting Supabase session:", error);
+    } else if (session?.access_token) {
+        console.log("Attaching Supabase token to request header.");
+        config.headers['Authorization'] = `Bearer ${session.access_token}`;
+    } else {
+        console.log("No active Supabase session found, sending request without token.");
+        // Ensure any previous invalid token is removed from defaults if necessary
+        delete config.headers['Authorization'];
     }
+
+    console.log(`Making request to: ${config.url}`); // Keep logging request details without headers for brevity
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request Error:', error);
+    return Promise.reject(error);
+  }
 );
 
-// Add response interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+// Response interceptor for error handling (keep generic error logging)
+axiosInstance.interceptors.response.use(
+  (response) => {
+    console.log('API Response Status:', response.status); // Log successful response status
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      response: error.response ? { status: error.response.status, data: error.response.data } : 'No response',
+      config: error.config,
+    });
+
     if (error.response?.status === 401) {
-      // Clear invalid token
-      removeStoredToken();
+        console.warn('API returned 401 Unauthorized. This might indicate the Supabase token was invalid or the backend API could not verify it.');
+        // Note: Supabase client automatically handles token refresh.
+        // We don't need to manually clear tokens here unless specifically required.
+        // Consider notifying the user or attempting a silent refresh if appropriate.
+    } else {
+        console.error(`Unhandled error status: ${error.response?.status}`);
     }
     return Promise.reject(error);
   }
 );
 
-// Authentication functions
-export const authApi = {
-  login: async (username, password) => {
-    try {
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-      
-      const response = await api.post('/auth/token', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-      const { access_token } = response.data;
-      setStoredToken(access_token);
-      return response.data;
-    } catch (error) {
-      console.error('Login failed:', error);
+// Authentication service using Supabase Auth
+export const auth = {
+  // Login using Supabase email/password
+  login: async (credentials) => {
+    console.log("Attempting Supabase login...");
+    const { email, password } = credentials; // Assuming credentials = {email, password}
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      console.error('Supabase Login error:', error.message);
+      throw error; // Re-throw the error to be handled by the component
+    }
+
+    console.log("Supabase login successful:", data.session?.user?.email);
+    // Return the user and session data provided by Supabase
+    return { user: data.user, session: data.session };
+  },
+
+  // Logout using Supabase
+  logout: async () => {
+    console.log("Attempting Supabase logout...");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Supabase Logout error:', error.message);
       throw error;
     }
+    console.log("Supabase logout successful.");
+    // No need to manually clear tokens, Supabase client handles it.
   },
 
-  logout: () => {
-    removeStoredToken();
+  // Get current Supabase session (includes user info)
+  getSession: async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+        console.error("Error fetching Supabase session:", error.message);
+        return null;
+    }
+    return session; // Contains user object if authenticated
   },
 
-  isAuthenticated: () => {
-    return !!getStoredToken();
-  }
-};
+  // Listen for auth state changes (useful for updating UI)
+  onAuthStateChange: (callback) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`Supabase auth event: ${event}`, session);
+      callback(event, session); // Pass event and session to the callback
+    });
+    return subscription; // Return the subscription object so it can be unsubscribed
+  },
 
-// Simple check for server availability
-export const checkServerAvailable = async () => {
-  try {
-    // Try a simple root endpoint request
-    const response = await fetch(`${API_URL}/`);
-    return response.ok;
-  } catch (error) {
-    console.error('Server connection error:', error);
-    return false;
+  // Convenience function to get current user directly
+  getCurrentUser: async () => {
+      const session = await auth.getSession();
+      return session?.user ?? null;
   }
+
+  // Remove getToken, getUserInfo etc. as Supabase manages the session
 };
 
 // Chat API service
 export const chatApi = {
-  // Get all chat sessions for the current user
-  getSessions: async (forceOnline = false) => {
+  getSessions: async () => {
+    console.log('Getting chat sessions from backend API');
     try {
-      console.log('Getting chat sessions from Supabase');
-      
-      // Get sessions from Supabase
-      const data = await supabaseService.chat.getSessions();
-      
-      // Get any local sessions from localStorage
-      let localSessions = [];
-      try {
-        localSessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-      } catch (storageError) {
-        console.error('Error reading local sessions:', storageError);
-      }
-      
-      // Combine online and local sessions
-      const combinedSessions = [
-        ...(data.sessions || []),
-        ...localSessions.filter(session => session.id && session.id.startsWith('local-'))
-      ];
-      
-      // Sort by updated_at date
-      const sortedSessions = combinedSessions.sort((a, b) => {
-        return new Date(b.updated_at) - new Date(a.updated_at);
-      });
-      
-      return { sessions: sortedSessions };
+      // Correct path: /chat/sessions
+      const response = await axiosInstance.get('/chat/sessions');
+      return response.data.sessions || []; // Ensure consistent return type
     } catch (error) {
-      console.error('Error fetching sessions from Supabase:', error);
-      
-      // Try to return local sessions if Supabase fails
-      try {
-        const localSessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-        return { sessions: localSessions };
-      } catch (storageError) {
-        console.error('Error reading local sessions:', storageError);
-        return { sessions: [] };
-      }
+      console.error('Error fetching sessions:', error);
+      // Don't clear auth state here, let the interceptor handle 401
+      return []; // Return empty array on error
     }
   },
 
-  // Get messages for a specific session
   getSessionMessages: async (sessionId) => {
+    console.log(`Getting messages for session: ${sessionId}`);
     try {
-      console.log('Getting messages for session from Supabase:', sessionId);
-      
-      // Check if this is a local session
-      if (sessionId && sessionId.toString().startsWith('local-')) {
-        console.log('Using local session - returning empty messages array');
-        return { messages: [] };
-      }
-      
-      try {
-        // Try to get messages from Supabase via supabaseService
-        const response = await supabaseService.chat.getSessionMessages(sessionId);
-        return response;
-      } catch (supabaseError) {
-        console.error('Error fetching session messages from Supabase:', supabaseError);
-        
-        // Fallback to local storage for message history
-        try {
-          const localMessages = JSON.parse(localStorage.getItem(`session_messages_${sessionId}`) || '[]');
-          return { messages: localMessages };
-        } catch (storageError) {
-          console.error('Error retrieving local message history:', storageError);
-          return { messages: [] };
-        }
-      }
+      // Correct path: /chat/sessions/{sessionId}/messages
+      const response = await axiosInstance.get(`/chat/sessions/${sessionId}/messages`);
+      return response.data.messages || [];
     } catch (error) {
-      console.error('Error in getSessionMessages:', error);
-      return { messages: [] };
+      console.error('Error fetching session messages:', error);
+      return [];
     }
   },
 
-  // Create a new chat session
   createSession: async () => {
+    console.log('Creating new chat session via backend API');
     try {
-      console.log('Creating new session in Supabase');
-      const session = await supabaseService.chat.createSession();
-      return session;
+       // Correct path: /chat/sessions
+      const response = await axiosInstance.post('/chat/sessions');
+      return response.data; // The created session object
     } catch (error) {
-      console.error('Error creating session in Supabase:', error);
-      
-      // Create a fallback local session
-      const fallbackSession = {
-        id: 'local-' + Date.now(),
-        user_id: 'guest',
-        messages: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        message_count: 0
-      };
-      
-      // Attempt to save it to localStorage for offline access
-      try {
-        const localSessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-        localSessions.push(fallbackSession);
-        localStorage.setItem('chat_sessions', JSON.stringify(localSessions));
-      } catch (storageError) {
-        console.error('Error saving to localStorage:', storageError);
-      }
-      
-      return fallbackSession;
+      console.error('Error creating session:', error);
+      // Optionally create a local session as fallback? Be careful with this.
+      // For now, just throw the error
+      throw error;
     }
   },
 
-  // Send a new message in a chat session
-  sendMessage: async (sessionId, content) => {
+  sendMessage: async (sessionId, message) => {
+    console.log(`Sending message for session: ${sessionId}`);
+    const payload = { content: message };
+    let endpoint = ''; // Will be determined by interceptor implicitly
+    let useAuthenticated = false;
+
+    // Logic to determine endpoint based on token is now handled by interceptor
+    // Simplified logic: assume if session exists, interceptor adds token for authenticated endpoint
+    // If not, it defaults to public (though backend might still require auth for some endpoints)
+    
+    // We can't reliably check token here easily without duplicating interceptor logic.
+    // Assume interceptor handles adding token if session exists.
+    // The primary path determination should ideally be based on context (are we logged in?)
+    // For now, we'll simplify and rely on the interceptor and backend rules.
+    // Let's try the authenticated endpoint first, backend will reject if no valid token
+    endpoint = `/chat/sessions/${sessionId}/messages`;
+    useAuthenticated = true; // Assume we try authenticated first
+    
     try {
-      console.log('Sending message for session:', sessionId);
+      // Use the authenticated endpoint by default
+      const response = await axiosInstance.post(endpoint, payload);
+      console.log('Message sent successfully:', response.data);
       
-      // Check if this is a local session
-      if (sessionId && sessionId.toString().startsWith('local-')) {
-        console.log('Using local session - generating fallback response');
-        return generateFallbackResponse(content);
-      }
+      // Response handling might need adjustment based on backend's actual response
+      // Assuming authenticated response returns the assistant message object:
+      return {
+          messages: [
+              { role: 'user', content: message, created_at: new Date().toISOString() }, // Simulate user message
+              response.data.message // Assuming response.data.message contains the assistant's reply object
+          ]
+      };
       
-      // No need to ensure test token, we'll use the standard token
-      
-      try {
-        // Try Supabase chat API with a timeout
-        const timeoutDuration = 3000; // 3 seconds timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        try {
-          const response = await supabaseService.chat.sendMessage(sessionId, content);
-          clearTimeout(timeoutId);
-          return response;
-        } catch (supabaseError) {
-          clearTimeout(timeoutId);
-          console.error('Error sending message via Supabase:', supabaseError);
-          
-          // Check if this is an OpenAI API quota error
-          if (supabaseError.message && (
-            supabaseError.message.includes('insufficient_quota') || 
-            (supabaseError.message.includes('429') && supabaseError.message.includes('quota'))
-          )) {
-            console.error('OpenAI API quota exceeded:', supabaseError.message);
-            throw new Error(`OpenAI API quota exceeded: ${supabaseError.message}`);
-          }
-          
-          throw supabaseError;
-        }
-      } catch (error) {
-        console.error('Error in sendMessage:', error);
-        
-        // If it's an OpenAI quota error, propagate it
-        if (error.message && (
-          error.message.includes('insufficient_quota') || 
-          (error.message.includes('429') && error.message.includes('quota'))
-        )) {
-          throw error;
-        }
-        
-        // Special handling for 404 errors - API endpoint not found
-        if (error.message && error.message.includes('API endpoint not found')) {
-          return generateFallbackResponse(content, '404');
-        }
-        
-        // Otherwise fallback to generating a simulated response
-        return generateFallbackResponse(content);
-      }
     } catch (error) {
-      console.error('Error in sendMessage:', error);
-      
-      // If it's an OpenAI quota error, propagate it
-      if (error.message && (
-        error.message.includes('insufficient_quota') || 
-        (error.message.includes('429') && error.message.includes('quota'))
-      )) {
-        throw error;
-      }
-      
-      // Special handling for 404 errors - API endpoint not found
-      if (error.message && error.message.includes('API endpoint not found')) {
-        return generateFallbackResponse(content, '404');
-      }
-      
-      // Otherwise fallback to generating a simulated response
-      return generateFallbackResponse(content);
+      console.error('Error sending message:', error);
+      // If 401/403, maybe try public endpoint as fallback if applicable?
+      // Or just let the error propagate
+      throw error;
     }
   },
-  
-  // Delete a chat session
+
   deleteSession: async (sessionId) => {
+    console.log(`Deleting session: ${sessionId}`);
     try {
-      // Check if this is a local session
-      if (sessionId && sessionId.toString().startsWith('local-')) {
-        console.log('Deleting local session:', sessionId);
-        // Remove from localStorage
-        try {
-          const localSessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-          const updatedSessions = localSessions.filter(s => s.id !== sessionId);
-          localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions));
-          return { success: true };
-        } catch (storageError) {
-          console.error('Error removing session from localStorage:', storageError);
-          throw storageError;
-        }
-      }
-      
-      console.log('Deleting session via Supabase:', sessionId);
-      const response = await supabaseService.chat.deleteSession(sessionId);
-      return response;
+      // Correct path: /chat/sessions/{sessionId}
+      await axiosInstance.delete(`/chat/sessions/${sessionId}`);
+      return { success: true };
     } catch (error) {
-      console.error('Error deleting session via Supabase:', error);
-      
-      // If error is due to invalid UUID format or local session, provide a clearer message
-      if (error.message && (
-          error.message.includes('Invalid session ID format') || 
-          error.message.includes('Local session IDs cannot be deleted')
-      )) {
-        console.error('Session ID issue:', sessionId, error.message);
-      }
-      
-      throw error;
+      console.error('Error deleting session:', error);
+      return { success: false, error };
     }
-  }
+  },
 };
 
-// Ensure we have an auth token
-const ensureTestAuthToken = async () => {
-  // Check if we already have a standard token
-  if (localStorage.getItem('token')) {
-    console.log('Standard auth token exists');
-    return;
-  }
-  
-  console.log('No auth token found, check if user is logged in');
-  
-  // Check if we have user info
-  const userInfo = localStorage.getItem('user');
-  if (!userInfo) {
-    console.log('No user information found, user needs to log in');
-    return;
-  }
-  
-  // If we have user info but no token, something is wrong with authentication
-  console.error('User info exists but no token found. User may need to log in again.');
-};
-
-// Generate a fallback response
-const generateFallbackResponse = async (content, errorType = null) => {
-  // Simulate some processing time
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // If it's a 404 error, provide a specific message
-  if (errorType === '404') {
-    return {
-      message: {
-        id: 'fallback-' + Date.now(),
-        role: 'assistant',
-        content: 'I\'m running in offline mode because the AI API server is not available. I can still answer basic HR questions. For more detailed information, please ensure the backend server is running with the chat endpoints properly configured.',
-        timestamp: new Date().toISOString()
-      }
-    };
-  }
-  
-  // Generate a simulated response based on the message
-  let responseText = '';
-  
-  if (content.toLowerCase().includes('hello') || content.toLowerCase().includes('hi')) {
-    responseText = 'Hello! How can I help you with HR matters today?';
-  } else if (content.toLowerCase().includes('policy') || content.toLowerCase().includes('policies')) {
-    responseText = 'Our HR policies are designed to create a fair and productive workplace. For specific policy questions, please provide more details.';
-  } else if (content.toLowerCase().includes('leave') || content.toLowerCase().includes('vacation') || content.toLowerCase().includes('time off')) {
-    responseText = 'Regarding leave: Full-time employees receive 20 days of PTO annually, plus 10 holidays. Please submit requests through the HR portal at least 2 weeks in advance.';
-  } else if (content.toLowerCase().includes('benefit') || content.toLowerCase().includes('insurance') || content.toLowerCase().includes('healthcare')) {
-    responseText = 'Our benefits package includes comprehensive health insurance, 401k matching up to 5%, and wellness programs. The enrollment period is in November each year.';
-  } else if (content.toLowerCase().includes('pay') || content.toLowerCase().includes('salary') || content.toLowerCase().includes('compensation')) {
-    responseText = 'Compensation questions should be directed to your manager during performance reviews. HR conducts market analysis annually to ensure our compensation remains competitive.';
-  } else if (content.toLowerCase().includes('work') || content.toLowerCase().includes('job') || content.toLowerCase().includes('career')) {
-    responseText = 'Career development is important at our company. We offer training programs, mentorship opportunities, and clear advancement paths. Talk to your manager about creating a personalized development plan.';
-  } else if (content.toLowerCase().includes('onboard') || content.toLowerCase().includes('new hire') || content.toLowerCase().includes('start')) {
-    responseText = 'Our onboarding process takes about 2 weeks and includes orientation, meeting your team, setting up accounts, and initial training. Your manager will guide you through the process.';
-  } else if (content.toLowerCase().includes('resign') || content.toLowerCase().includes('quit') || content.toLowerCase().includes('leave company')) {
-    responseText = 'If you\'re considering resigning, please provide at least 2 weeks notice to your manager in writing. HR will schedule an exit interview and provide information about final pay and benefits continuation.';
-  } else if (content.toLowerCase().includes('online') || content.toLowerCase().includes('offline')) {
-    responseText = 'I\'m currently running in fallback mode. To use the full power of the AI API, make sure your backend server is running at http://localhost:8000.';
-  } else if (content.toLowerCase().includes('help') || content.toLowerCase().includes('capabilities')) {
-    responseText = 'As your HR virtual assistant, I can answer questions about company policies, benefits, time off, compensation, and other HR matters. I can also help with onboarding procedures and career development information.';
-  } else {
-    responseText = 'I understand you\'re asking about ' + content.split(' ').slice(0, 3).join(' ') + '... As your HR assistant, I can provide information on company policies, benefits, leave, compensation, and other HR-related matters. How can I assist you further?';
-  }
-  
-  return {
-    message: {
-      id: 'fallback-' + Date.now(),
-      role: 'assistant',
-      content: responseText,
-      timestamp: new Date().toISOString()
-    }
-  };
-};
-
-// Knowledge base API service
+// Knowledge Base API service
 export const knowledgeApi = {
-  // Search for documents in the knowledge base
-  searchDocuments: async (query, topK = 5) => {
+  addDocument: async (documentData) => {
+    console.log('Adding document via API:', documentData);
     try {
-      const response = await api.get('/knowledge/search', { 
-        params: { 
-          query,
-          top_k: topK
-        } 
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error searching documents:', error);
-      throw error;
-    }
-  },
-
-  // Upload text as a document (with metadata)
-  uploadDocument: async (text, metadata) => {
-    try {
-      console.log('Uploading text with metadata:', metadata);
-      
-      // Use the proper backend endpoint
-      const response = await api.post('/knowledge/test-upload', {
-        text: text,
-        title: metadata.title,
-        source: metadata.source,
-        category: metadata.category
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      
-      if (error.response && error.response.data) {
-        console.error('Error details:', error.response.data);
-      }
-      
-      throw error;
-    }
-  },
-  
-  // Add a document with text and metadata
-  addDocument: async (document) => {
-    try {
-      // Format document to match backend expectations
-      const formattedDoc = {
-        text: document.text || "",
-        title: document.title || "Untitled Document", 
-        source: document.source || "Manual Entry",
-        category: document.category || "general"
-      };
-      
-      console.log('Adding document to knowledge base:', formattedDoc);
-      
-      // Try direct Supabase first
-      try {
-        console.log('Attempting direct Supabase insertion...');
-        const supabaseResult = await supabaseService.addDocument(formattedDoc);
-        
-        if (supabaseResult.success) {
-          console.log('Document added successfully via supabaseService:', supabaseResult.data);
-          return { message: "Document added successfully via direct Supabase insertion" };
-        } else {
-          // Handle the specific error response from supabaseService
-          console.log('Supabase insertion failed, fallback to API:', supabaseResult.error);
-          
-          if (supabaseResult.fallbackToApi) {
-            // Explicit fallback signal from supabaseService
-            console.log('Falling back to API endpoint as directed by Supabase service...');
-          } else {
-            // Unexpected error, but still attempt API fallback
-            console.error('Unexpected Supabase error:', supabaseResult.error);
-          }
-        }
-      } catch (supabaseError) {
-        // Handle any unexpected exceptions from supabaseService
-        console.error('Exception using supabaseService:', supabaseError);
-        console.log('Falling back to API endpoint...');
-      }
-      
-      // Try authenticated endpoint first
-      try {
-        console.log('Attempting to post to authenticated API endpoint: /knowledge/documents');
-        const response = await api.post('/knowledge/documents', formattedDoc);
-        console.log('Document added successfully via API:', response.data);
-        return { ...response.data, message: "Document added successfully via API" };
-      } catch (authError) {
-        console.error('Error with authenticated upload:', authError);
-        console.log('Auth error details:', authError.response ? authError.response.data : 'No response data');
-        console.log('Auth error status:', authError.response ? authError.response.status : 'No status code');
-        
-        // If authentication fails, try the test endpoint
-        console.log('Using test upload endpoint');
-        try {
-          const testResponse = await fetch(`${API_URL}/knowledge/test-upload`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formattedDoc)
-          });
-          
-          console.log('Test endpoint response status:', testResponse.status);
-          
-          if (!testResponse.ok) {
-            const errorData = await testResponse.json().catch(e => ({ error: 'Failed to parse error response' }));
-            console.error('Test endpoint error details:', errorData);
-            throw new Error(errorData.detail || 'Failed to upload document');
-          }
-          
-          const responseData = await testResponse.json();
-          console.log('Document added successfully via test endpoint:', responseData);
-          return { ...responseData, message: "Document added successfully via test API endpoint" };
-        } catch (testError) {
-          console.error('Error with test endpoint:', testError);
-          throw testError;
-        }
-      }
+      // Correct path: /knowledge/documents or /knowledge/upload
+      // Interceptor will add Authorization header if Supabase session exists
+      const response = await axiosInstance.post('/knowledge/upload', documentData);
+      return { success: true, data: response.data };
     } catch (error) {
       console.error('Error adding document:', error);
-      
-      if (error.response && error.response.data) {
-        console.error('Error details:', error.response.data);
-      }
-      
-      throw error;
+      return { success: false, error };
     }
   },
 
-  // Get all documents in the knowledge base
-  getAllDocuments: async () => {
-    try {
-      const response = await api.get('/knowledge/documents');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      throw error;
-    }
-  },
-
-  // Delete a document from the knowledge base
-  deleteDocument: async (documentId) => {
-    try {
-      const response = await api.delete(`/knowledge/documents/${documentId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      throw error;
-    }
-  },
-
-  // Upload a file to the knowledge base
   uploadFile: async (file, metadata = {}) => {
-    try {
+      console.log(`Uploading file via API: ${file.name}`);
       const formData = new FormData();
       formData.append('file', file);
-      
-      // Add metadata as a JSON string
       formData.append('metadata', JSON.stringify(metadata));
-      
-      const response = await api.post('/knowledge/upload-file', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return response.data;
+      try {
+          // Correct path: /knowledge/upload-file
+          const response = await axiosInstance.post('/knowledge/upload-file', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          return { success: true, data: response.data };
+      } catch (error) {
+          console.error('Error uploading file:', error);
+          return { success: false, error };
+      }
+  },
+
+  searchDocuments: async (query) => {
+    console.log(`Searching knowledge base via API with query: ${query}`);
+    try {
+        // Correct path: /knowledge/search
+      const response = await axiosInstance.get('/knowledge/search', { params: { query } });
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
+      console.error('Error searching documents:', error);
+      return { success: false, error };
     }
   },
-  
-  // Search endpoint to match frontend component expectations
-  search: async (query, topK = 3) => {
-    return knowledgeApi.searchDocuments(query, topK);
-  }
+
+  // Add other knowledge base endpoints as needed
 };
 
-// Add a specific function to directly get a test token
-export const getAndSetTestToken = async () => {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/test-token`);
-    const data = await response.json();
-    if (data.access_token) {
-      localStorage.setItem('auth_token', data.access_token);
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Failed to get test token:', error);
-    return false;
-  }
+// Combine services (optional, based on usage)
+const apiService = {
+  auth,
+  chat: chatApi,
+  knowledge: knowledgeApi,
+  // Add other services if needed
 };
 
-export default api;
+// Remove the cors-fix script if it exists, as it might conflict
+const corsFixScript = document.getElementById('hr-chatbot-cors-fix-script');
+if (corsFixScript) {
+    corsFixScript.remove();
+    console.log("Removed conflicting cors-fix.js script.");
+}
+
+
+export default apiService; // Export combined or individual services as needed

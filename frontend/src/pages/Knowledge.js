@@ -262,18 +262,28 @@ function Knowledge() {
       // Fallback to API
       console.log('Attempting to add document via API...');
       const result = await knowledgeApi.addDocument(newDocument);
-      console.log(result.message || 'Document added successfully');
       
-      // Reset form on success
-      setNewDocument({
-        title: '',
-        text: '',
-        source: '',
-        category: 'general',
-      });
-      
-      setAddSuccess(true);
-    } catch (error) {
+      // Check if the API call was successful
+      if (result.success) {
+          console.log(result.data?.message || 'Document added successfully');
+          // Reset form on success
+          setNewDocument({
+            title: '',
+            text: '',
+            source: '',
+            category: 'general',
+          });
+          setAddSuccess(true);
+          setAddError(''); // Clear any previous error
+      } else {
+          // Handle API error
+          const errorMessage = result.error?.response?.data?.detail || result.error?.message || 'Failed to add document via API';
+          console.error('API Error adding document:', errorMessage);
+          setAddError(errorMessage);
+          setAddSuccess(false);
+      }
+
+    } catch (error) { // Catch errors from the try block itself
       console.error('Error adding document:', error);
       
       // Special handling for OpenAI API errors

@@ -58,18 +58,6 @@ def main():
     
     print(f"\nUpdated {env_file} with Supabase configuration.")
     
-    # Remove Firebase configuration if it exists
-    if os.getenv("FIREBASE_CREDENTIALS_PATH"):
-        print("\nRemoving Firebase configuration...")
-        set_key(env_file, "FIREBASE_CREDENTIALS_PATH", "")
-        set_key(env_file, "FIREBASE_API_KEY", "")
-        set_key(env_file, "FIREBASE_AUTH_DOMAIN", "")
-        set_key(env_file, "FIREBASE_PROJECT_ID", "")
-        set_key(env_file, "FIREBASE_STORAGE_BUCKET", "")
-        set_key(env_file, "FIREBASE_MESSAGING_SENDER_ID", "")
-        set_key(env_file, "FIREBASE_APP_ID", "")
-        set_key(env_file, "FIREBASE_MEASUREMENT_ID", "")
-    
     # Set USE_MOCK_EMBEDDINGS for testing
     set_key(env_file, "USE_MOCK_EMBEDDINGS", "true")
     
@@ -112,7 +100,7 @@ def test_supabase_connection(url, key):
         
         # Test connection by getting table info
         print("Testing table existence...")
-        response = client.table("knowledge_documents").select("count(*)", count="exact").execute()
+        response = client.table("knowledge_documents").select("id", count="exact").execute()
         
         if hasattr(response, 'error') and response.error:
             print(f"❌ Error accessing table: {response.error}")

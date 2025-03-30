@@ -1,66 +1,42 @@
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from app.models.chat import ChatSession, Message, ChatRequest, ChatResponse
+from fastapi import HTTPException, status
+
+# Import models
+from app.models.chat import ChatSession, Message, ChatRequest, ChatResponse 
+# Import OpenAI and vector store utils
 from app.utils.openai_utils import get_chat_completion
 from app.utils.vector_store import vector_store
+# Import Supabase chat utility functions
+from app.utils.supabase_chat_utils import (
+    db_create_chat_session,
+    db_add_chat_message,
+    db_get_chat_sessions,
+    db_get_chat_messages,
+    db_delete_chat_session
+)
 
-# In-memory storage for chat sessions (in a real app, use a database)
-chat_sessions = {}
+# REMOVE In-memory storage 
+# chat_sessions = {}
 
-def create_session(db, user_id: str) -> ChatSession:
-    """Create a new chat session."""
-    # Create new session with a valid ID
-    try:
-        new_session = ChatSession(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            messages=[],
-            created_at=datetime.now(),
-            updated_at=datetime.now()
-        )
-        
-        # Store session
-        chat_sessions[new_session.id] = new_session
-        
-        # Return a copy to avoid reference issues
+def create_session(db, user_id: str) -> Optional[ChatSession]: # db param might be unused now
+    """Create a new chat session in Supabase."""
+    db_session = db_create_chat_session(user_id)
+    if db_session:
+        # Map Supabase response to ChatSession Pydantic model
         return ChatSession(
-            id=new_session.id,
-            user_id=new_session.user_id,
-            messages=[],
-            created_at=new_session.created_at,
-            updated_at=new_session.updated_at
+            id=str(db_session['id']), # Ensure ID is string if model expects it
+            user_id=db_session['user_id'],
+            created_at=datetime.fromisoformat(db_session['created_at']), # Parse timestamp
+            updated_at=datetime.fromisoformat(db_session['updated_at']),
+            messages=[] # Messages are fetched separately
         )
-    except Exception as e:
-        print(f"Error creating session: {e}")
-        # Return a fallback session if there's an error
-        fallback_id = str(uuid.uuid4())
-        return ChatSession(
-            id=fallback_id,
-            user_id=user_id,
-            messages=[],
-            created_at=datetime.now(),
-            updated_at=datetime.now()
-        )
+    return None
 
-def get_or_create_session(session_id: Optional[str], user_id: str) -> ChatSession:
-    """Get or create a chat session."""
-    if session_id and session_id in chat_sessions:
-        return chat_sessions[session_id]
-    
-    # Create new session
-    return create_session(None, user_id)
+# REMOVE get_or_create_session (logic will be handled in process_chat_request)
 
-def add_message_to_session(session: ChatSession, role: str, content: str) -> Message:
-    """Add a message to a chat session."""
-    message = Message(
-        role=role,
-        content=content,
-        timestamp=datetime.now()
-    )
-    session.messages.append(message)
-    session.updated_at = datetime.now()
-    return message
+# REMOVE add_message_to_session (will call db function directly)
 
 def get_relevant_context(query: str, top_k: int = 3) -> str:
     """Get relevant context from the knowledge base."""
@@ -78,20 +54,34 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     return context
 
 def process_chat_request(request: ChatRequest) -> ChatResponse:
-    """Process a chat request."""
-    # Get or create session
-    session = get_or_create_session(request.session_id, request.user_id)
+    """Process a chat request using Supabase for persistence."""
+    session_id = request.session_id
+    user_id = request.user_id
+    message_content = request.message
+
+    # 1. Ensure session exists (or handle creation if session_id is None)
+    # Note: Current frontend flow seems to always create first, then send message.
+    # If a message could arrive without a session_id, logic to create one here is needed.
+    if not session_id:
+        # This case might indicate an issue in the frontend flow if it happens
+        print("Warning: process_chat_request called without session_id. Attempting to create.")
+        new_session = db_create_chat_session(user_id)
+        if not new_session:
+             raise HTTPException(status_code=500, detail="Failed to create chat session")
+        session_id = new_session['id']
+        print(f"Created new session {session_id} during chat processing.")
     
-    # Add user message to session
-    add_message_to_session(session, "user", request.message)
+    # 2. Add user message to Supabase
+    db_add_chat_message(session_id, "user", message_content)
     
-    # Get relevant context from knowledge base
-    context = get_relevant_context(request.message)
-    
-    # Prepare messages for OpenAI
+    # 3. Get recent messages from Supabase for context
+    # We need the user_id to fetch messages because db_get_chat_messages checks ownership
+    recent_messages_db = db_get_chat_messages(session_id, user_id)
+    if recent_messages_db is None: # Handle case where session doesn't exist or user doesn't own it
+        raise HTTPException(status_code=404, detail="Chat session not found or access denied")
+
+    # Map DB messages to Message model if needed, or directly use dicts
     openai_messages = []
-    
-    # System message with instructions and context
     system_message = {
         "role": "system",
         "content": (
@@ -102,29 +92,46 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     }
     openai_messages.append(system_message)
     
-    # Add context if available
+    # 4. Get relevant context from knowledge base (as before)
+    context = get_relevant_context(message_content)
     if context:
-        context_message = {
-            "role": "system",
-            "content": context
-        }
+        context_message = {"role": "system", "content": context}
         openai_messages.append(context_message)
-    
-    # Add recent conversation history (last 5 messages)
-    for msg in session.messages[-10:]:
+
+    # Add recent conversation history (last N messages from DB)
+    history_limit = 10 # How many messages to include
+    for msg in recent_messages_db[-history_limit:]:
         openai_messages.append({
-            "role": msg.role,
-            "content": msg.content
+            "role": msg['role'],
+            "content": msg['content']
         })
-    
-    # Get response from OpenAI
+
+    # Ensure the user's *current* message is the last one in the list for OpenAI
+    if not openai_messages or openai_messages[-1]['content'] != message_content:
+         openai_messages.append({"role": "user", "content": message_content}) 
+            
+    # 5. Get response from OpenAI (as before)
     assistant_response = get_chat_completion(openai_messages)
     
-    # Add assistant response to session
-    add_message_to_session(session, "assistant", assistant_response)
+    # 6. Add assistant response to Supabase
+    db_add_chat_message(session_id, "assistant", assistant_response)
     
-    # Return response
+    # 7. Return response
     return ChatResponse(
-        message=assistant_response,
-        session_id=session.id
+        response=assistant_response, # Changed from 'message' to match model
+        session_id=session_id
     )
+
+# --- Add Service functions to interact with routers --- 
+
+def get_chat_sessions(db, user_id: str) -> List[Dict[str, Any]]:
+    """Service function to get sessions from DB."""
+    return db_get_chat_sessions(user_id)
+    
+def get_session_messages(db, session_id: str, user_id: str) -> Optional[List[Dict[str, Any]]]:
+    """Service function to get messages from DB."""
+    return db_get_chat_messages(session_id, user_id)
+    
+def delete_session(db, session_id: str, user_id: str) -> bool:
+    """Service function to delete a session from DB."""
+    return db_delete_chat_session(session_id, user_id)
