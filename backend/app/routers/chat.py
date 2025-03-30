@@ -201,7 +201,7 @@ async def send_message(
             # ID might not be easily available here, maybe return full response?
             "id": None, # Placeholder 
             "role": "assistant",
-            "content": response.response, 
+            "content": response.message,
             "timestamp": datetime.now().isoformat() # Approximate timestamp
         }
     }
