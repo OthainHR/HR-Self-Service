@@ -47,49 +47,48 @@ async def add_document(
     document: Document,
     current_user: dict = Depends(get_current_supabase_user)
 ):
-    """
-    Add a document to the knowledge base.
-    
-    The document is processed, embedded, and stored in the vector store.
-    """
-    # Get required info from the NEW user object (which is now a dict)
+    logger.info("Entered /documents endpoint")
     user_email = current_user.get('email')
-    print(f"Auth: User authenticated as: {user_email}")
+    logger.info(f"Auth: User authenticated as: {user_email}")
     
-    # TEMPORARY: Check permission based on email - REPLACE LATER WITH PROPER ROLE CHECK
     if user_email != "admin@example.com":
-        print(f"Permission denied for user {user_email}")
+        logger.warning(f"Permission denied for user {user_email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin@example.com can add documents (temporary check)"
         )
     
-    # Print document details
-    print(f"Adding document: title={document.title}, source={document.source}, category={document.category}")
-    print(f"Document text (first 50 chars): {document.text[:50]}...")
+    logger.info(f"Processing document: title={document.title}, source={document.source}")
+    logger.info(f"Document text (first 50 chars): {document.text[:50]}...")
     
-    # Add document
-    success = knowledge_service.add_document(document)
-    
-    if not success:
-        print("Failed to add document - knowledge_service.add_document returned False")
+    logger.info("Calling knowledge_service.add_document...")
+    try:
+        success = knowledge_service.add_document(document)
+        logger.info(f"knowledge_service.add_document returned: {success}")
+        
+        if not success:
+            logger.error("Failed to add document - knowledge_service returned False")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add document in service"
+            )
+        
+        logger.info("Document added successfully via /documents endpoint")
+        return {"message": "Document added successfully"}
+    except Exception as e:
+        logger.exception("Exception caught in /documents endpoint")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to add document"
+            detail=f"Server error adding document: {e}"
         )
-    
-    print(f"Document added successfully")
-    return {"message": "Document added successfully"}
 
-# Add an alias endpoint to match the frontend call
 @router.post("/upload", response_model=Dict[str, str])
 async def upload_document(
     document: Document,
     current_user: dict = Depends(get_current_supabase_user)
 ):
-    """Alias for add_document to match frontend expectations"""
-    result = await add_document(document, current_user)
-    return {"message": "Document uploaded successfully"}
+    logger.info("Entered /upload alias endpoint, calling add_document...")
+    return await add_document(document, current_user)
 
 @router.post("/upload-file", response_model=Dict[str, str])
 async def upload_file(
@@ -97,53 +96,52 @@ async def upload_file(
     metadata: Optional[str] = Form("{}"),
     current_user: dict = Depends(get_current_supabase_user)
 ):
-    """
-    Upload a file to the knowledge base.
-    
-    The file contents are processed, embedded, and stored in the vector store.
-    """
-    # TEMPORARY: Check permission based on email - REPLACE LATER WITH PROPER ROLE CHECK
+    logger.info("Entered /upload-file endpoint")
     user_email = current_user.get('email')
     if user_email != "admin@example.com":
-        print(f"Permission denied for user {user_email} attempting file upload")
+        logger.warning(f"Permission denied for user {user_email} attempting file upload")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin@example.com can upload documents (temporary check)"
         )
     
+    logger.info(f"Processing uploaded file: {file.filename}")
     try:
-        # Read file content
         content = await file.read()
         text = content.decode("utf-8")
+        logger.info(f"File content decoded (first 50 chars): {text[:50]}...")
         
-        # Parse metadata or use defaults
         try:
             meta_dict = json.loads(metadata)
         except:
             meta_dict = {}
+            logger.warning("Could not parse metadata JSON, using defaults.")
         
-        # Create document
-        document = Document(
+        doc_obj = Document(
             text=text,
             title=meta_dict.get("title", file.filename),
             source=meta_dict.get("source", "File Upload"),
             category=meta_dict.get("category", "general")
         )
         
-        # Add document
-        success = knowledge_service.add_document(document)
+        logger.info("Calling knowledge_service.add_document for uploaded file...")
+        success = knowledge_service.add_document(doc_obj)
+        logger.info(f"knowledge_service.add_document returned: {success}")
         
         if not success:
+            logger.error("Failed to add uploaded file - knowledge_service returned False")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to add file"
+                detail="Failed to add file in service"
             )
         
+        logger.info(f"File {file.filename} processed successfully via /upload-file endpoint")
         return {"message": f"File {file.filename} uploaded successfully"}
     except Exception as e:
+        logger.exception("Exception caught in /upload-file endpoint")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing file: {str(e)}"
+            detail=f"Server error processing file: {str(e)}"
         )
 
 @router.get("/search", response_model=dict)

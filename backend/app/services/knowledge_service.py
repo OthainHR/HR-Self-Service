@@ -1,7 +1,10 @@
+import logging
 from typing import List, Dict, Any
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 from app.utils.vector_store import vector_store
+
+logger = logging.getLogger(__name__)
 
 class Document(BaseModel):
     """Document model for API validation."""
@@ -20,20 +23,24 @@ def add_document(document: Document) -> bool:
     Returns:
         True if successful, False otherwise
     """
+    logger.info(f"Entered knowledge_service.add_document for title: {document.title}")
     try:
-        # Create metadata
         metadata = {
             "title": document.title,
             "source": document.source,
             "category": document.category
         }
+        logger.info(f"Prepared metadata: {metadata}")
         
-        # Add to vector store
-        return vector_store.add_document(document.text, metadata)
+        logger.info("Calling vector_store.add_document...")
+        success = vector_store.add_document(document.text, metadata)
+        logger.info(f"vector_store.add_document returned: {success}")
+        return success
     except Exception as e:
+        logger.exception("Exception caught in knowledge_service.add_document")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error adding document: {str(e)}"
+            detail=f"Error adding document in service: {str(e)}"
         )
 
 def search_documents(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
