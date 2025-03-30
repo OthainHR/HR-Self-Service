@@ -53,17 +53,15 @@ async def add_document(
     The document is processed, embedded, and stored in the vector store.
     """
     # Get required info from the NEW user object (which is now a dict)
-    username = current_user.get('username')
-    role = current_user.get('role')
-    print(f"Auth: User authenticated as: {username}, role: {role}")
+    user_email = current_user.get('email')
+    print(f"Auth: User authenticated as: {user_email}")
     
-    # Check permission based on the new user object's role
-    # Note: Ensure 'admin' role is correctly set in Supabase user_metadata
-    if role not in ["hr", "admin"]:
-        print(f"Permission denied for user {username} with role {role}")
+    # TEMPORARY: Check permission based on email - REPLACE LATER WITH PROPER ROLE CHECK
+    if user_email != "admin@example.com":
+        print(f"Permission denied for user {user_email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only HR administrators or admins can add documents"
+            detail="Only admin@example.com can add documents (temporary check)"
         )
     
     # Print document details
@@ -104,12 +102,13 @@ async def upload_file(
     
     The file contents are processed, embedded, and stored in the vector store.
     """
-    # Check permission based on the new user object's role
-    role = current_user.get('role')
-    if role not in ["hr", "admin"]:
+    # TEMPORARY: Check permission based on email - REPLACE LATER WITH PROPER ROLE CHECK
+    user_email = current_user.get('email')
+    if user_email != "admin@example.com":
+        print(f"Permission denied for user {user_email} attempting file upload")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only HR administrators or admins can upload documents"
+            detail="Only admin@example.com can upload documents (temporary check)"
         )
     
     try:
