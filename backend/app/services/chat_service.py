@@ -118,7 +118,7 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     
     # 7. Return response
     return ChatResponse(
-        response=assistant_response, # Changed from 'message' to match model
+        message=assistant_response, # Corrected field name
         session_id=session_id
     )
 
