@@ -156,10 +156,12 @@ export const chatApi = {
     try {
       // Correct path: /chat/sessions/{sessionId}/messages
       const response = await axiosInstance.get(`/chat/sessions/${sessionId}/messages`);
-      return response.data.messages || [];
+      // The backend returns {"messages": [...]}, which is what ChatWindow expects.
+      // Just return the whole data object.
+      return response.data || { messages: [] }; // Return the data or a default structure
     } catch (error) {
       console.error('Error fetching session messages:', error);
-      return [];
+      return { messages: [] }; // Return default structure on error
     }
   },
 
