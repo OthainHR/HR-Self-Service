@@ -162,19 +162,19 @@ const ProtectedRoute = ({ children }) => {
 
 // Admin route component
 const AdminRoute = ({ children }) => {
-  // Get state from useAuth
   const { user, isLoading } = useAuth();
-  const isAuthenticated = !!user;
-  
-  // Check user role from Supabase user metadata (adjust key as needed)
-  const isAdmin = user?.user_metadata?.role === 'admin'; 
 
   if (isLoading) {
-    // Show a loading indicator
+    // Crucially, wait for loading to finish before making decisions
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
-  // Check if authenticated
+  // Now that isLoading is false, we can reliably check user and isAdmin
+  const isAuthenticated = !!user;
+  // Temporary check using email for admin - Replace with proper role check later
+  const isAdmin = user?.email === 'admin@example.com';
+
+  // Check if authenticated first
   if (!isAuthenticated) {
     console.log('AdminRoute: Not authenticated, redirecting to login.');
     return <Navigate to="/login" replace />;
