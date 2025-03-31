@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { 
   AppBar, 
@@ -31,7 +31,24 @@ import { useAuth } from '../contexts/AuthContext';
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
   const isAuthenticated = !!user;
-  const isAdmin = user?.user_metadata?.role === 'admin';
+
+  // ---- START RE-ADDED DEBUG LOG ----
+  useEffect(() => {
+    console.log("--- Vercel NavBar Debug ---");
+    if (isLoading) {
+        console.log("Auth is loading...");
+    } else if (user) {
+      console.log("User object (Vercel):", JSON.stringify(user, null, 2)); // Stringify for better logging
+      console.log("User email (Vercel):", user.email);
+      console.log("Is Admin check (Vercel):", user?.email === 'admin@example.com');
+    } else {
+        console.log("User object is null or undefined.");
+    }
+  }, [user, isLoading]);
+  // ---- END RE-ADDED DEBUG LOG ----
+
+  // Temporary check using email for admin - Replace with proper role check later
+  const isAdmin = user?.email === 'admin@example.com';
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
