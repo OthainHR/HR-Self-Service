@@ -17,7 +17,8 @@ init_db()
 app = FastAPI(title="HR Chatbot API")
 
 # Get CORS origins from environment variable
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app").split(",")
+print(f"*** Allowed CORS Origins: {cors_origins} ***")
 
 # Configure CORS
 app.add_middleware(
