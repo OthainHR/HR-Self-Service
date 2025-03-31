@@ -164,29 +164,32 @@ const ProtectedRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { user, isLoading } = useAuth();
 
+  // ---- Add AdminRoute Debug Log ----
+  console.log("--- AdminRoute Render ---");
+  console.log(`AdminRoute: isLoading=${isLoading}`);
+  console.log(`AdminRoute: user=`, user ? JSON.stringify(user, null, 2) : user);
+  // ---- End AdminRoute Debug Log ----
+
   if (isLoading) {
-    // Crucially, wait for loading to finish before making decisions
+    console.log("AdminRoute: Rendering Loading Indicator...");
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
-  // Now that isLoading is false, we can reliably check user and isAdmin
   const isAuthenticated = !!user;
-  // Temporary check using email for admin - Replace with proper role check later
   const isAdmin = user?.email === 'admin@example.com';
+  console.log(`AdminRoute: Post-loading check -> isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
 
-  // Check if authenticated first
   if (!isAuthenticated) {
     console.log('AdminRoute: Not authenticated, redirecting to login.');
     return <Navigate to="/login" replace />;
   }
 
-  // Check if admin
   if (!isAdmin) {
     console.warn("AdminRoute: User is not an admin. Redirecting to chat.", user);
-    return <Navigate to="/chat" replace />; // Redirect non-admins to chat or home
+    return <Navigate to="/chat" replace />; 
   }
 
-  // Render children if authenticated admin
+  console.log("AdminRoute: Rendering children.");
   return children;
 };
 
