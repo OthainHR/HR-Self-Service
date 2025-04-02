@@ -54,8 +54,6 @@ function Knowledge() {
 
   const { user, isLoading: authIsLoading } = useAuth();
 
-  const isAdmin = user?.email === 'admin@example.com';
-
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -65,7 +63,6 @@ function Knowledge() {
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
   const [showFullText, setShowFullText] = useState(false);
-  const [hasAccess, setHasAccess] = useState(false);
   
   const [newDocument, setNewDocument] = useState({
     title: '',
@@ -76,19 +73,6 @@ function Knowledge() {
   const [addingDocument, setAddingDocument] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
   const [addError, setAddError] = useState('');
-  
-  // Re-check access whenever user or loading state changes
-  useEffect(() => {
-    console.log('Knowledge useEffect [user, authIsLoading] running...');
-    if (!authIsLoading && user) {
-      const isAdminCheck = user.email === 'admin@example.com';
-      console.log(`Knowledge useEffect: authIsLoading=${authIsLoading}, user exists=${!!user}, isAdminCheck=${isAdminCheck}`);
-      setHasAccess(isAdminCheck);
-    } else {
-      console.log(`Knowledge useEffect: Setting hasAccess to false (authIsLoading=${authIsLoading}, user exists=${!!user})`);
-      setHasAccess(false); // Explicitly set to false if not loaded or no user
-    }
-  }, [user, authIsLoading]);
   
   // Test Supabase connection on component mount
   useEffect(() => {
@@ -293,39 +277,17 @@ function Knowledge() {
 
   // --- Knowledge Debug Log BEFORE RETURN ---
   console.log('Knowledge component: Reached BEFORE final return statement.');
-  console.log(`Knowledge component: Current state -> hasAccess=${hasAccess}, authIsLoading=${authIsLoading}`);
+  console.log(`Knowledge component: Current state -> authIsLoading=${authIsLoading}`);
   // --- End Knowledge Debug Log ---
 
-  // Conditional rendering based on access check
+  // Show loading indicator ONLY if auth is loading (though AdminRoute should prevent this state)
   if (authIsLoading) {
-    console.log("Knowledge component rendering: Loading indicator (authIsLoading)...");
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
-  }
-
-  if (!hasAccess) {
-    console.log("Knowledge component rendering: Access Denied message.");
-    return (
-      <Container maxWidth="md">
-        <Paper sx={{ p: 4, mt: 4, textAlign: 'center', backgroundColor: '#fff0f0' }}>
-          <Typography variant="h5" color="error" gutterBottom>
-            Access Denied
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            You don't have permission to access the Knowledge Base management features.
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-            This feature is only available to admin users or accounts with specific permissions.
-          </Typography>
-          <Button variant="contained" onClick={() => window.history.back()}> {/* Consider using useNavigate instead */}
-            Return to Previous Page
-          </Button>
-        </Paper>
-      </Container>
-    );
+      console.log("Knowledge component rendering: Loading indicator (authIsLoading shouldn't happen here)...");
+      return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
   }
 
   // --- Knowledge Debug Log ACCESS GRANTED ---
-  console.log('Knowledge component rendering: Access GRANTED, rendering main content.');
+  console.log('Knowledge component rendering: Assuming access GRANTED, rendering main content.');
   // --- End Knowledge Debug Log ---
 
   return (
