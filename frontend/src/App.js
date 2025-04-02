@@ -227,8 +227,12 @@ const AdminRoute = ({ children }) => {
   console.log(`AdminRoute #${renderCount}: Checks passed. Preparing to render children.`); // Modified log
   // Wrap children in Error Boundary
   return (
-    <ErrorBoundary>
-      {children}
+    <ErrorBoundary> 
+      {/* Temporarily render simple text instead of children */} 
+      <h1 style={{ color: 'red', marginTop: '100px', textAlign: 'center' }}>
+        ADMIN ROUTE TEST - ACCESS GRANTED
+      </h1> 
+      {/* {children}  <- Original children commented out */}
     </ErrorBoundary>
   );
 };
