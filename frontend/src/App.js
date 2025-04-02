@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, Container, CircularProgress } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -139,6 +139,34 @@ const theme = createTheme({
   },
 });
 
+// Simple Error Boundary component
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true, error: error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      console.error("ErrorBoundary rendering fallback UI due to error:", this.state.error);
+      return <h1>Something went wrong rendering this section. Error: {this.state.error?.message || 'Unknown error'}</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   // Get state from useAuth
@@ -163,34 +191,46 @@ const ProtectedRoute = ({ children }) => {
 // Admin route component
 const AdminRoute = ({ children }) => {
   const { user, isLoading } = useAuth();
+  const [renderCount, setRenderCount] = React.useState(0); // Add render count state
+
+  React.useEffect(() => { // Increment render count on mount/update
+      setRenderCount(prev => prev + 1);
+  }, [user, isLoading]);
+
 
   // ---- Add AdminRoute Debug Log ----
-  console.log("--- AdminRoute Render ---");
-  console.log(`AdminRoute: isLoading=${isLoading}`);
-  console.log(`AdminRoute: user=`, user ? JSON.stringify(user, null, 2) : user);
+  console.log(`--- AdminRoute Render #${renderCount} ---`); // Log render count
+  console.log(`AdminRoute #${renderCount}: isLoading=${isLoading}`);
+  // Log only email for brevity, handle null case
+  console.log(`AdminRoute #${renderCount}: user email=`, user ? user.email : user);
   // ---- End AdminRoute Debug Log ----
 
   if (isLoading) {
-    console.log("AdminRoute: Rendering Loading Indicator...");
+    console.log(`AdminRoute #${renderCount}: Rendering Loading Indicator...`);
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
   const isAuthenticated = !!user;
   const isAdmin = user?.email === 'admin@example.com';
-  console.log(`AdminRoute: Post-loading check -> isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
+  console.log(`AdminRoute #${renderCount}: Post-loading check -> isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
 
   if (!isAuthenticated) {
-    console.log('AdminRoute: Not authenticated, redirecting to login.');
+    console.log(`AdminRoute #${renderCount}: Not authenticated, redirecting to login.`);
     return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin) {
-    console.warn("AdminRoute: User is not an admin. Redirecting to chat.", user);
-    return <Navigate to="/chat" replace />; 
+    console.warn(`AdminRoute #${renderCount}: User is not an admin. Redirecting to chat.`, user?.email);
+    return <Navigate to="/chat" replace />;
   }
 
-  console.log("AdminRoute: Rendering children.");
-  return children;
+  console.log(`AdminRoute #${renderCount}: Checks passed. Preparing to render children.`); // Modified log
+  // Wrap children in Error Boundary
+  return (
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
+  );
 };
 
 // Main app component
