@@ -42,7 +42,7 @@ const NavBar = () => {
       console.log("User email (Vercel):", user.email);
       console.log("Is Admin check (Vercel):", user?.email === 'admin@example.com');
     } else {
-        console.log("User object is null or undefined.");
+        console.log("User object is null or undefined");
     }
   }, [user, isLoading]);
   // ---- END RE-ADDED DEBUG LOG ----
