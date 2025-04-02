@@ -29,6 +29,7 @@ import {
 import { Search as SearchIcon, Add as AddIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { knowledgeApi } from '../services/api';
 import supabaseService, { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -47,6 +48,14 @@ function TabPanel(props) {
 }
 
 function Knowledge() {
+  // --- Knowledge Debug Log START ---
+  console.log('Knowledge component starts rendering...');
+  // --- End Knowledge Debug Log ---
+
+  const { user, isLoading: authIsLoading } = useAuth();
+
+  const isAdmin = user?.email === 'admin@example.com';
+
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -68,45 +77,35 @@ function Knowledge() {
   const [addSuccess, setAddSuccess] = useState(false);
   const [addError, setAddError] = useState('');
   
-  // Check if user has access to knowledge base
+  // Re-check access whenever user or loading state changes
   useEffect(() => {
-    const checkAccess = () => {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        setHasAccess(false);
-        return;
-      }
-      
-      try {
-        const user = JSON.parse(userStr);
-        // Check if user has knowledge:access permission
-        if (user.permissions && user.permissions.includes('knowledge:access')) {
-          setHasAccess(true);
-        } else if (user.role === 'admin') {
-          // Admins always have access
-          setHasAccess(true);
-        } else {
-          setHasAccess(false);
-        }
-      } catch (err) {
-        console.error('Error checking knowledge access:', err);
-        setHasAccess(false);
-      }
-    };
-    
-    checkAccess();
-  }, []);
+    console.log('Knowledge useEffect [user, authIsLoading] running...');
+    if (!authIsLoading && user) {
+      const isAdminCheck = user.email === 'admin@example.com';
+      console.log(`Knowledge useEffect: authIsLoading=${authIsLoading}, user exists=${!!user}, isAdminCheck=${isAdminCheck}`);
+      setHasAccess(isAdminCheck);
+    } else {
+      console.log(`Knowledge useEffect: Setting hasAccess to false (authIsLoading=${authIsLoading}, user exists=${!!user})`);
+      setHasAccess(false); // Explicitly set to false if not loaded or no user
+    }
+  }, [user, authIsLoading]);
   
   // Test Supabase connection on component mount
   useEffect(() => {
+    // --- Knowledge Debug Log ---
+    console.log('Knowledge useEffect for testConnection running...');
+    // --- End Knowledge Debug Log ---
     const testConnection = async () => {
       try {
+        console.log('Knowledge: Testing Supabase connection...'); // Added log
         const result = await supabaseService.testConnection();
         if (!result.success) {
-          console.error('Supabase connection failed:', result.error);
+          console.error('Knowledge: Supabase connection failed:', result.error);
+        } else {
+          console.log('Knowledge: Supabase connection test successful.'); // Added log
         }
       } catch (err) {
-        console.error('Error testing Supabase connection:', err);
+        console.error('Knowledge: Error testing Supabase connection:', err);
       }
     };
     
@@ -207,7 +206,6 @@ function Knowledge() {
   const handleAddDocument = async (e) => {
     e.preventDefault();
     
-    // Validate form
     if (!newDocument.title.trim() || !newDocument.text.trim() || !newDocument.source.trim()) {
       setAddError('Please fill in all required fields');
       return;
@@ -216,94 +214,27 @@ function Knowledge() {
     setAddingDocument(true);
     setAddSuccess(false);
     setAddError('');
-    
-    console.log('Attempting to add document:', newDocument);
+    console.log('Attempting to add document (handleAddDocument):', newDocument);
     
     try {
-      // First try using direct Supabase connection
-      try {
-        console.log('Trying direct Supabase connection...');
-        const supabaseResult = await supabaseService.addDocument(newDocument);
-        
-        if (supabaseResult.success) {
-          console.log('Document added successfully via direct Supabase insertion');
-          
-          // Reset form on success
-          setNewDocument({
-            title: '',
-            text: '',
-            source: '',
-            category: 'general',
-          });
-          
-          setAddSuccess(true);
-          return; // Exit if successful
-        } else {
-          throw new Error(supabaseResult.error || 'Supabase insertion failed');
-        }
-      } catch (supabaseError) {
-        console.error('Direct Supabase insert failed:', supabaseError);
-        
-        // Check if this is due to OpenAI unavailability
-        if (supabaseError.message && supabaseError.message.includes('Real embeddings required')) {
-          console.log('Falling back to API due to real embeddings requirement');
-          // We'll continue to the API fallback in this case
-        } else if (supabaseError.message && supabaseError.message.includes('OpenAI API')) {
-          setAddError(`Cannot add document: OpenAI API is required but not available. 
-                      Please provide valid OpenAI credentials.`);
-          setAddingDocument(false);
-          return; // Don't try API fallback for OpenAI errors
-        } else {
-          // Continue to API fallback for other types of errors
-          console.log('Falling back to API service due to other error:', supabaseError.message);
-        }
-      }
-      
-      // Fallback to API
       console.log('Attempting to add document via API...');
       const result = await knowledgeApi.addDocument(newDocument);
-      
-      // Check if the API call was successful
-      if (result.success) {
-          console.log(result.data?.message || 'Document added successfully');
-          // Reset form on success
-          setNewDocument({
-            title: '',
-            text: '',
-            source: '',
-            category: 'general',
-          });
-          setAddSuccess(true);
-          setAddError(''); // Clear any previous error
-      } else {
-          // Handle API error
-          const errorMessage = result.error?.response?.data?.detail || result.error?.message || 'Failed to add document via API';
-          console.error('API Error adding document:', errorMessage);
-          setAddError(errorMessage);
-          setAddSuccess(false);
-      }
+      console.log('<<< API call returned >>> Result:', result);
 
-    } catch (error) { // Catch errors from the try block itself
-      console.error('Error adding document:', error);
-      
-      // Special handling for OpenAI API errors
-      if (error.message && error.message.includes('OpenAI')) {
-        setAddError(`Cannot add document: OpenAI API is required but not available. 
-                    Please provide valid OpenAI credentials.`);
-      }
-      // Detailed error logging for other errors
-      else if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Status code:', error.response.status);
-        setAddError(error.response.data?.detail || 'Failed to add document: Server error');
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        setAddError('Failed to add document: No response from server');
+      if (result.success) {
+        console.log('Document added successfully via API');
+        setNewDocument({ title: '', text: '', source: '', category: 'general' });
+        setAddSuccess(true);
       } else {
-        console.error('Error message:', error.message);
-        setAddError(`Failed to add document: ${error.message}`);
+        console.error('API call failed:', result.error);
+        const detail = result.error?.response?.data?.detail || result.error?.message || 'API call failed';
+        throw new Error(detail);
       }
+    } catch (apiError) {
+      console.error('Exception caught during API call or processing:', apiError);
+      setAddError(`Error: ${apiError.message}`);
     } finally {
+      console.log('Setting addingDocument to false');
       setAddingDocument(false);
     }
   };
@@ -360,6 +291,43 @@ function Knowledge() {
     }
   };
 
+  // --- Knowledge Debug Log BEFORE RETURN ---
+  console.log('Knowledge component: Reached BEFORE final return statement.');
+  console.log(`Knowledge component: Current state -> hasAccess=${hasAccess}, authIsLoading=${authIsLoading}`);
+  // --- End Knowledge Debug Log ---
+
+  // Conditional rendering based on access check
+  if (authIsLoading) {
+    console.log("Knowledge component rendering: Loading indicator (authIsLoading)...");
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
+  }
+
+  if (!hasAccess) {
+    console.log("Knowledge component rendering: Access Denied message.");
+    return (
+      <Container maxWidth="md">
+        <Paper sx={{ p: 4, mt: 4, textAlign: 'center', backgroundColor: '#fff0f0' }}>
+          <Typography variant="h5" color="error" gutterBottom>
+            Access Denied
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            You don't have permission to access the Knowledge Base management features.
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            This feature is only available to admin users or accounts with specific permissions.
+          </Typography>
+          <Button variant="contained" onClick={() => window.history.back()}> {/* Consider using useNavigate instead */}
+            Return to Previous Page
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
+
+  // --- Knowledge Debug Log ACCESS GRANTED ---
+  console.log('Knowledge component rendering: Access GRANTED, rendering main content.');
+  // --- End Knowledge Debug Log ---
+
   return (
     <>
       <Box 
@@ -397,379 +365,348 @@ function Knowledge() {
           Knowledge Base Management
         </Typography>
         
-        {!hasAccess ? (
-          <Paper elevation={0} sx={{ 
-            borderRadius: 3,
-            overflow: 'hidden',
-            padding: 4,
-            bgcolor: 'rgba(255, 255, 255, 0.65)',
-            backdropFilter: 'blur(15px)',
-            border: '1px solid rgba(255, 255, 255, 0.6)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-            textAlign: 'center'
-          }}>
-            <Typography variant="h5" color="error" gutterBottom>
-              Access Denied
-            </Typography>
-            <Typography variant="body1" paragraph>
-              You don't have permission to access the Knowledge Base management features.
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              This feature is only available to admin users or accounts with specific permissions.
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              sx={{ mt: 3 }}
-              onClick={() => window.location.href = '/chat'}
-            >
-              Return to Chat
-            </Button>
-          </Paper>
-        ) : (
-          <Paper elevation={0} sx={{ 
-            borderRadius: 3,
-            overflow: 'hidden',
-            bgcolor: 'rgba(255, 255, 255, 0.65)',
-            backdropFilter: 'blur(15px)',
-            border: '1px solid rgba(255, 255, 255, 0.6)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
-          }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'rgba(0, 0, 0, 0.08)', bgcolor: 'rgba(255, 255, 255, 0.5)' }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange} 
-                aria-label="knowledge base tabs"
-                sx={{
-                  '& .MuiTab-root': {
-                    fontWeight: 500,
-                    py: 1.5,
-                    '&.Mui-selected': {
-                      color: 'primary.main',
-                      fontWeight: 600
-                    }
-                  },
-                  '& .MuiTabs-indicator': {
-                    height: 3,
-                    borderRadius: '3px 3px 0 0'
+        <Paper elevation={0} sx={{ 
+          borderRadius: 3,
+          overflow: 'hidden',
+          bgcolor: 'rgba(255, 255, 255, 0.65)',
+          backdropFilter: 'blur(15px)',
+          border: '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+        }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'rgba(0, 0, 0, 0.08)', bgcolor: 'rgba(255, 255, 255, 0.5)' }}>
+            <Tabs 
+              value={tabValue} 
+              onChange={handleTabChange} 
+              aria-label="knowledge base tabs"
+              sx={{
+                '& .MuiTab-root': {
+                  fontWeight: 500,
+                  py: 1.5,
+                  '&.Mui-selected': {
+                    color: 'primary.main',
+                    fontWeight: 600
                   }
-                }}
-              >
-                <Tab label="Search Knowledge Base" />
-                <Tab label="Add to Knowledge Base" />
-              </Tabs>
-            </Box>
+                },
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0'
+                }
+              }}
+            >
+              <Tab label="Search Knowledge Base" />
+              <Tab label="Add to Knowledge Base" />
+            </Tabs>
+          </Box>
+          
+          {/* Search Tab */}
+          <TabPanel value={tabValue} index={0}>
+            <Typography variant="h6" gutterBottom>
+              Search HR Knowledge Base
+            </Typography>
             
-            {/* Search Tab */}
-            <TabPanel value={tabValue} index={0}>
-              <Typography variant="h6" gutterBottom>
-                Search HR Knowledge Base
-              </Typography>
-              
-              {success && (
-                <Alert severity="success" sx={{ 
-                  mb: 2, 
-                  bgcolor: 'rgba(237, 247, 237, 0.7)',
-                  backdropFilter: 'blur(5px)',
-                  borderRadius: '8px'
-                }}>
-                  {success}
-                </Alert>
-              )}
-              
-              {error && (
-                <Alert severity="error" sx={{ 
-                  mb: 2,
-                  bgcolor: 'rgba(253, 237, 237, 0.7)',
-                  backdropFilter: 'blur(5px)',
-                  borderRadius: '8px'
-                }}>
-                  {error}
-                </Alert>
-              )}
-              
-              <Box component="div" sx={{ mb: 4 }}>
-                <Grid container spacing={2} component="form" onSubmit={handleSearch}>
-                  <Grid item xs={12} sm={9}>
-                    <TextField
-                      fullWidth
-                      label="Search Query"
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      placeholder="Type your search query here..."
-                      variant="outlined"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && searchQuery.trim()) {
-                          e.preventDefault();
-                          handleSearch(e);
-                        }
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          bgcolor: 'rgba(255, 255, 255, 0.5)',
-                          backdropFilter: 'blur(5px)',
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'rgba(0, 0, 0, 0.23)',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                          }
-                        }
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <Button
-                      fullWidth
-                      type="submit"
-                      onClick={handleSearch}
-                      variant="contained"
-                      color="primary"
-                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
-                      disabled={!searchQuery.trim() || loading}
-                      sx={{ 
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      {loading ? 'Searching...' : 'Direct Search'}
-                    </Button>
-                  </Grid>
-                </Grid>
-                
-                {/* Quick test button */}
-                <Box mt={2} display="flex" justifyContent="center" gap={2}>
-                  <Button
-                    size="small"
+            {success && (
+              <Alert severity="success" sx={{ 
+                mb: 2, 
+                bgcolor: 'rgba(237, 247, 237, 0.7)',
+                backdropFilter: 'blur(5px)',
+                borderRadius: '8px'
+              }}>
+                {success}
+              </Alert>
+            )}
+            
+            {error && (
+              <Alert severity="error" sx={{ 
+                mb: 2,
+                bgcolor: 'rgba(253, 237, 237, 0.7)',
+                backdropFilter: 'blur(5px)',
+                borderRadius: '8px'
+              }}>
+                {error}
+              </Alert>
+            )}
+            
+            <Box component="div" sx={{ mb: 4 }}>
+              <Grid container spacing={2} component="form" onSubmit={handleSearch}>
+                <Grid item xs={12} sm={9}>
+                  <TextField
+                    fullWidth
+                    label="Search Query"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Type your search query here..."
                     variant="outlined"
-                    color="info"
-                    sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.3)',
-                      backdropFilter: 'blur(5px)',
-                      borderColor: 'rgba(0, 0, 0, 0.12)',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.5)',
-                        borderColor: 'primary.light'
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        e.preventDefault();
+                        handleSearch(e);
                       }
                     }}
-                    onClick={async () => {
-                      try {
-                        setLoading(true);
-                        
-                        // Direct query without any functions
-                        const { data, error } = await supabase
-                          .from('knowledge_documents')
-                          .select('*');
-                        
-                        if (error) {
-                          throw error;
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255, 255, 255, 0.5)',
+                        backdropFilter: 'blur(5px)',
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(0, 0, 0, 0.23)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
                         }
-                        
-                        if (!data || data.length === 0) {
-                          setError('No documents found in database!');
-                          return;
-                        }
-                        
-                        // Format and display
-                        const formattedDocs = data.map(doc => ({
-                          id: doc.id,
-                          text: doc.text,
-                          title: doc.metadata?.title || 'Unknown',
-                          source: doc.metadata?.source || 'Unknown',
-                          category: doc.metadata?.category || 'general',
-                          relevance_score: 1.0
-                        }));
-                        
-                        // Show the documents
-                        setSearchResults(formattedDocs);
-                        setSuccess(`Showing all ${formattedDocs.length} documents in database.`);
-                        
-                        // If some documents have text, set as search query to help user
-                        if (data[0] && data[0].text) {
-                          const sampleWord = data[0].text.split(' ')[0];
-                          setSearchQuery(sampleWord);
-                        }
-                      } catch (err) {
-                        console.error('Emergency fetch failed:', err);
-                        setError(`Emergency fetch failed: ${err.message}`);
-                      } finally {
-                        setLoading(false);
                       }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Button
+                    fullWidth
+                    type="submit"
+                    onClick={handleSearch}
+                    variant="contained"
+                    color="primary"
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
+                    disabled={!searchQuery.trim() || loading}
+                    sx={{ 
+                      height: '100%',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.3s ease'
                     }}
                   >
-                    Show All Documents
+                    {loading ? 'Searching...' : 'Direct Search'}
+                  </Button>
+                </Grid>
+              </Grid>
+              
+              {/* Quick test button */}
+              <Box mt={2} display="flex" justifyContent="center" gap={2}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="info"
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.3)',
+                    backdropFilter: 'blur(5px)',
+                    borderColor: 'rgba(0, 0, 0, 0.12)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.5)',
+                      borderColor: 'primary.light'
+                    }
+                  }}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      
+                      // Direct query without any functions
+                      const { data, error } = await supabase
+                        .from('knowledge_documents')
+                        .select('*');
+                      
+                      if (error) {
+                        throw error;
+                      }
+                      
+                      if (!data || data.length === 0) {
+                        setError('No documents found in database!');
+                        return;
+                      }
+                      
+                      // Format and display
+                      const formattedDocs = data.map(doc => ({
+                        id: doc.id,
+                        text: doc.text,
+                        title: doc.metadata?.title || 'Unknown',
+                        source: doc.metadata?.source || 'Unknown',
+                        category: doc.metadata?.category || 'general',
+                        relevance_score: 1.0
+                      }));
+                      
+                      // Show the documents
+                      setSearchResults(formattedDocs);
+                      setSuccess(`Showing all ${formattedDocs.length} documents in database.`);
+                      
+                      // If some documents have text, set as search query to help user
+                      if (data[0] && data[0].text) {
+                        const sampleWord = data[0].text.split(' ')[0];
+                        setSearchQuery(sampleWord);
+                      }
+                    } catch (err) {
+                      console.error('Emergency fetch failed:', err);
+                      setError(`Emergency fetch failed: ${err.message}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Show All Documents
+                </Button>
+              </Box>
+            </Box>
+            
+            {searchResults.length > 0 ? (
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  {`Found ${searchResults.length} results for "${searchQuery}"`}
+                </Typography>
+                
+                <Box mb={2} display="flex" justifyContent="flex-end">
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    onClick={() => setShowFullText(!showFullText)}
+                  >
+                    {showFullText ? "Show Less" : "Show Full Text"}
                   </Button>
                 </Box>
+                
+                <List sx={{ 
+                  bgcolor: 'rgba(255, 255, 255, 0.4)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255, 255, 255, 0.5)'
+                }}>
+                  {searchResults.map((result, index) => (
+                    <React.Fragment key={index}>
+                      <ListItem alignItems="flex-start">
+                        <ListItemText
+                          primary={`${result.title} - Match Score: ${((result.score || result.relevance_score || 0) * 100).toFixed(2)}%`}
+                          secondary={
+                            <React.Fragment>
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                Source: {result.source} | Category: {result.category}
+                              </Typography>
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                color="text.primary"
+                                sx={{ display: 'block', mt: 1 }}
+                              >
+                                {result.text ? (result.text.length > 200 && !showFullText
+                                  ? `${result.text.substring(0, 200)}...` 
+                                  : result.text) : 'No text content'}
+                              </Typography>
+                            </React.Fragment>
+                          }
+                        />
+                      </ListItem>
+                      {index < searchResults.length - 1 && <Divider sx={{ opacity: 0.6 }} />}
+                    </React.Fragment>
+                  ))}
+                </List>
               </Box>
-              
-              {searchResults.length > 0 ? (
-                <Box>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {`Found ${searchResults.length} results for "${searchQuery}"`}
-                  </Typography>
-                  
-                  <Box mb={2} display="flex" justifyContent="flex-end">
-                    <Button
-                      size="small"
-                      variant="text"
-                      color="primary"
-                      onClick={() => setShowFullText(!showFullText)}
-                    >
-                      {showFullText ? "Show Less" : "Show Full Text"}
-                    </Button>
-                  </Box>
-                  
-                  <List sx={{ 
-                    bgcolor: 'rgba(255, 255, 255, 0.4)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    border: '1px solid rgba(255, 255, 255, 0.5)'
-                  }}>
-                    {searchResults.map((result, index) => (
-                      <React.Fragment key={index}>
-                        <ListItem alignItems="flex-start">
-                          <ListItemText
-                            primary={`${result.title} - Match Score: ${((result.score || result.relevance_score || 0) * 100).toFixed(2)}%`}
-                            secondary={
-                              <React.Fragment>
-                                <Typography component="span" variant="body2" color="text.secondary">
-                                  Source: {result.source} | Category: {result.category}
-                                </Typography>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.primary"
-                                  sx={{ display: 'block', mt: 1 }}
-                                >
-                                  {result.text ? (result.text.length > 200 && !showFullText
-                                    ? `${result.text.substring(0, 200)}...` 
-                                    : result.text) : 'No text content'}
-                                </Typography>
-                              </React.Fragment>
-                            }
-                          />
-                        </ListItem>
-                        {index < searchResults.length - 1 && <Divider sx={{ opacity: 0.6 }} />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </Box>
-              ) : (
-                <Box mt={2}>
-                  <Typography variant="subtitle1">
-                    No results found for "{searchQuery}". Try a different search term.
-                  </Typography>
-                </Box>
-              )}
-            </TabPanel>
+            ) : (
+              <Box mt={2}>
+                <Typography variant="subtitle1">
+                  No results found for "{searchQuery}". Try a different search term.
+                </Typography>
+              </Box>
+            )}
+          </TabPanel>
+          
+          {/* Add Document Tab */}
+          <TabPanel value={tabValue} index={1}>
+            <Typography variant="h6" gutterBottom>
+              Add to Knowledge Base
+            </Typography>
             
-            {/* Add Document Tab */}
-            <TabPanel value={tabValue} index={1}>
-              <Typography variant="h6" gutterBottom>
-                Add to Knowledge Base
-              </Typography>
-              
-              {addSuccess && (
-                <Alert severity="success" sx={{ 
-                  mb: 3, 
-                  bgcolor: 'rgba(237, 247, 237, 0.7)',
-                  backdropFilter: 'blur(5px)',
-                  borderRadius: '8px'
-                }}>
-                  Document added successfully!
-                </Alert>
-              )}
-              
-              {addError && (
-                <Alert severity="error" sx={{ 
-                  mb: 3,
-                  bgcolor: 'rgba(253, 237, 237, 0.7)',
-                  backdropFilter: 'blur(5px)',
-                  borderRadius: '8px'
-                }}>
-                  {addError}
-                </Alert>
-              )}
-              
-              <Box component="form" onSubmit={handleAddDocument}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Document Title"
-                      name="title"
-                      value={newDocument.title}
-                      onChange={handleDocumentChange}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Source"
-                      name="source"
-                      value={newDocument.source}
-                      onChange={handleDocumentChange}
-                      helperText="e.g., Employee Handbook, HR Policy, etc."
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel>Category</InputLabel>
-                      <Select
-                        name="category"
-                        value={newDocument.category}
-                        onChange={handleDocumentChange}
-                        label="Category"
-                      >
-                        <MenuItem value="general">General</MenuItem>
-                        <MenuItem value="policy">Policy</MenuItem>
-                        <MenuItem value="benefits">Benefits</MenuItem>
-                        <MenuItem value="leave">Leave</MenuItem>
-                        <MenuItem value="payroll">Payroll</MenuItem>
-                        <MenuItem value="onboarding">Onboarding</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <TextField
-                      required
-                      fullWidth
-                      multiline
-                      rows={8}
-                      label="Document Text"
-                      name="text"
-                      value={newDocument.text}
-                      onChange={handleDocumentChange}
-                      helperText="The text content of the document that will be searchable"
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      startIcon={addingDocument ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
-                      disabled={addingDocument}
-                      sx={{ 
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      {addingDocument ? 'Adding...' : 'Add Document'}
-                    </Button>
-                  </Grid>
+            {addSuccess && (
+              <Alert severity="success" sx={{ 
+                mb: 3, 
+                bgcolor: 'rgba(237, 247, 237, 0.7)',
+                backdropFilter: 'blur(5px)',
+                borderRadius: '8px'
+              }}>
+                Document added successfully!
+              </Alert>
+            )}
+            
+            {addError && (
+              <Alert severity="error" sx={{ 
+                mb: 3,
+                bgcolor: 'rgba(253, 237, 237, 0.7)',
+                backdropFilter: 'blur(5px)',
+                borderRadius: '8px'
+              }}>
+                {addError}
+              </Alert>
+            )}
+            
+            <Box component="form" onSubmit={handleAddDocument}>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    required
+                    fullWidth
+                    label="Document Title"
+                    name="title"
+                    value={newDocument.title}
+                    onChange={handleDocumentChange}
+                  />
                 </Grid>
-              </Box>
-            </TabPanel>
-          </Paper>
-        )}
+                
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    required
+                    fullWidth
+                    label="Source"
+                    name="source"
+                    value={newDocument.source}
+                    onChange={handleDocumentChange}
+                    helperText="e.g., Employee Handbook, HR Policy, etc."
+                  />
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Category</InputLabel>
+                    <Select
+                      name="category"
+                      value={newDocument.category}
+                      onChange={handleDocumentChange}
+                      label="Category"
+                    >
+                      <MenuItem value="general">General</MenuItem>
+                      <MenuItem value="policy">Policy</MenuItem>
+                      <MenuItem value="benefits">Benefits</MenuItem>
+                      <MenuItem value="leave">Leave</MenuItem>
+                      <MenuItem value="payroll">Payroll</MenuItem>
+                      <MenuItem value="onboarding">Onboarding</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <TextField
+                    required
+                    fullWidth
+                    multiline
+                    rows={8}
+                    label="Document Text"
+                    name="text"
+                    value={newDocument.text}
+                    onChange={handleDocumentChange}
+                    helperText="The text content of the document that will be searchable"
+                  />
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={addingDocument ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
+                    disabled={addingDocument}
+                    sx={{ 
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {addingDocument ? 'Adding...' : 'Add Document'}
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+          </TabPanel>
+        </Paper>
       </Container>
     </>
   );
