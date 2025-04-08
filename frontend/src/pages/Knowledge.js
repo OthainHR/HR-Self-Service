@@ -25,11 +25,13 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  useTheme
 } from '@mui/material';
 import { Search as SearchIcon, Add as AddIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { knowledgeApi } from '../services/api';
 import supabaseService, { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -53,6 +55,8 @@ function Knowledge() {
   // --- End Knowledge Debug Log ---
 
   const { user, isLoading: authIsLoading } = useAuth();
+  const { isDarkMode } = useDarkMode();
+  const theme = useTheme();
 
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,7 +171,7 @@ function Knowledge() {
         title: doc.metadata?.title || 'Unknown',
         source: doc.metadata?.source || 'Unknown',
         category: doc.metadata?.category || 'general',
-        relevance_score: 1.0
+        relevance_score: 1.0 // Placeholder score for direct search
       }));
       
       setSearchResults(formattedDocuments);
@@ -303,7 +307,9 @@ function Knowledge() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, #121212 0%, #1e1e1e 50%, #262626 100%)'
+            : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
           backgroundSize: 'cover',
           backgroundAttachment: 'fixed',
           overflowY: 'auto',
@@ -317,25 +323,32 @@ function Knowledge() {
             bottom: 0,
             width: '100%',
             height: '100%',
-            backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
+            backgroundImage: isDarkMode
+              ? 'radial-gradient(circle at 30% 20%, rgba(80,80,80,0.2) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(30,50,80,0.15) 0%, transparent 30%)'
+              : 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
             zIndex: 0,
           }
         }}
       />
       <Container maxWidth="md" sx={{ position: 'relative', zIndex: 5, pt: 4, pb: 8 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.main' }}>
           Knowledge Base Management
         </Typography>
         
         <Paper elevation={0} sx={{ 
           borderRadius: 3,
           overflow: 'hidden',
-          bgcolor: 'rgba(255, 255, 255, 0.65)',
+          bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.65)',
           backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.6)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+          border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          color: isDarkMode ? 'white' : 'inherit'
         }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'rgba(0, 0, 0, 0.08)', bgcolor: 'rgba(255, 255, 255, 0.5)' }}>
+          <Box sx={{
+            borderBottom: 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+            bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+          }}>
             <Tabs 
               value={tabValue} 
               onChange={handleTabChange} 
@@ -344,8 +357,9 @@ function Knowledge() {
                 '& .MuiTab-root': {
                   fontWeight: 500,
                   py: 1.5,
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
                   '&.Mui-selected': {
-                    color: 'primary.main',
+                    color: isDarkMode ? 'white' : 'primary.main',
                     fontWeight: 600
                   }
                 },
@@ -369,7 +383,7 @@ function Knowledge() {
             {success && (
               <Alert severity="success" sx={{ 
                 mb: 2, 
-                bgcolor: 'rgba(237, 247, 237, 0.7)',
+                bgcolor: isDarkMode ? 'rgba(102, 187, 106, 0.2)' : 'rgba(237, 247, 237, 0.7)',
                 backdropFilter: 'blur(5px)',
                 borderRadius: '8px'
               }}>
@@ -380,7 +394,7 @@ function Knowledge() {
             {error && (
               <Alert severity="error" sx={{ 
                 mb: 2,
-                bgcolor: 'rgba(253, 237, 237, 0.7)',
+                bgcolor: isDarkMode ? 'rgba(239, 83, 80, 0.2)' : 'rgba(253, 237, 237, 0.7)',
                 backdropFilter: 'blur(5px)',
                 borderRadius: '8px'
               }}>
@@ -405,14 +419,19 @@ function Knowledge() {
                       }
                     }}
                     sx={{
+                      '& label': { color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit' },
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255, 255, 255, 0.5)',
+                        color: isDarkMode ? 'white' : 'inherit',
+                        bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.5)' : 'rgba(255, 255, 255, 0.5)',
                         backdropFilter: 'blur(5px)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
+                        },
                         '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'rgba(0, 0, 0, 0.23)',
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.23)',
                         },
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'primary.main',
+                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
                         }
                       }
                     }}
@@ -445,12 +464,13 @@ function Knowledge() {
                   variant="outlined"
                   color="info"
                   sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.3)',
+                    bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.3)' : 'rgba(255, 255, 255, 0.3)',
                     backdropFilter: 'blur(5px)',
-                    borderColor: 'rgba(0, 0, 0, 0.12)',
+                    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                    color: isDarkMode ? theme.palette.info.light : theme.palette.info.main,
                     '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.5)',
-                      borderColor: 'primary.light'
+                      bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                      borderColor: theme.palette.info.light
                     }
                   }}
                   onClick={async () => {
@@ -521,11 +541,11 @@ function Knowledge() {
                 </Box>
                 
                 <List sx={{ 
-                  bgcolor: 'rgba(255, 255, 255, 0.4)',
+                  bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.4)' : 'rgba(255, 255, 255, 0.4)',
                   backdropFilter: 'blur(10px)',
                   borderRadius: 2,
                   overflow: 'hidden',
-                  border: '1px solid rgba(255, 255, 255, 0.5)'
+                  border: isDarkMode ? '1px solid rgba(60, 60, 60, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)'
                 }}>
                   {searchResults.map((result, index) => (
                     <React.Fragment key={index}>
@@ -551,7 +571,7 @@ function Knowledge() {
                           }
                         />
                       </ListItem>
-                      {index < searchResults.length - 1 && <Divider sx={{ opacity: 0.6 }} />}
+                      {index < searchResults.length - 1 && <Divider sx={{ opacity: 0.6, borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)' }} />}
                     </React.Fragment>
                   ))}
                 </List>
@@ -574,7 +594,7 @@ function Knowledge() {
             {addSuccess && (
               <Alert severity="success" sx={{ 
                 mb: 3, 
-                bgcolor: 'rgba(237, 247, 237, 0.7)',
+                bgcolor: isDarkMode ? 'rgba(102, 187, 106, 0.2)' : 'rgba(237, 247, 237, 0.7)',
                 backdropFilter: 'blur(5px)',
                 borderRadius: '8px'
               }}>
@@ -585,7 +605,7 @@ function Knowledge() {
             {addError && (
               <Alert severity="error" sx={{ 
                 mb: 3,
-                bgcolor: 'rgba(253, 237, 237, 0.7)',
+                bgcolor: isDarkMode ? 'rgba(239, 83, 80, 0.2)' : 'rgba(253, 237, 237, 0.7)',
                 backdropFilter: 'blur(5px)',
                 borderRadius: '8px'
               }}>
@@ -603,6 +623,29 @@ function Knowledge() {
                     name="title"
                     value={newDocument.title}
                     onChange={handleDocumentChange}
+                    sx={{
+                      '& label.Mui-focused': {
+                        color: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& label': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+                      },
+                      '& .MuiInput-underline:after': {
+                        borderBottomColor: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        color: isDarkMode ? 'white' : 'inherit',
+                        '& fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.87)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
+                        },
+                      },
+                    }}
                   />
                 </Grid>
                 
@@ -615,17 +658,70 @@ function Knowledge() {
                     value={newDocument.source}
                     onChange={handleDocumentChange}
                     helperText="e.g., Employee Handbook, HR Policy, etc."
+                    sx={{
+                      '& label.Mui-focused': {
+                        color: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& label': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+                      },
+                      '& .MuiInput-underline:after': {
+                        borderBottomColor: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        color: isDarkMode ? 'white' : 'inherit',
+                        '& fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.87)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
+                        },
+                      },
+                      '& .MuiFormHelperText-root': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'inherit'
+                      }
+                    }}
                   />
                 </Grid>
                 
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
+                  <FormControl fullWidth required sx={{
+                    '& label.Mui-focused': {
+                        color: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& label': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        color: isDarkMode ? 'white' : 'inherit',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.87)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
+                        },
+                        '& .MuiSelect-icon': {
+                          color: isDarkMode ? 'rgba(255, 255, 255, 0.54)' : 'inherit',
+                        },
+                      }
+                  }}>
                     <InputLabel>Category</InputLabel>
                     <Select
                       name="category"
                       value={newDocument.category}
                       onChange={handleDocumentChange}
                       label="Category"
+                      MenuProps={{
+                        PaperProps: {
+                          sx: { bgcolor: isDarkMode ? '#424242' : 'white' },
+                        },
+                      }}
                     >
                       <MenuItem value="general">General</MenuItem>
                       <MenuItem value="policy">Policy</MenuItem>
@@ -648,6 +744,32 @@ function Knowledge() {
                     value={newDocument.text}
                     onChange={handleDocumentChange}
                     helperText="The text content of the document that will be searchable"
+                    sx={{
+                      '& label.Mui-focused': {
+                        color: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& label': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
+                      },
+                      '& .MuiInput-underline:after': {
+                        borderBottomColor: isDarkMode ? 'primary.light' : 'primary.main',
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        color: isDarkMode ? 'white' : 'inherit',
+                        '& fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.87)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
+                        },
+                      },
+                      '& .MuiFormHelperText-root': {
+                        color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'inherit'
+                      }
+                    }}
                   />
                 </Grid>
                 
