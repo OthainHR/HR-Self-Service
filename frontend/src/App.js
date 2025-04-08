@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, Container, CircularProgress } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -15,14 +15,14 @@ import Login from './pages/Login';
 import Chat from './pages/Chat';
 import Knowledge from './pages/Knowledge';
 
-
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DarkModeProvider, useDarkMode } from './contexts/DarkModeContext';
 
-// Create theme
-const theme = createTheme({
+// Create theme function - now accepts mode parameter
+const createAppTheme = (mode) => createTheme({
   palette: {
-    mode: 'light',
+    mode,
     primary: {
       main: '#4361ee', // Modern blue
       light: '#738eef',
@@ -36,8 +36,8 @@ const theme = createTheme({
       contrastText: '#ffffff',
     },
     background: {
-      default: '#f8f9fa',
-      paper: '#ffffff',
+      default: mode === 'dark' ? '#121212' : '#f8f9fa',
+      paper: mode === 'dark' ? '#1e1e1e' : '#ffffff',
     },
     info: {
       main: '#4cc9f0', // Light blue
@@ -51,7 +51,11 @@ const theme = createTheme({
     error: {
       main: '#f72585', // Pink/red
     },
-    divider: 'rgba(0,0,0,0.08)',
+    divider: mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+    text: {
+      primary: mode === 'dark' ? '#ffffff' : 'rgba(0,0,0,0.87)',
+      secondary: mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+    }
   },
   typography: {
     fontFamily: '"Lexend", sans-serif',
@@ -233,64 +237,73 @@ const AdminRoute = ({ children }) => {
   );
 };
 
-// Main app component
+// Main app content with theme provider
 const AppContent = () => {
+  const { isDarkMode } = useDarkMode();
+  
+  // Create the theme based on dark mode state
+  const theme = useMemo(() => 
+    createAppTheme(isDarkMode ? 'dark' : 'light'),
+    [isDarkMode]
+  );
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <CssBaseline />
-      <NavBar />
-      <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 4 }}>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          
+    <ThemeProvider theme={theme}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <CssBaseline />
+        <NavBar />
+        <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 4 }}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/chat" 
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Protected routes */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/chat" 
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Admin routes */}
+            <Route 
+              path="/knowledge" 
+              element={
+                <AdminRoute>
+                  <Knowledge />
+                </AdminRoute>
+              } 
+            />
 
-          {/* Admin routes */}
-          <Route 
-            path="/knowledge" 
-            element={
-              <AdminRoute>
-                <Knowledge />
-              </AdminRoute>
-            } 
-          />
-
-          {/* Redirect to homepage for any other route */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Container>
-    </Box>
+            {/* Redirect to homepage for any other route */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 };
 
 // Wrap app with providers
 const App = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <Router>
+    <Router>
+      <DarkModeProvider>
         <AuthProvider>
           <AppContent />
         </AuthProvider>
-      </Router>
-    </ThemeProvider>
+      </DarkModeProvider>
+    </Router>
   );
 };
 
