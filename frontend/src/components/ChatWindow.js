@@ -226,7 +226,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           color: theme => theme.palette.text.primary,
         }}
       >
-        <BotIcon sx={{ fontSize: 60, color: 'black', mb: 2, opacity: 0.8 }} />
+        <BotIcon sx={{ fontSize: 60, color: theme => theme.palette.text.primary, mb: 2, opacity: 0.8 }} />
         <Typography variant="h5" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
           Welcome to Othain HR Assistant
         </Typography>
@@ -307,7 +307,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar
             sx={{
-              bgcolor: isDarkMode ? 'white' : 'black',
+              bgcolor: theme => theme.palette.mode === 'dark' ? 'primary.main' : 'black',
               width: 40,
               height: 40,
               mr: 2,
@@ -315,7 +315,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <SupportAgentIcon />
+            <SupportAgentIcon sx={{ color: theme => theme.palette.mode === 'dark' ? 'black' : 'white' }} />
           </Avatar>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
@@ -363,8 +363,8 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
               }}
             >
-              <BotIcon sx={{ fontSize: 60, color: 'white', mb: 2, opacity: 0.8 }} />
-              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: 'white' }}>
+              <BotIcon sx={{ fontSize: 60, color: theme => theme.palette.text.primary, mb: 2, opacity: 0.8 }} />
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: theme => theme.palette.text.primary }}>
                 Start a conversation
               </Typography>
               <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
