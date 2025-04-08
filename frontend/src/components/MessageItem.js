@@ -2,10 +2,12 @@ import React from 'react';
 import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress } from '@mui/material';
 import { Person as PersonIcon, SmartToy as BotIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 // Message component for displaying chat messages
 function MessageItem({ message }) {
   const theme = useTheme();
+  const { isDarkMode } = useDarkMode();
   const isUser = message.role === 'user';
   const isLoading = !isUser && message.isLoading === true;
   const isError = !isUser && message.isError === true;
@@ -37,7 +39,7 @@ function MessageItem({ message }) {
           left: 45,
           width: 16,
           height: 16,
-          background: theme.palette.background.paper,
+          background: isDarkMode ? 'rgba(40, 40, 40, 0.8)' : theme.palette.background.paper,
           borderBottomLeftRadius: 16,
           boxShadow: `-2px 2px 2px rgba(0, 0, 0, 0.03)`,
           zIndex: 0,
@@ -60,7 +62,7 @@ function MessageItem({ message }) {
             sx={{ 
               bgcolor: isLoading ? 'warning.light' : 
                       isError ? 'error.main' : 
-                      'primary.main', 
+                      isDarkMode ? 'white' : 'primary.main', 
               mr: 1,
               boxShadow: theme.shadows[2],
               width: 38,
@@ -71,7 +73,7 @@ function MessageItem({ message }) {
                 transform: 'scale(1.05)',
                 boxShadow: theme.shadows[3],
               },
-              border: '2px solid white',
+              border: isDarkMode ? '2px solid rgba(30, 30, 30, 0.9)' : '2px solid white',
               animation: isLoading ? 'pulse 1.5s infinite' : 'none',
               '@keyframes pulse': {
                 '0%': { opacity: 1 },
@@ -98,11 +100,11 @@ function MessageItem({ message }) {
           background: isUser 
             ? `linear-gradient(135deg, rgba(67, 97, 238, 0.85) 0%, rgba(76, 110, 245, 0.9) 100%)` 
             : isLoading
-              ? 'rgba(255, 255, 255, 0.6)'
+              ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
               : isError
-                ? 'rgba(255, 255, 255, 0.6)'
-                : 'rgba(255, 255, 255, 0.6)',
-          color: isUser ? 'white' : 'text.primary',
+                ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
+                : isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)',
+          color: isUser ? 'white' : theme.palette.text.primary,
           position: 'relative',
           zIndex: 1,
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -115,10 +117,10 @@ function MessageItem({ message }) {
           borderColor: isUser 
             ? 'rgba(255, 255, 255, 0.3)' 
             : isLoading 
-              ? 'rgba(255, 193, 7, 0.3)'
+              ? isDarkMode ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.3)'
               : isError 
-                ? 'rgba(211, 47, 47, 0.3)'
-                : 'rgba(255, 255, 255, 0.5)',
+                ? isDarkMode ? 'rgba(211, 47, 47, 0.2)' : 'rgba(211, 47, 47, 0.3)'
+                : isDarkMode ? 'rgba(60, 60, 60, 0.5)' : 'rgba(255, 255, 255, 0.5)',
           backdropFilter: 'blur(10px)',
           boxShadow: isUser 
             ? '0 4px 15px rgba(67, 97, 238, 0.2)'
@@ -133,7 +135,9 @@ function MessageItem({ message }) {
             height: '100%',
             backgroundImage: isUser
               ? 'radial-gradient(circle at top right, rgba(255,255,255,0.12), transparent 65%)'
-              : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
+              : isDarkMode
+                ? 'linear-gradient(to bottom, rgba(60,60,60,0.3), rgba(50,50,50,0.1))'
+                : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
             zIndex: -1,
           },
         }}
@@ -190,9 +194,9 @@ function MessageItem({ message }) {
               mb: 0.5,
             },
             '& code': {
-              backgroundColor: theme.palette.mode === 'light' 
-                ? 'rgba(0, 0, 0, 0.04)' 
-                : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: isDarkMode 
+                ? 'rgba(70, 70, 70, 0.4)' 
+                : 'rgba(0, 0, 0, 0.04)',
               padding: '2px 4px',
               borderRadius: '4px',
               fontFamily: 'monospace',
@@ -213,10 +217,10 @@ function MessageItem({ message }) {
             borderTop: `1px solid ${isUser 
               ? 'rgba(255, 255, 255, 0.15)' 
               : isLoading
-                ? 'rgba(255, 193, 7, 0.15)'
+                ? isDarkMode ? 'rgba(255, 193, 7, 0.12)' : 'rgba(255, 193, 7, 0.15)'
                 : isError
-                  ? 'rgba(211, 47, 47, 0.15)' 
-                  : theme.palette.divider}`,
+                  ? isDarkMode ? 'rgba(211, 47, 47, 0.12)' : 'rgba(211, 47, 47, 0.15)' 
+                  : isDarkMode ? 'rgba(70, 70, 70, 0.4)' : theme.palette.divider}`,
           }}
         >
           <Typography
@@ -244,7 +248,7 @@ function MessageItem({ message }) {
               component="span" 
               sx={{ 
                 ml: 0.75, 
-                bgcolor: 'rgba(255, 193, 7, 0.15)', 
+                bgcolor: isDarkMode ? 'rgba(255, 193, 7, 0.1)' : 'rgba(255, 193, 7, 0.15)', 
                 color: 'warning.main',
                 px: 0.75,
                 py: 0.25,
@@ -254,7 +258,7 @@ function MessageItem({ message }) {
                 alignItems: 'center',
                 gap: 0.4,
                 fontWeight: 500,
-                border: '1px solid rgba(255, 193, 7, 0.2)',
+                border: isDarkMode ? '1px solid rgba(255, 193, 7, 0.15)' : '1px solid rgba(255, 193, 7, 0.2)',
               }}
             >
               <CircularProgress size={10} color="inherit" sx={{ animationDuration: '1s' }} />
@@ -267,7 +271,7 @@ function MessageItem({ message }) {
               component="span" 
               sx={{ 
                 ml: 0.75, 
-                bgcolor: 'rgba(211, 47, 47, 0.15)', 
+                bgcolor: isDarkMode ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.15)', 
                 color: 'error.main',
                 px: 0.75,
                 py: 0.25,
@@ -277,7 +281,7 @@ function MessageItem({ message }) {
                 alignItems: 'center',
                 gap: 0.4,
                 fontWeight: 500,
-                border: '1px solid rgba(211, 47, 47, 0.2)',
+                border: isDarkMode ? '1px solid rgba(211, 47, 47, 0.15)' : '1px solid rgba(211, 47, 47, 0.2)',
               }}
             >
               error
@@ -295,7 +299,7 @@ function MessageItem({ message }) {
         >
           <Avatar 
             sx={{ 
-              bgcolor: 'secondary.main', 
+              bgcolor: isDarkMode ? 'white' : 'primary.main', 
               ml: 1,
               boxShadow: theme.shadows[2],
               width: 38,
@@ -306,7 +310,7 @@ function MessageItem({ message }) {
                 transform: 'scale(1.05)',
                 boxShadow: theme.shadows[3],
               },
-              border: '2px solid white',
+              border: isDarkMode ? '2px solid rgba(30, 30, 30, 0.9)' : '2px solid white',
             }}
           >
             <PersonIcon />

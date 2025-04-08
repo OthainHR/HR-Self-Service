@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import MessageItem from './MessageItem';
 import { chatApi } from '../services/api';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [messages, setMessages] = useState([]);
@@ -35,6 +36,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [error, setError] = useState(null);
   const [serverError, setServerError] = useState(false);
   const messagesEndRef = useRef(null);
+  const { isDarkMode } = useDarkMode();
 
   // Set to false since we're removing offline mode
   const offlineMode = false;
@@ -196,7 +198,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             borderRadius: 1, 
             mt: 1, 
             mb: 2,
-            bgcolor: 'grey.200',
+            bgcolor: isDarkMode ? 'grey.800' : 'grey.200',
             '& .MuiChip-icon': { color: 'text.secondary' },
             '& .MuiChip-label': { color: 'text.primary', fontWeight: 'medium' }
           }}
@@ -218,11 +220,14 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           justifyContent: 'center', 
           alignItems: 'center',
           borderRadius: 3,
-          background: 'linear-gradient(to bottom, rgba(67, 97, 238, 0.05), rgba(67, 97, 238, 0.1))',
+          background: isDarkMode 
+            ? 'linear-gradient(to bottom, rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.15))'
+            : 'linear-gradient(to bottom, rgba(67, 97, 238, 0.05), rgba(67, 97, 238, 0.1))',
+          color: theme => theme.palette.text.primary,
         }}
       >
-        <BotIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2, opacity: 0.8 }} />
-        <Typography variant="h5" color="primary" sx={{ mb: 1, fontWeight: 500 }}>
+        <BotIcon sx={{ fontSize: 60, color: 'black', mb: 2, opacity: 0.8 }} />
+        <Typography variant="h5" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
           Welcome to Othain HR Assistant
         </Typography>
         <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3, maxWidth: 500 }}>
@@ -267,9 +272,9 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         height: '100%',
         borderRadius: 3,
         overflow: 'hidden',
-        bgcolor: 'rgba(255, 255, 255, 0.65)',
+        bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.65)',
         backdropFilter: 'blur(15px)',
-        border: '1px solid rgba(255, 255, 255, 0.6)',
+        border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
         position: 'relative',
         zIndex: 5,
@@ -280,7 +285,9 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           left: 0,
           right: 0,
           height: '100%',
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
+          backgroundImage: isDarkMode 
+            ? 'linear-gradient(to bottom, rgba(40,40,40,0.5), rgba(30,30,30,0.2))'
+            : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
           zIndex: 0,
         }
       }}
@@ -288,9 +295,9 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       <Box 
         sx={{ 
           p: 2, 
-          borderBottom: '1px solid rgba(255, 255, 255, 0.5)',
+          borderBottom: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
           backdropFilter: 'blur(10px)',
-          bgcolor: 'rgba(255, 255, 255, 0.7)',
+          bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -300,18 +307,18 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar
             sx={{
-              bgcolor: 'primary.main',
+              bgcolor: isDarkMode ? 'white' : 'black',
               width: 40,
               height: 40,
               mr: 2,
-              border: '2px solid white',
+              border: isDarkMode ? '2px solid rgba(40, 40, 40, 0.8)' : '2px solid white',
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
             }}
           >
             <SupportAgentIcon />
           </Avatar>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
               Othain HR Assistant
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -329,7 +336,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           p: 3,
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: 'rgba(245, 247, 250, 0.5)',
+          bgcolor: isDarkMode ? 'rgba(25, 25, 25, 0.7)' : 'rgba(245, 247, 250, 0.5)',
           position: 'relative',
           zIndex: 1,
         }}
@@ -349,15 +356,15 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                 height: '100%',
                 p: 3,
                 textAlign: 'center',
-                bgcolor: 'rgba(255, 255, 255, 0.6)',
+                bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                 borderRadius: 3,
                 backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                border: isDarkMode ? '1px solid rgba(60, 60, 60, 0.3)' : '1px solid rgba(255, 255, 255, 0.3)',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
               }}
             >
-              <BotIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2, opacity: 0.8 }} />
-              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: 'primary.main' }}>
+              <BotIcon sx={{ fontSize: 60, color: 'white', mb: 2, opacity: 0.8 }} />
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: 'white' }}>
                 Start a conversation
               </Typography>
               <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
@@ -381,12 +388,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
-                      bgcolor: 'rgba(255, 255, 255, 0.7)',
+                      bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.5)',
+                      border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
                       }
                     }}
@@ -397,18 +404,18 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   <Button
                     variant="outlined"
                     color="primary"
-                    onClick={() => setInput('How do I apply for parental leave?')}
+                    onClick={() => setInput('How do I apply for Work From Home?')}
                     sx={{
                       py: 1.5,
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
-                      bgcolor: 'rgba(255, 255, 255, 0.7)',
+                      bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.5)',
+                      border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
                       }
                     }}
@@ -425,12 +432,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
-                      bgcolor: 'rgba(255, 255, 255, 0.7)',
+                      bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.5)',
+                      border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
                       }
                     }}
@@ -473,8 +480,8 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         onSubmit={handleSubmit}
         sx={{ 
           p: 2, 
-          borderTop: '1px solid rgba(255, 255, 255, 0.5)',
-          bgcolor: 'rgba(255, 255, 255, 0.7)',
+          borderTop: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
+          bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
           backdropFilter: 'blur(10px)',
           position: 'relative',
           zIndex: 1,
@@ -490,7 +497,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 3,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(5px)',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               transition: 'all 0.2s ease',

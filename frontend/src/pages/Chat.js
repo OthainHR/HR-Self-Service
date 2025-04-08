@@ -32,10 +32,12 @@ import {
 import ChatWindow from '../components/ChatWindow';
 import { chatApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { useNavigate } from 'react-router-dom';
 
 function Chat() {
   const { user, isLoading: authLoading, logout } = useAuth();
+  const { isDarkMode } = useDarkMode();
   const isAuthenticated = !!user;
 
   const [sessions, setSessions] = useState([]);
@@ -157,7 +159,9 @@ function Chat() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, #121212 0%, #1e1e1e 50%, #262626 100%)'
+            : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
           backgroundSize: 'cover',
           backgroundAttachment: 'fixed',
           overflowY: 'auto',
@@ -171,7 +175,9 @@ function Chat() {
             bottom: 0,
             width: '100%',
             height: '100%',
-            backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
+            backgroundImage: isDarkMode
+              ? 'radial-gradient(circle at 30% 20%, rgba(80,80,80,0.2) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(30,50,80,0.15) 0%, transparent 30%)'
+              : 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
             zIndex: 0,
           }
         }}
@@ -186,13 +192,14 @@ function Chat() {
                   flexDirection: 'column', 
                   borderRadius: 2, 
                   overflow: 'hidden',
-                  bgcolor: 'rgba(255, 255, 255, 0.75)',
+                  bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.75)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.6)'
+                  border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
+                  color: theme => theme.palette.text.primary
               }}>
                 <Box sx={{ 
                   p: 2, 
-                  borderBottom: '1px solid rgba(0,0,0,0.08)', 
+                  borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)', 
                   textAlign: 'center'
                 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
@@ -202,10 +209,10 @@ function Chat() {
                   onClick={handleNewChat}
                   sx={{ 
                     py: 1.5,
-                    borderBottom: '1px solid rgba(0,0,0,0.08)',
-                    bgcolor: 'rgba(255, 255, 255, 0.6)',
+                    borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+                    bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                     '&:hover': { 
-                      bgcolor: 'rgba(67, 97, 238, 0.08)', 
+                      bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)', 
                     },
                     display: 'flex',
                     alignItems: 'center',
@@ -231,9 +238,9 @@ function Chat() {
                         selected={selectedSessionId === session.id}
                         onClick={() => handleSessionChange(session.id)}
                         sx={{ 
-                            borderBottom: '1px solid rgba(0,0,0,0.05)',
-                            '&.Mui-selected': { bgcolor: 'rgba(67, 97, 238, 0.1)' },
-                            '&:hover': { bgcolor: 'rgba(67, 97, 238, 0.05)' }
+                            borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+                            '&.Mui-selected': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.2)' : 'rgba(67, 97, 238, 0.1)' },
+                            '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.1)' : 'rgba(67, 97, 238, 0.05)' }
                         }}
                       >
                         <ListItemText 

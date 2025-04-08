@@ -27,9 +27,12 @@ import {
   Home
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
+import DarkModeSwitch from './DarkModeSwitch';
 
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isAuthenticated = !!user;
 
   // ---- START RE-ADDED DEBUG LOG ----
@@ -236,6 +239,26 @@ const NavBar = () => {
             />
           </ListItem>
         )}
+        
+        {/* Add Dark Mode Toggle to drawer */}
+        <ListItem 
+          sx={{ 
+            my: 0.5, 
+            borderRadius: 1,
+            mx: 1,
+            display: 'flex',
+            justifyContent: 'space-between'
+          }}
+        >
+          <ListItemText 
+            primary="Dark Mode" 
+            primaryTypographyProps={{ 
+              fontWeight: 500,
+              color: 'primary.main'
+            }}
+          />
+          <DarkModeSwitch checked={isDarkMode} onChange={toggleDarkMode} />
+        </ListItem>
       </List>
     </Box>
   );
@@ -417,6 +440,13 @@ const NavBar = () => {
                 Knowledge Base
               </Button>
             )}
+          </Box>
+        )}
+        
+        {/* Dark Mode Switch for desktop */}
+        {!isMobile && (
+          <Box sx={{ mx: 1 }}>
+            <DarkModeSwitch checked={isDarkMode} onChange={toggleDarkMode} />
           </Box>
         )}
         
