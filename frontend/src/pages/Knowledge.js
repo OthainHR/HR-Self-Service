@@ -51,7 +51,7 @@ function TabPanel(props) {
 
 function Knowledge() {
   // --- Knowledge Debug Log START ---
-  console.log('Knowledge component starts rendering...');
+  
   // --- End Knowledge Debug Log ---
 
   const { user, isLoading: authIsLoading } = useAuth();
@@ -81,19 +81,19 @@ function Knowledge() {
   // Test Supabase connection on component mount
   useEffect(() => {
     // --- Knowledge Debug Log ---
-    console.log('Knowledge useEffect for testConnection running...');
+    
     // --- End Knowledge Debug Log ---
     const testConnection = async () => {
       try {
-        console.log('Knowledge: Testing Supabase connection...'); // Added log
+        
         const result = await supabaseService.testConnection();
         if (!result.success) {
-          console.error('Knowledge: Supabase connection failed:', result.error);
+          
         } else {
-          console.log('Knowledge: Supabase connection test successful.'); // Added log
+          
         }
       } catch (err) {
-        console.error('Knowledge: Error testing Supabase connection:', err);
+        
       }
     };
     
@@ -177,7 +177,6 @@ function Knowledge() {
       setSearchResults(formattedDocuments);
       setSuccess(`Found ${formattedDocuments.length} result(s)`);
     } catch (err) {
-      console.error('Error in handleSearch:', err);
       setError(`Error searching documents: ${err.message}`);
     } finally {
       setLoading(false);
@@ -202,27 +201,20 @@ function Knowledge() {
     setAddingDocument(true);
     setAddSuccess(false);
     setAddError('');
-    console.log('Attempting to add document (handleAddDocument):', newDocument);
     
     try {
-      console.log('Attempting to add document via API...');
       const result = await knowledgeApi.addDocument(newDocument);
-      console.log('<<< API call returned >>> Result:', result);
 
       if (result.success) {
-        console.log('Document added successfully via API');
         setNewDocument({ title: '', text: '', source: '', category: 'general' });
         setAddSuccess(true);
       } else {
-        console.error('API call failed:', result.error);
         const detail = result.error?.response?.data?.detail || result.error?.message || 'API call failed';
         throw new Error(detail);
       }
     } catch (apiError) {
-      console.error('Exception caught during API call or processing:', apiError);
       setAddError(`Error: ${apiError.message}`);
     } finally {
-      console.log('Setting addingDocument to false');
       setAddingDocument(false);
     }
   };
@@ -268,7 +260,7 @@ function Knowledge() {
         category: "general"
       };
       
-      console.log('Uploading text with metadata:', metadata);
+      
       const result = await knowledgeApi.uploadDocument(text, metadata);
       setSuccess(result.message);
       setText('');
@@ -280,18 +272,16 @@ function Knowledge() {
   };
 
   // --- Knowledge Debug Log BEFORE RETURN ---
-  console.log('Knowledge component: Reached BEFORE final return statement.');
-  console.log(`Knowledge component: Current state -> authIsLoading=${authIsLoading}`);
+  
   // --- End Knowledge Debug Log ---
 
   // Show loading indicator ONLY if auth is loading (though AdminRoute should prevent this state)
   if (authIsLoading) {
-      console.log("Knowledge component rendering: Loading indicator (authIsLoading shouldn't happen here)...");
       return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
   }
 
   // --- Knowledge Debug Log ACCESS GRANTED ---
-  console.log('Knowledge component rendering: Assuming access GRANTED, rendering main content.');
+  
   // --- End Knowledge Debug Log ---
 
   return (
@@ -511,7 +501,6 @@ function Knowledge() {
                         setSearchQuery(sampleWord);
                       }
                     } catch (err) {
-                      console.error('Emergency fetch failed:', err);
                       setError(`Emergency fetch failed: ${err.message}`);
                     } finally {
                       setLoading(false);
