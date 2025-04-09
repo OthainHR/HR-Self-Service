@@ -121,10 +121,32 @@ export const auth = {
   // Listen for auth state changes (useful for updating UI)
   onAuthStateChange: (callback) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      
       callback(event, session); // Pass event and session to the callback
     });
     return subscription; // Return the subscription object so it can be unsubscribed
+  },
+
+  // Signup using Supabase
+  signup: async (credentials) => {
+    const { email, password } = credentials;
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      // You can add options here, like redirect URLs or metadata
+      // options: {
+      //   emailRedirectTo: 'http://localhost:3000/chat',
+      //   data: { full_name: 'Optional Name' } // Example metadata
+      // }
+    });
+
+    if (error) {
+      throw error; // Let the calling function (AuthContext) handle the error
+    }
+
+    // Signup successful. Data might contain user and session if auto-confirmed,
+    // or just user if email confirmation is required.
+    // The onAuthStateChange listener will typically handle the session update.
+    return { user: data.user, session: data.session };
   },
 
   // Convenience function to get current user directly

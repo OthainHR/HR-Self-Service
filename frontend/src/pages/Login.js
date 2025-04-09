@@ -11,13 +11,17 @@ import {
   Alert,
   CircularProgress,
   Link,
+  useTheme
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import Avatar from '@mui/material/Avatar';
 
 const Login = () => {
   const { login, isLoading, error: authError } = useAuth();
   const navigate = useNavigate();
+  const { isDarkMode } = useDarkMode();
+  const theme = useTheme();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -43,16 +47,20 @@ const Login = () => {
   return (
     <Container component="main" maxWidth="xs" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)' }}>
       <Paper elevation={6} sx={{ padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', borderRadius: 2 }}>
-        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-          <LockOutlinedIcon />
+        <Avatar sx={{ m: 1, bgcolor: 'transparent', width: 56, height: 56 }}>
+          <img 
+            src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+            alt="Othain Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </Avatar>
-        <Typography component="h1" variant="h5">
+        <Typography component="h1" variant="h5" sx={{ mt: 1 }}>
           Sign In
         </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
           {(localError || authError) && (
             <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
-              {localError || authError}
+              {localError || (authError && typeof authError === 'string' ? authError : 'Login failed. Please check your credentials.')}
             </Alert>
           )}
           <TextField

@@ -1,7 +1,13 @@
-import React, { Component, useMemo } from 'react';
+import React, { lazy, Suspense, Component, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CssBaseline, Container, CircularProgress } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {
+  Box,
+  CssBaseline,
+  Container,
+  CircularProgress,
+  ThemeProvider,
+  createTheme
+} from '@mui/material';
 import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
@@ -9,17 +15,18 @@ import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 // Components
 import NavBar from './components/NavBar';
 
-// Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Chat from './pages/Chat';
-import Knowledge from './pages/Knowledge';
-
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DarkModeProvider, useDarkMode } from './contexts/DarkModeContext';
 
-// Create theme function - now accepts mode parameter
+// --- LAZY LOAD PAGES --- 
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Knowledge = lazy(() => import('./pages/Knowledge'));
+const Register = lazy(() => import('./pages/Register')); 
+
+// --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
   palette: {
     mode,
@@ -143,6 +150,8 @@ const createAppTheme = (mode) => createTheme({
   },
 });
 
+// --- UTILITY COMPONENTS --- 
+
 // Simple Error Boundary component
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -237,6 +246,15 @@ const AdminRoute = ({ children }) => {
   );
 };
 
+// Loading Indicator Component (Example)
+const LoadingIndicator = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+    <CircularProgress />
+  </Box>
+);
+
+// --- CORE APP STRUCTURE --- 
+
 // Main app content with theme provider
 const AppContent = () => {
   const { isDarkMode } = useDarkMode();
@@ -253,36 +271,26 @@ const AppContent = () => {
         <CssBaseline />
         <NavBar />
         <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 4 }}>
-          <Routes>
+           {/* Routes are rendered here, Suspense handles loading */}
+           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} /> {/* Add Register route */}
             
             {/* Protected routes */}
             <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              } 
+              path="/"
+              element={<ProtectedRoute><Home /></ProtectedRoute>}
             />
             <Route 
-              path="/chat" 
-              element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              } 
+              path="/chat"
+              element={<ProtectedRoute><Chat /></ProtectedRoute>}
             />
 
             {/* Admin routes */}
             <Route 
-              path="/knowledge" 
-              element={
-                <AdminRoute>
-                  <Knowledge />
-                </AdminRoute>
-              } 
+              path="/knowledge"
+              element={<AdminRoute><Knowledge /></AdminRoute>}
             />
 
             {/* Redirect to homepage for any other route */}
@@ -294,13 +302,15 @@ const AppContent = () => {
   );
 };
 
-// Wrap app with providers
+// Wrap app with providers and Suspense
 const App = () => {
   return (
     <Router>
       <DarkModeProvider>
         <AuthProvider>
-          <AppContent />
+          <Suspense fallback={<LoadingIndicator />}>
+            <AppContent /> 
+          </Suspense>
         </AuthProvider>
       </DarkModeProvider>
     </Router>

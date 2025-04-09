@@ -67,6 +67,45 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Signup function with domain validation
+  const signup = useCallback(async (credentials) => {
+    setIsLoading(true);
+    setError(null);
+
+    const { email, password } = credentials;
+
+    // Validate email domain
+    const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com'];
+    const emailDomain = email.substring(email.lastIndexOf('@'));
+
+    if (!allowedDomains.includes(emailDomain)) {
+      const errorMsg = "Sign up failed: Only @othainsoft.com and @jerseytechpartners.com emails are allowed.";
+      setError(errorMsg);
+      setIsLoading(false);
+      throw new Error(errorMsg); // Throw error to stop execution
+    }
+
+    try {
+      // Use the Supabase signup from api.js
+      await auth.signup(credentials);
+
+      // --- Log the user out immediately after successful signup --- 
+      await auth.logout(); 
+      // --- End immediate logout ---
+
+      // Supabase might automatically sign the user in, or require confirmation.
+      // The onAuthStateChange listener should handle the session update.
+      // You might want to show a message asking the user to check their email for confirmation.
+    } catch (err) {
+      setError(err.message || "Sign up failed. Please try again.");
+      // Don't set user/session to null here, as the user might be partially signed up (e.g., awaiting confirmation)
+      throw err; // Re-throw for the component to handle
+    } finally {
+      // Set loading false after a short delay to allow listener to potentially update
+      setTimeout(() => setIsLoading(false), 100);
+    }
+  }, []);
+
   // Logout function
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -94,6 +133,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
+    signup,
   };
 
   return (

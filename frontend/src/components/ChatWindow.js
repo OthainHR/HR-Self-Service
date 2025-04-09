@@ -227,13 +227,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         }}
       >
         <img 
-          src={isDarkMode ? '/OthainOcolor.png' : '/othainlogopreview.png'}
+          src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
           alt="Othain Logo"
-          height="60"
+          height={isDarkMode ? "60" : "50"}
           style={{ marginBottom: theme.spacing(2), opacity: 1 }}
         />
         <Typography variant="h5" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
-          Welcome to Othain HR Assistant
+          Welcome to Othain Employee Self Service
         </Typography>
         <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3, maxWidth: 500 }}>
           Select an existing chat from the sidebar or start a new conversation to get assistance with HR-related questions.
