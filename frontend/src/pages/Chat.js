@@ -374,7 +374,11 @@ function Chat() {
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position
       >
-        <SnackbarAlert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        <SnackbarAlert 
+            onClose={handleSnackbarClose} 
+            severity={snackbarSeverity} 
+            sx={{ width: '100%', color: 'white' }} // Add color: 'white' here
+        >
           {snackbarMessage}
         </SnackbarAlert>
       </Snackbar>
