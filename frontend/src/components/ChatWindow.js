@@ -249,7 +249,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               alignItems: 'center' 
             }}
           >
-            Currently using simulated AI responses
+            Currently using offline responses
           </Alert>
         ) : (
           <Alert 
@@ -261,7 +261,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               alignItems: 'center' 
             }}
           >
-            Connected to API - all features available
+            Connected to Othain ESS
           </Alert>
         )}
       </Paper>
