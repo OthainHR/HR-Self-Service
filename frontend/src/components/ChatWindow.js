@@ -60,7 +60,6 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         const result = await chatApi.getSessionMessages(sessionId);
         setMessages(result.messages || []);
       } catch (error) {
-        console.error('Error fetching messages:', error);
         setError('Failed to load messages. Please try again.');
       } finally {
         setLoading(false);
@@ -152,7 +151,6 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         setMessages(prev => [...prev, assistantMessage]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       
       // Clear the timeout
       clearTimeout(responseTimeout);
@@ -420,7 +418,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       }
                     }}
                   >
-                    How do I apply for parental leave?
+                    How do I apply for Work From Home?
                   </Button>
                   
                   <Button

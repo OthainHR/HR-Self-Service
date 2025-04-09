@@ -21,7 +21,8 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  DialogContentText
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -46,6 +47,10 @@ function Chat() {
   const [loading, setLoading] = useState(true);
   const [serverError, setServerError] = useState(false);
   const navigate = useNavigate();
+  
+  // State for delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
   
   useEffect(() => {
     if (!authLoading && isAuthenticated) { 
@@ -108,23 +113,31 @@ function Chat() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
-  const handleDeleteSession = async (e, sessionId) => {
-    e.stopPropagation();
+  // --- Delete Handling with Dialog ---
+  const handleDeleteSessionRequest = (e, sessionId) => {
+    e.stopPropagation(); // Prevent ListItemButton click
+    setSessionToDelete(sessionId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return;
     
-    if (!window.confirm('Are you sure you want to delete this chat session?')) {
-      return;
-    }
-    
+    const sessionId = sessionToDelete;
+    handleCloseDeleteDialog(); // Close dialog immediately
+
     try {
       await chatApi.deleteSession(sessionId);
-      
       setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
-      
       if (selectedSessionId === sessionId) {
         setSelectedSessionId(null);
       }
     } catch (error) {
-      
       if (error.message && error.message.includes('Invalid session ID format')) {
         alert('There was an issue with the session ID format. Please refresh the page and try again.');
       } else {
@@ -132,6 +145,7 @@ function Chat() {
       }
     }
   };
+  // --- End Delete Handling ---
   
   const handleLogoutClick = async () => {
     try {
@@ -267,7 +281,7 @@ function Chat() {
                           secondary={`Updated: ${formatDate(session.updated_at)}`}
                           primaryTypographyProps={{ fontWeight: 500 }}
                         />
-                         <IconButton edge="end" aria-label="delete" onClick={(e) => handleDeleteSession(e, session.id)} size="small">
+                         <IconButton edge="end" aria-label="delete" onClick={(e) => handleDeleteSessionRequest(e, session.id)} size="small">
                            <DeleteIcon fontSize="small" />
                          </IconButton>
                       </ListItemButton>
@@ -287,6 +301,29 @@ function Chat() {
           </Box>
         )}
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this chat session?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
