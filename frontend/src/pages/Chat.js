@@ -22,7 +22,9 @@ import {
   DialogActions,
   CircularProgress,
   Skeleton,
-  DialogContentText
+  DialogContentText,
+  Snackbar,
+  Alert as MuiAlert
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -36,6 +38,11 @@ import { chatApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useNavigate } from 'react-router-dom';
+
+// Use Alert inside Snackbar
+const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 function Chat() {
   const { user, isLoading: authLoading, logout } = useAuth();
@@ -51,6 +58,12 @@ function Chat() {
   // State for delete confirmation dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false); // State for deletion loading
+  
+  // State for Snackbar feedback
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' or 'error'
   
   useEffect(() => {
     if (!authLoading && isAuthenticated) { 
@@ -113,23 +126,39 @@ function Chat() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
-  // --- Delete Handling with Dialog ---
+  // --- Delete Handling with Dialog & Feedback ---
   const handleDeleteSessionRequest = (e, sessionId) => {
-    e.stopPropagation(); // Prevent ListItemButton click
+    e.stopPropagation(); 
     setSessionToDelete(sessionId);
     setIsDeleteDialogOpen(true);
   };
 
   const handleCloseDeleteDialog = () => {
+    if (isDeleting) return; // Prevent closing while deleting
     setIsDeleteDialogOpen(false);
     setSessionToDelete(null);
   };
 
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
   const handleConfirmDelete = async () => {
-    if (!sessionToDelete) return;
+    if (!sessionToDelete || isDeleting) return;
     
     const sessionId = sessionToDelete;
-    handleCloseDeleteDialog(); // Close dialog immediately
+    setIsDeleting(true);
+    // Keep dialog open but maybe disable buttons? Or close it? Let's close it for now.
+    setIsDeleteDialogOpen(false); 
 
     try {
       await chatApi.deleteSession(sessionId);
@@ -137,12 +166,16 @@ function Chat() {
       if (selectedSessionId === sessionId) {
         setSelectedSessionId(null);
       }
+      showSnackbar('Chat session deleted successfully.', 'success');
     } catch (error) {
+      let errorMsg = 'Failed to delete chat. Please try again.';
       if (error.message && error.message.includes('Invalid session ID format')) {
-        alert('There was an issue with the session ID format. Please refresh the page and try again.');
-      } else {
-        alert('Failed to delete chat. Please try again.');
+        errorMsg = 'There was an issue deleting the chat. Please refresh and try again.';
       }
+      showSnackbar(errorMsg, 'error');
+    } finally {
+      setIsDeleting(false);
+      setSessionToDelete(null); // Clear the target session ID after operation
     }
   };
   // --- End Delete Handling ---
@@ -281,8 +314,17 @@ function Chat() {
                           secondary={`Updated: ${formatDate(session.updated_at)}`}
                           primaryTypographyProps={{ fontWeight: 500 }}
                         />
-                         <IconButton edge="end" aria-label="delete" onClick={(e) => handleDeleteSessionRequest(e, session.id)} size="small">
-                           <DeleteIcon fontSize="small" />
+                         <IconButton 
+                            edge="end" 
+                            aria-label="delete" 
+                            onClick={(e) => handleDeleteSessionRequest(e, session.id)} 
+                            size="small"
+                            disabled={isDeleting && sessionToDelete === session.id} // Disable button if it's being deleted
+                         >
+                           {(isDeleting && sessionToDelete === session.id) 
+                             ? <CircularProgress size={20} /> 
+                             : <DeleteIcon fontSize="small" />
+                           }
                          </IconButton>
                       </ListItemButton>
                     ))}
@@ -318,12 +360,24 @@ function Chat() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" autoFocus>
-            Delete
+          <Button onClick={handleCloseDeleteDialog} disabled={isDeleting}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus disabled={isDeleting}>
+            {isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for Feedback */}
+      <Snackbar 
+        open={snackbarOpen} 
+        autoHideDuration={6000} // Hide after 6 seconds
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position
+      >
+        <SnackbarAlert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </SnackbarAlert>
+      </Snackbar>
     </>
   );
 }
