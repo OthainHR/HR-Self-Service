@@ -302,12 +302,13 @@ const NavBar = () => {
           }
         }}>
           <img 
-            src="/othainwhite.png" 
+            src="/logowhite.png" 
             alt="Othain Logo" 
-            height="36" 
+            height="30" 
             style={{ 
               filter: 'brightness(0) invert(1)', 
               marginRight: '8px',
+              marginBottom: '10px',
               transition: 'transform 0.2s ease'
             }} 
           />
@@ -321,10 +322,11 @@ const NavBar = () => {
             flexGrow: 1,
             fontFamily: '"Lexend", sans-serif',
             fontWeight: 500,
-            textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+            marginLeft: '-10px'
           }}
         >
-          HR Assistant
+          Employee Self Service
         </Typography>
         
         {/* Desktop navigation */}

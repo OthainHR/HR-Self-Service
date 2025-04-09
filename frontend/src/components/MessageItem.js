@@ -53,7 +53,7 @@ function MessageItem({ message }) {
         <Tooltip 
           title={isLoading ? "Processing..." : 
                  isError ? "Error occurred" : 
-                 "AI Assistant"}
+                 "Othain ESS"}
           TransitionComponent={Zoom}
           arrow
           placement="top-start"
@@ -62,7 +62,7 @@ function MessageItem({ message }) {
             sx={{ 
               bgcolor: isLoading ? 'warning.light' : 
                       isError ? 'error.main' : 
-                      isDarkMode ? 'white' : 'primary.main', 
+                      isDarkMode ? 'white' : 'black', 
               mr: 1,
               boxShadow: theme.shadows[2],
               width: 38,
@@ -82,7 +82,15 @@ function MessageItem({ message }) {
               },
             }}
           >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : <BotIcon />}
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : <img 
+          src={isDarkMode ? '/OthainOcolor.png' : '/othainlogopreview.png' }
+          alt="Othain Logo"
+          height={isDarkMode ? "20" : "25"}
+          style={{ 
+            marginBottom: isDarkMode ? 0 : -2,
+            opacity: 0.8 
+          }}
+        />}
           </Avatar>
         </Tooltip>
       )}

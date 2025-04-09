@@ -13,6 +13,7 @@ import {
   Alert,
   Chip,
   Avatar,
+  useTheme
 } from '@mui/material';
 import { 
   Send as SendIcon, 
@@ -37,6 +38,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [serverError, setServerError] = useState(false);
   const messagesEndRef = useRef(null);
   const { isDarkMode } = useDarkMode();
+  const theme = useTheme();
 
   // Set to false since we're removing offline mode
   const offlineMode = false;
@@ -224,7 +226,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           color: theme => theme.palette.text.primary,
         }}
       >
-        <BotIcon sx={{ fontSize: 60, color: theme => theme.palette.text.primary, mb: 2, opacity: 0.8 }} />
+        <img 
+          src={isDarkMode ? '/OthainOcolor.png' : '/othainlogopreview.png'}
+          alt="Othain Logo"
+          height="60"
+          style={{ marginBottom: theme.spacing(2), opacity: 1 }}
+        />
         <Typography variant="h5" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
           Welcome to Othain HR Assistant
         </Typography>
@@ -305,22 +312,36 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar
             sx={{
-              bgcolor: theme => theme.palette.mode === 'dark' ? 'primary.main' : 'black',
+              bgcolor: theme => theme.palette.mode === 'dark' ? 'black' : 'black',
               width: 40,
               height: 40,
-              mr: 2,
+              mr: 1.5,
               border: isDarkMode ? '2px solid rgba(40, 40, 40, 0.8)' : '2px solid white',
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <SupportAgentIcon sx={{ color: theme => theme.palette.mode === 'dark' ? 'black' : 'white' }} />
+            <img 
+            src="/othainlogopreview.png"
+            alt="Othain Logo" 
+            height="26" 
+            style={{marginBottom: '-1px' }} 
+          />
           </Avatar>
+          <img 
+            src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
+            alt="Othain Logo" 
+            height={isDarkMode ? "20" : "22"} 
+            style={{ marginRight: '8px', marginBottom: '29px' }} 
+          /> 
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-              Othain HR Assistant
+              ESS
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              AI-powered support
+            <Typography variant="caption" sx={{ 
+              color: 'text.secondary', 
+              marginLeft: isDarkMode ? '-88px' : '-95px' 
+            }}>
+              Employee Self Service
             </Typography>
           </Box>
         </Box>
@@ -361,7 +382,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
               }}
             >
-              <BotIcon sx={{ fontSize: 60, color: theme => theme.palette.text.primary, mb: 2, opacity: 0.8 }} />
+              <img 
+          src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+          alt="Othain Logo"
+          height={isDarkMode ? "50" : "42"}
+          style={{ marginBottom: theme.spacing(2), opacity: 1 }}
+        />
               <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: theme => theme.palette.text.primary }}>
                 Start a conversation
               </Typography>
