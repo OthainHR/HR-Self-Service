@@ -25,7 +25,8 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  useTheme
+  useTheme,
+  Skeleton
 } from '@mui/material';
 import { Search as SearchIcon, Add as AddIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { knowledgeApi } from '../services/api';
@@ -275,6 +276,42 @@ function Knowledge() {
   
   // --- End Knowledge Debug Log ---
 
+  // Skeleton loader for search results
+  const renderSearchSkeletons = () => (
+    <Box>
+        <Typography variant="subtitle1" gutterBottom>
+          <Skeleton width="40%" />
+        </Typography>
+        <Box mb={2} display="flex" justifyContent="flex-end">
+          <Skeleton variant="text" width={100} height={36} />
+        </Box>
+        <List sx={{ 
+          bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.4)' : 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: 2,
+          overflow: 'hidden',
+          border: isDarkMode ? '1px solid rgba(60, 60, 60, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)'
+        }}>
+          {[...Array(3)].map((_, index) => (
+            <React.Fragment key={`skel-${index}`}>
+              <ListItem alignItems="flex-start">
+                <ListItemText
+                  primary={<Skeleton variant="text" width="70%" height={24} />}
+                  secondary={
+                    <React.Fragment>
+                      <Skeleton variant="text" width="50%" height={18} sx={{ mt: 1 }} />
+                      <Skeleton variant="rectangular" height={60} sx={{ mt: 1.5 }} />
+                    </React.Fragment>
+                  }
+                />
+              </ListItem>
+              {index < 2 && <Divider sx={{ opacity: 0.6, borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)' }} />}
+            </React.Fragment>
+          ))}
+        </List>
+      </Box>
+  );
+
   // Show loading indicator ONLY if auth is loading (though AdminRoute should prevent this state)
   if (authIsLoading) {
       return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
@@ -512,7 +549,9 @@ function Knowledge() {
               </Box>
             </Box>
             
-            {searchResults.length > 0 ? (
+            {loading ? (
+                renderSearchSkeletons()
+            ) : searchResults.length > 0 ? (
               <Box>
                 <Typography variant="subtitle1" gutterBottom>
                   {`Found ${searchResults.length} results for "${searchQuery}"`}
@@ -567,9 +606,11 @@ function Knowledge() {
               </Box>
             ) : (
               <Box mt={2}>
-                <Typography variant="subtitle1">
-                  No results found for "{searchQuery}". Try a different search term.
-                </Typography>
+                {!loading && 
+                  <Typography variant="subtitle1">
+                    No results found for "{searchQuery}". Try a different search term.
+                  </Typography>
+                }
               </Box>
             )}
           </TabPanel>
