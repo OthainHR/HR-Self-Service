@@ -251,7 +251,7 @@ function Chat() {
                     <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>No chat sessions yet.</Typography>
                 ) : (
                   <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
-                    {sessions.map((session) => (
+                    {sessions.map((session, index) => (
                       <ListItemButton
                         key={session.id}
                         selected={selectedSessionId === session.id}
@@ -263,7 +263,7 @@ function Chat() {
                         }}
                       >
                         <ListItemText 
-                          primary={`Chat ${session.id.substring(0, 8)}...`} 
+                          primary={`Chat ${sessions.length - index}`}
                           secondary={`Updated: ${formatDate(session.updated_at)}`}
                           primaryTypographyProps={{ fontWeight: 500 }}
                         />
