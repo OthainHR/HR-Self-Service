@@ -37,15 +37,13 @@ const NavBar = () => {
 
   // ---- START RE-ADDED DEBUG LOG ----
   useEffect(() => {
-    console.log("--- Vercel NavBar Debug ---");
+    
     if (isLoading) {
-        console.log("Auth is loading...");
+        
     } else if (user) {
-      console.log("User object (Vercel):", JSON.stringify(user, null, 2)); // Stringify for better logging
-      console.log("User email (Vercel):", user.email);
-      console.log("Is Admin check (Vercel):", user?.email === 'admin@example.com');
+
     } else {
-        console.log("User object is null or undefined");
+        
     }
   }, [user, isLoading]);
   // ---- END RE-ADDED DEBUG LOG ----
@@ -79,7 +77,7 @@ const NavBar = () => {
       await logout();
       navigate('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      
     }
   };
   

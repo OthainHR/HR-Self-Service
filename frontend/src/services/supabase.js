@@ -2,38 +2,25 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Debug the environment variables
-console.log("All environment variables:", {
-  NODE_ENV: process.env.NODE_ENV,
-  PUBLIC_URL: 'https://sethhceiojxrevvpzupf.supabase.co',
-  REACT_APP_SUPABASE_URL: 'https://sethhceiojxrevvpzupf.supabase.co',
-  REACT_APP_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NDcyMDAsImV4cCI6MjA1ODEyMzIwMH0.dYLDhmxgP9k-fOAGAddH8UNCETMF8fHKNhSPWpDNisM' ,
-  // Also check with process.env directly
-  directAccess: process.env["REACT_APP_SUPABASE_URL"]
-});
+
 
 // Initialize Supabase client with hardcoded values for reliability
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://sethhceiojxrevvpzupf.supabase.co';
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NDcyMDAsImV4cCI6MjA1ODEyMzIwMH0.dYLDhmxgP9k-fOAGAddH8UNCETMF8fHKNhSPWpDNisM';
 
-console.log(`Using hardcoded Supabase URL: ${supabaseUrl.substring(0, 30)}... and key`);
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Key exists:', !!supabaseKey);
+
 
 // Make sure these environment variables are correctly set
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Key exists:', !!supabaseKey);
 
 let supabase;
 try {
-  console.log('Creating Supabase client with hardcoded values');
   supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
       persistSession: true
     }
   });
-  console.log('Supabase client created successfully');
 } catch (error) {
-  console.error('Failed to initialize Supabase client:', error);
+  
   throw new Error('Cannot initialize Supabase client. Backend services will be unavailable.');
 }
 
@@ -91,7 +78,6 @@ const toUUID = (id) => {
   
   // If input is invalid, throw a detailed error
   if (!id || typeof id !== 'string') {
-    console.error('Invalid session ID type:', typeof id, id);
     throw new Error('Invalid session ID: Must be a string');
   }
   
@@ -112,10 +98,8 @@ const toUUID = (id) => {
       return `${id.slice(0,8)}-${id.slice(8,12)}-${id.slice(12,16)}-${id.slice(16,20)}-${id.slice(20)}`;
     }
     
-    console.error('Cannot convert to UUID:', id);
     throw new Error(`Cannot convert to UUID: invalid format "${id}"`);
   } catch (error) {
-    console.error('UUID conversion error:', error, 'for ID:', id);
     throw new Error('Invalid session ID format. Must be a valid UUID.');
   }
 };
@@ -134,13 +118,11 @@ const supabaseService = {
         .select('*', { count: 'exact', head: true });
         
       if (error) {
-        console.error('Supabase connection test failed:', error);
         return { success: false, error };
       }
       
       return { success: true, count };
     } catch (error) {
-      console.error('Supabase connection test error:', error);
       return { success: false, error };
     }
   },
@@ -148,7 +130,6 @@ const supabaseService = {
   // For diagnostic purposes - get direct documents data
   getDiagnosticData: async () => {
     try {
-      console.log('Getting diagnostic data from knowledge_documents table...');
       
       // Get all documents directly
       const { data, error } = await supabase
@@ -157,7 +138,6 @@ const supabaseService = {
         .limit(10);
         
       if (error) {
-        console.error('Error fetching diagnostic data:', error);
         return { success: false, error };
       }
       
@@ -168,10 +148,8 @@ const supabaseService = {
         has_embedding: !!doc.embedding
       }));
       
-      console.log('Diagnostic data retrieved:', simplifiedData);
       return { success: true, data: simplifiedData, rawData: data };
     } catch (error) {
-      console.error('Error getting diagnostic data:', error);
       return { success: false, error };
     }
   },
@@ -182,7 +160,6 @@ const supabaseService = {
     getSessions: async () => {
       try {
         // Add logging to debug
-        console.log('Fetching sessions...')
         
         const { data, error } = await supabase
           .from('chat_sessions')
@@ -190,14 +167,11 @@ const supabaseService = {
           .order('created_at', { ascending: false })
         
         if (error) {
-          console.error('Error fetching sessions:', error)
           return []
         }
         
-        console.log('Sessions found:', data)
         return data
       } catch (error) {
-        console.error('Error in getSessions:', error)
         return []
       }
     },
@@ -206,7 +180,6 @@ const supabaseService = {
     createSession: async () => {
       try {
         const userId = await getUserId();
-        console.log('Creating new chat session for user:', userId);
         
         const newSession = {
           user_id: userId,
@@ -223,13 +196,11 @@ const supabaseService = {
           .single();
           
         if (error) {
-          console.error('Error creating chat session:', error);
           throw error;
         }
         
         return data;
       } catch (error) {
-        console.error('Supabase createSession error:', error);
         throw error;
       }
     },
@@ -237,7 +208,6 @@ const supabaseService = {
     // Delete a chat session
     deleteSession: async (sessionId) => {
       try {
-        console.log('Deleting chat session:', sessionId);
         
         const { error } = await supabase
           .from('chat_sessions')
@@ -245,13 +215,11 @@ const supabaseService = {
           .eq('id', sessionId);
           
         if (error) {
-          console.error('Error deleting chat session:', error);
           throw error;
         }
         
         return { success: true };
       } catch (error) {
-        console.error('Supabase deleteSession error:', error);
         throw error;
       }
     },
@@ -259,7 +227,6 @@ const supabaseService = {
     // Get messages for a specific session
     getSessionMessages: async (sessionId) => {
       try {
-        console.log('Getting messages for session:', sessionId);
         
         const { data, error } = await supabase
           .from('chat_messages')
@@ -268,13 +235,11 @@ const supabaseService = {
           .order('created_at', { ascending: true });
           
         if (error) {
-          console.error('Error fetching session messages:', error);
           throw error;
         }
         
         return { messages: data || [] };
       } catch (error) {
-        console.error('Supabase getSessionMessages error:', error);
         throw error;
       }
     },
@@ -282,7 +247,6 @@ const supabaseService = {
     // Send a message to a chat session
     sendMessage: async (sessionId, content) => {
       try {
-        console.log('Sending message to session:', sessionId);
         
         // For direct OpenAI API access, create a custom API endpoint
         // Prepare the message payload
@@ -294,7 +258,6 @@ const supabaseService = {
         
         // Use the direct backend API URL
         const backendUrl = 'https://hr-self-service.onrender.com/api/chat/public';
-        console.log(`Sending message to backend API at: ${backendUrl}`);
         
         // Send the request
         const response = await fetch(backendUrl, {
@@ -310,7 +273,7 @@ const supabaseService = {
         }
         
         const data = await response.json();
-        console.log('Message sent successfully, response:', data);
+        
         
         // Format response in expected format
         return {
@@ -328,7 +291,6 @@ const supabaseService = {
           ]
         };
       } catch (error) {
-        console.error('Error sending message:', error);
         throw error;
       }
     }
@@ -336,18 +298,14 @@ const supabaseService = {
   
   // Add a document directly to Supabase
   addDocument: async (document) => {
-    console.log('Supabase addDocument called with:', document);
     
     if (!document || !document.text) {
-      console.error('Invalid document: Missing required fields');
       throw new Error('Invalid document: Text is required');
     }
     
     try {
-      console.log('Direct insertion not supported, use backend API');
       throw new Error('Direct insertion not supported');
     } catch (error) {
-      console.error('Error in Supabase addDocument:', error);
       
       // Return a specific error object that indicates we should fall back to API
       return { 
@@ -360,13 +318,10 @@ const supabaseService = {
   
   // Search for documents - simplified to only use direct document search
   searchDocuments: async (query, topK = 5) => {
-    console.log(`Searching documents with query: ${query}, topK: ${topK}`);
-    
+
     try {
-      console.log('Direct search not supported, use backend API');
       throw new Error('Direct search not supported');
     } catch (error) {
-      console.error('Error in Supabase searchDocuments:', error);
       
       // Return a specific error object that indicates we should fall back to API
       return { 
@@ -383,6 +338,5 @@ export default supabaseService;
 
 const checkAuth = async () => {
   const { data: { session } } = await supabase.auth.getSession()
-  console.log('Current session:', session)
   return session
 }

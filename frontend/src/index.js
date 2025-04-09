@@ -15,7 +15,7 @@ import App from './App';
 window.addEventListener('error', function(e) {
   // Check if error is related to manifest.json
   if (e.filename && e.filename.includes('manifest.json')) {
-    console.warn('Manifest.json loading error handled:', e.message);
+    
     e.preventDefault(); // Prevent the error from appearing in console
   }
 });

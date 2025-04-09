@@ -19,16 +19,15 @@ export const AuthProvider = ({ children }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
-        console.log("Initial session check complete.", currentSession);
+        
     }).catch(err => {
-        console.error("Error during initial session check:", err);
+        
         setIsLoading(false);
         setError("Failed to check initial session.");
     });
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: authListener } = auth.onAuthStateChange((event, currentSession) => {
-        console.log(`Auth state changed: ${event}`, currentSession);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false); // Ensure loading is false after updates
@@ -43,7 +42,6 @@ export const AuthProvider = ({ children }) => {
     return () => {
       if (authListener?.subscription) {
           authListener.subscription.unsubscribe();
-          console.log("Auth listener unsubscribed.");
       }
     };
   }, []);
@@ -57,9 +55,7 @@ export const AuthProvider = ({ children }) => {
       // It handles setting the session internally via onAuthStateChange
       await auth.login(credentials);
       // No need to manually set state here, listener will handle it
-      console.log("Login successful (AuthProvider)");
     } catch (err) {
-      console.error('Login failed (AuthProvider):', err);
       setError(err.message || "Login failed. Please check credentials.");
       setUser(null); // Ensure user is null on failed login
       setSession(null);
@@ -79,9 +75,7 @@ export const AuthProvider = ({ children }) => {
       // Use the new Supabase logout from api.js
       await auth.logout();
       // No need to manually set state here, listener will handle it
-      console.log("Logout successful (AuthProvider)");
     } catch (err) {
-      console.error('Logout failed (AuthProvider):', err);
       setError(err.message || "Logout failed.");
       // Keep user/session state as is, let listener handle the update
       throw err; // Re-throw for the component to handle

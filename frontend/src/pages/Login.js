@@ -34,10 +34,9 @@ const Login = () => {
 
     try {
       await login({ email: username, password });
-      console.log('Login successful, navigating to chat...');
       navigate('/chat');
     } catch (err) {
-      console.error('Login component caught error:', err);
+      
     }
   };
 

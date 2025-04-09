@@ -13,6 +13,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",          # React dev server
     "https://othain-hr-self-service.vercel.app",  # Production domain
+    "https://ess.othain.com"
 ]
 
 # Add CORS middleware
