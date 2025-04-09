@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  CircularProgress
+  CircularProgress,
+  Skeleton
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -58,7 +59,6 @@ function Chat() {
   }, [isAuthenticated, authLoading]);
   
   const loadSessions = async () => {
-    console.log('Loading sessions...');
     setLoading(true);
     setServerError(false);
 
@@ -66,17 +66,14 @@ function Chat() {
       const sessionsData = await chatApi.getSessions();
       
       if (sessionsData && sessionsData.length > 0) {
-        console.log('Successfully fetched sessions:', sessionsData.length);
         setSessions(sessionsData.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
       } else {
-        console.log('No sessions found');
         setSessions([]);
       }
     } catch (error) {
-      console.error('Error loading sessions:', error);
       setSessions([]);
       if (error.response?.status === 401 || error.response?.status === 403) {
-          console.warn("Authorization error loading sessions. User might be logged out.");
+        // Handle auth error silently or redirect if needed
       } else {
           setServerError(true);
       }
@@ -98,10 +95,10 @@ function Chat() {
         
         setSelectedSessionId(newSession.id);
       } else {
-        console.error('Created session missing ID:', newSession);
+        
       }
     } catch (error) {
-      console.error('Error creating new session:', error);
+      
       alert('Failed to create a new chat. Please try again.');
     }
   };
@@ -127,7 +124,6 @@ function Chat() {
         setSelectedSessionId(null);
       }
     } catch (error) {
-      console.error('Error deleting session:', error);
       
       if (error.message && error.message.includes('Invalid session ID format')) {
         alert('There was an issue with the session ID format. Please refresh the page and try again.');
@@ -141,10 +137,33 @@ function Chat() {
     try {
       await logout();
     } catch (error) {
-      console.error("Logout failed in Chat component:", error);
+      
       alert("Logout failed. Please try again.");
     }
   };
+  
+  const renderSkeletons = () => (
+    <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
+      {[...Array(5)].map((_, index) => (
+        <ListItemButton 
+          key={`skeleton-${index}`} 
+          sx={{ 
+              borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+              py: 1.2,
+              display: 'flex',
+              justifyContent: 'space-between'
+          }}
+          disabled
+        >
+          <Box sx={{ width: '80%' }}>
+            <Skeleton variant="text" width="60%" height={20} />
+            <Skeleton variant="text" width="80%" height={16} sx={{ mt: 0.5 }} />
+          </Box>
+          <Skeleton variant="circular" width={24} height={24} />
+        </ListItemButton>
+      ))}
+    </List>
+  );
   
   return (
     <>
@@ -225,7 +244,7 @@ function Chat() {
                 </ListItemButton>
 
                 {loading ? (
-                    <Box sx={{p: 2, textAlign: 'center'}}><CircularProgress /></Box>
+                    renderSkeletons()
                 ) : serverError ? (
                     <Alert severity="error" sx={{m: 2}}>Error connecting to server.</Alert>
                 ) : sessions.length === 0 ? (
