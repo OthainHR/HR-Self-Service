@@ -253,7 +253,7 @@ function Chat() {
           <Grid container spacing={2} sx={{ height: 'calc(100vh - 120px)' }}>
             <Grid item xs={12} md={3}>
               <Paper elevation={2} sx={{ 
-                  height: '100%', 
+                  height: '90%', 
                   display: 'flex', 
                   flexDirection: 'column', 
                   borderRadius: 2, 
@@ -368,11 +368,11 @@ function Chat() {
       </Dialog>
 
       {/* Snackbar for Feedback */}
-      <Snackbar 
+      <Snackbar style={{ marginLeft: '140px', marginRight: 'auto' }}
         open={snackbarOpen} 
         autoHideDuration={6000} // Hide after 6 seconds
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center'}}
       >
         <SnackbarAlert 
             onClose={handleSnackbarClose} 
