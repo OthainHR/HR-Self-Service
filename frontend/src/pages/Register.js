@@ -44,10 +44,10 @@ const Register = () => {
     }
 
     // Client-side validation is good, but context handles domain check primarily
-    const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com'];
+    const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com', '@markenzoworldwide.com'];
     const emailDomain = email.substring(email.lastIndexOf('@'));
     if (!allowedDomains.includes(emailDomain.toLowerCase())) {
-        setLocalError("Sign up failed: Only @othainsoft.com and @jerseytechpartners.com emails are allowed.");
+        setLocalError("Sign up failed: Only @othainsoft.com, @jerseytechpartners.com, and @markenzoworldwide.com emails are allowed.");
         return;
     }
 

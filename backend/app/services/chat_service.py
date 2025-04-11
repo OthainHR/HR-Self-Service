@@ -53,7 +53,7 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     
     return context
 
-def process_chat_request(request: ChatRequest) -> ChatResponse:
+def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
     """Process a chat request using Supabase for persistence."""
     session_id = request.session_id
     user_id = request.user_id
@@ -71,8 +71,8 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
         session_id = new_session['id']
         print(f"Created new session {session_id} during chat processing.")
     
-    # 2. Add user message to Supabase
-    db_add_chat_message(session_id, "user", message_content)
+    # 2. Add user message to Supabase, including email if provided
+    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
     
     # 3. Get recent messages from Supabase for context
     # We need the user_id to fetch messages because db_get_chat_messages checks ownership
@@ -114,7 +114,7 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     # 5. Get response from OpenAI (as before)
     assistant_response = get_chat_completion(openai_messages)
     
-    # 6. Add assistant response to Supabase
+    # 6. Add assistant response to Supabase (no email needed for assistant)
     db_add_chat_message(session_id, "assistant", assistant_response)
     
     # 7. Return response

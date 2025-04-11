@@ -183,15 +183,17 @@ async def send_message(
     # db: Session = Depends(get_db) # db likely not needed anymore
 ):
     """Send a message to a specific chat session via the service."""
-    supabase_user_id = current_user.get('id') 
+    supabase_user_id = current_user.get('id')
+    user_email = current_user.get('email') # Get user email
+    
     # Construct the ChatRequest model expected by the service
     request = ChatRequest(
         message=message.content,
         session_id=session_id,
         user_id=supabase_user_id 
     )
-    # Call the main processing function
-    response = chat_service.process_chat_request(request)
+    # Call the main processing function, passing the email
+    response = chat_service.process_chat_request(request, user_email=user_email)
     
     # The process_chat_request now returns ChatResponse model.
     # We need to adapt the return structure if frontend expects something different.

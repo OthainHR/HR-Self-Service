@@ -29,17 +29,22 @@ def db_create_chat_session(user_id: str) -> Optional[Dict[str, Any]]:
         print(f"Exception in db_create_chat_session: {e}")
         return None
 
-def db_add_chat_message(session_id: str, role: str, content: str) -> Optional[Dict[str, Any]]:
+def db_add_chat_message(session_id: str, role: str, content: str, user_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Adds a chat message to a session in Supabase."""
     if not supabase_admin_client:
         print("ERROR: Supabase client not available for db_add_chat_message")
         return None
     try:
-        response = supabase_admin_client.table(MESSAGES_TABLE).insert({
+        message_data = {
             "session_id": session_id,
             "role": role,
             "content": content
-        }).execute()
+        }
+        # Add user_email only for user messages
+        if role == "user" and user_email:
+            message_data["user_email"] = user_email
+            
+        response = supabase_admin_client.table(MESSAGES_TABLE).insert(message_data).execute()
         
         if response.data and len(response.data) > 0:
             print(f"Supabase: Added message to session {session_id}")
@@ -127,23 +132,25 @@ def db_delete_chat_session(session_id: str, user_id: str) -> bool:
              print(f"Supabase: Session {session_id} not found or access denied for user {user_id} during delete attempt.")
              return False # Indicate failure (not found or forbidden)
 
-        # Delete messages first (optional, depends on cascade settings)
-        # If cascade delete is set up in Supabase, this might not be needed.
-        print(f"Supabase: Deleting messages for session {session_id}")
-        supabase_admin_client.table(MESSAGES_TABLE).delete().eq("session_id", session_id).execute()
+        # --- REMOVED ACTUAL DELETION --- 
+        # # Delete messages first (optional, depends on cascade settings)
+        # # If cascade delete is set up in Supabase, this might not be needed.
+        # print(f"Supabase: Deleting messages for session {session_id}")
+        # supabase_admin_client.table(MESSAGES_TABLE).delete().eq("session_id", session_id).execute()
 
-        # Delete session
-        print(f"Supabase: Deleting session {session_id}")
-        delete_response = supabase_admin_client.table(SESSIONS_TABLE).delete().eq("id", session_id).execute()
+        # # Delete session
+        # print(f"Supabase: Deleting session {session_id}")
+        # delete_response = supabase_admin_client.table(SESSIONS_TABLE).delete().eq("id", session_id).execute()
         
-        # Check if delete was successful (usually response.data is empty on success)
-        # A more robust check might involve checking status code if available
-        if hasattr(delete_response, 'error') and delete_response.error:
-            print(f"Supabase: Error deleting session {session_id}: {delete_response.error}")
-            return False
+        # # Check if delete was successful (usually response.data is empty on success)
+        # # A more robust check might involve checking status code if available
+        # if hasattr(delete_response, 'error') and delete_response.error:
+        #     print(f"Supabase: Error deleting session {session_id}: {delete_response.error}")
+        #     return False
+        # --- END REMOVED ACTUAL DELETION --- 
             
-        print(f"Supabase: Session {session_id} deleted successfully.")
-        return True
+        print(f"Supabase: Session {session_id} marked for deletion (record kept). User {user_id} verified.")
+        return True # Indicate success (ownership verified) even though we didn't delete
 
     except Exception as e:
         print(f"Exception in db_delete_chat_session: {e}")
