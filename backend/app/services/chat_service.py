@@ -85,9 +85,10 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     system_message = {
         "role": "system",
         "content": (
-            "You are an HR assistant for a company. Answer questions about HR policies, "
+            "You are an HR assistant for Othain. Answer questions about HR policies, "
             "benefits, leave, payroll, and other HR-related topics based on the provided context. "
-            "If you don't know the answer or the information is not in the context, say so politely."
+            "If you don't know the answer or the information is not in the context, say so politely and tell the user to contact hr@othainsoft.com."
+            "Refer to yourself as Othain Self Service, and when talking about the company, refer to it as Othain."
         )
     }
     openai_messages.append(system_message)

@@ -406,7 +406,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   <Button
                     variant="outlined"
                     color="primary"
-                    onClick={() => setInput('What is our vacation policy?')}
+                    onClick={() => setInput('Is there a work-from-home policy at Othain, and what guidelines do employees need to follow?')}
                     sx={{
                       py: 1.5,
                       px: 3,
@@ -422,13 +422,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       }
                     }}
                   >
-                    What is our vacation policy?
+                    Is there a work-from-home policy at Othain, and what guidelines do employees need to follow?
                   </Button>
                   
                   <Button
                     variant="outlined"
                     color="primary"
-                    onClick={() => setInput('How do I apply for Work From Home?')}
+                    onClick={() => setInput('What is the process for an employee to apply for leave and obtain approval?')}
                     sx={{
                       py: 1.5,
                       px: 3,
@@ -444,13 +444,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       }
                     }}
                   >
-                    How do I apply for Work From Home?
+                    What is the process for an employee to apply for leave and obtain approval?
                   </Button>
                   
                   <Button
                     variant="outlined"
                     color="primary"
-                    onClick={() => setInput('What are our health insurance benefits?')}
+                    onClick={() => setInput('When can I expect my salary to be credited each month?')}
                     sx={{
                       py: 1.5,
                       px: 3,
@@ -466,7 +466,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       }
                     }}
                   >
-                    What are our health insurance benefits?
+                    When can I expect my salary to be credited each month?
                   </Button>
                 </Box>
               </Box>

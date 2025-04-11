@@ -14,7 +14,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Check if we should use mock embeddings (for testing without OpenAI credits)
 USE_MOCK_EMBEDDINGS = os.getenv("USE_MOCK_EMBEDDINGS", "false").lower() == "true"
 
-def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo"):
+def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
     """
     Get a chat completion from OpenAI API.
     
