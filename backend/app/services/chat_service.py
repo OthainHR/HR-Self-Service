@@ -54,8 +54,9 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     
     return context
 
-def process_chat_request(request: ChatRequest) -> ChatResponse:
+def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
     """Process a chat request using Supabase for persistence."""
+    # Force re-deploy test comment - v2
     session_id = request.session_id
     user_id = request.user_id
     message_content = request.message
@@ -66,7 +67,7 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     if not session_id:
         # This case might indicate an issue in the frontend flow if it happens
         print("Warning: process_chat_request called without session_id. Attempting to create.")
-        new_session = db_create_chat_session(user_id)
+        new_session = db_create_chat_session(user_id, user_email=user_email)
         if not new_session:
              raise HTTPException(status_code=500, detail="Failed to create chat session")
         session_id = new_session['id']
