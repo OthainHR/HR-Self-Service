@@ -106,7 +106,7 @@ const Register = () => {
             required
             fullWidth
             id="email"
-            label="Email Address (@othainsoft.com / @jerseytechpartners.com)"
+            label="Email Address (@othainsoft.com / @jerseytechpartners.com / @markenzoworldwide.com)"
             name="email"
             autoComplete="email"
             autoFocus
