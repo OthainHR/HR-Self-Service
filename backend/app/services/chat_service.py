@@ -20,14 +20,15 @@ from app.utils.supabase_chat_utils import (
 # REMOVE In-memory storage 
 # chat_sessions = {}
 
-def create_session(db, user_id: str) -> Optional[ChatSession]: # db param might be unused now
+def create_session(db, user_id: str, user_email: Optional[str] = None) -> Optional[ChatSession]: # db param might be unused now
     """Create a new chat session in Supabase."""
-    db_session = db_create_chat_session(user_id)
+    db_session = db_create_chat_session(user_id, user_email=user_email)
     if db_session:
         # Map Supabase response to ChatSession Pydantic model
         return ChatSession(
             id=str(db_session['id']), # Ensure ID is string if model expects it
             user_id=db_session['user_id'],
+            user_email=db_session.get('user_email'),
             created_at=datetime.fromisoformat(db_session['created_at']), # Parse timestamp
             updated_at=datetime.fromisoformat(db_session['updated_at']),
             messages=[] # Messages are fetched separately
@@ -53,7 +54,7 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     
     return context
 
-def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
+def process_chat_request(request: ChatRequest) -> ChatResponse:
     """Process a chat request using Supabase for persistence."""
     session_id = request.session_id
     user_id = request.user_id
@@ -71,8 +72,8 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         session_id = new_session['id']
         print(f"Created new session {session_id} during chat processing.")
     
-    # 2. Add user message to Supabase, including email if provided
-    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
+    # 2. Add user message to Supabase
+    db_add_chat_message(session_id, "user", message_content)
     
     # 3. Get recent messages from Supabase for context
     # We need the user_id to fetch messages because db_get_chat_messages checks ownership
@@ -114,7 +115,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     # 5. Get response from OpenAI (as before)
     assistant_response = get_chat_completion(openai_messages)
     
-    # 6. Add assistant response to Supabase (no email needed for assistant)
+    # 6. Add assistant response to Supabase
     db_add_chat_message(session_id, "assistant", assistant_response)
     
     # 7. Return response

@@ -154,9 +154,27 @@ async def get_sessions(current_user: dict = Depends(get_current_supabase_user),
     supabase_user_id = current_user.get('id')
     print(f"Router: Fetching sessions for user ID: {supabase_user_id}")
     # Call the service function
-    user_sessions_data = chat_service.get_chat_sessions(None, supabase_user_id) # Pass None for db if unused
-    # The service now returns the data directly
-    return {"sessions": user_sessions_data}
+    user_sessions_raw = chat_service.get_chat_sessions(None, supabase_user_id) # Pass None for db if unused
+    
+    # Process raw data to extract message count
+    processed_sessions = []
+    for session in user_sessions_raw:
+        message_count = 0
+        # Check if 'chat_messages' key exists and is a non-empty list
+        if session.get('chat_messages') and isinstance(session['chat_messages'], list) and len(session['chat_messages']) > 0:
+            # Access the count from the first item in the list
+            message_count = session['chat_messages'][0].get('count', 0)
+        
+        processed_sessions.append({
+            "id": session.get('id'),
+            "user_id": session.get('user_id'),
+            "created_at": session.get('created_at'),
+            "updated_at": session.get('updated_at'),
+            "message_count": message_count # Add the extracted count here
+        })
+        
+    # Return the processed data
+    return {"sessions": processed_sessions}
 
 # GET /sessions/{session_id} - No longer needed if messages are fetched separately
 # If needed, implement similarly using chat_service.get_session_details or similar
@@ -169,8 +187,10 @@ async def create_chat_session(
 ):
     """Create a new chat session via the service."""
     supabase_user_id = current_user.get('id')
-    # Call the service function
-    session = chat_service.create_session(None, supabase_user_id) # Pass None for db if unused
+    user_email = current_user.get('email') # Get email
+    
+    # Call the service function, passing user_id and user_email
+    session = chat_service.create_session(None, supabase_user_id, user_email=user_email) # Pass None for db if unused
     if not session:
          raise HTTPException(status_code=500, detail="Failed to create chat session")
     return session

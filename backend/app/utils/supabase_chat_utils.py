@@ -8,19 +8,22 @@ import uuid
 SESSIONS_TABLE = "chat_sessions"
 MESSAGES_TABLE = "chat_messages"
 
-def db_create_chat_session(user_id: str) -> Optional[Dict[str, Any]]:
+def db_create_chat_session(user_id: str, user_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Creates a new chat session in Supabase and returns it."""
     if not supabase_admin_client:
         print("ERROR: Supabase client not available for db_create_chat_session")
         return None
     try:
-        response = supabase_admin_client.table(SESSIONS_TABLE).insert({
+        session_data = {
             "user_id": user_id
-            # Supabase handles id and created_at/updated_at automatically
-        }).execute()
+        }
+        if user_email:
+            session_data["user_email"] = user_email
+            
+        response = supabase_admin_client.table(SESSIONS_TABLE).insert(session_data).execute()
         
         if response.data and len(response.data) > 0:
-            print(f"Supabase: Created session {response.data[0]['id']} for user {user_id}")
+            print(f"Supabase: Created session {response.data[0]['id']} for user {user_id} ({user_email})")
             return response.data[0]
         else:
             print(f"Supabase Error creating session: {response}")
@@ -62,14 +65,17 @@ def db_get_chat_sessions(user_id: str) -> List[Dict[str, Any]]:
         print("ERROR: Supabase client not available for db_get_chat_sessions")
         return []
     try:
+        # Select session columns AND a count of related messages
         response = supabase_admin_client.table(SESSIONS_TABLE)\
-            .select("id, user_id, created_at, updated_at")\
+            .select("id, user_id, created_at, updated_at, chat_messages(count)")\
             .eq("user_id", user_id)\
             .order("updated_at", desc=True)\
             .execute()
         
         if response.data:
-            print(f"Supabase: Fetched {len(response.data)} sessions for user {user_id}")
+            # The count will be nested, e.g., data[0]['chat_messages'][0]['count']
+            print(f"Supabase: Fetched {len(response.data)} sessions for user {user_id} with message counts.") 
+            # Example: print(response.data[0]['chat_messages'][0]['count'])
             return response.data
         else:
             print(f"Supabase: No sessions found for user {user_id} or error: {response}")
