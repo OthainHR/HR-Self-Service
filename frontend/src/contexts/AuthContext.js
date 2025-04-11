@@ -75,11 +75,11 @@ export const AuthProvider = ({ children }) => {
     const { email, password } = credentials;
 
     // Validate email domain
-    const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com'];
+    const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com', '@markenzoworldwide.com'];
     const emailDomain = email.substring(email.lastIndexOf('@'));
 
-    if (!allowedDomains.includes(emailDomain)) {
-      const errorMsg = "Sign up failed: Only @othainsoft.com and @jerseytechpartners.com emails are allowed.";
+    if (!allowedDomains.includes(emailDomain.toLowerCase())) {
+      const errorMsg = "Sign up failed: Only @othainsoft.com, @jerseytechpartners.com, and @markenzoworldwide.com emails are allowed.";
       setError(errorMsg);
       setIsLoading(false);
       throw new Error(errorMsg); // Throw error to stop execution
