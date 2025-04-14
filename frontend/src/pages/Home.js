@@ -64,7 +64,7 @@ const Home = () => {
               {user && `, ${user.name || user.email}`}
             </Typography>
             <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit' }}>
-              Your interactive HR assistant designed to help with policies, benefits, and workplace questions.
+              Your interactive Employee Self-Service designed to help with policies, benefits, and workplace questions.
               Start a conversation to get instant answers to your HR-related inquiries.
             </Typography>
             <Button 
