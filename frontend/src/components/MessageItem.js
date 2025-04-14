@@ -329,4 +329,5 @@ function MessageItem({ message }) {
   );
 }
 
-export default MessageItem;
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(MessageItem);

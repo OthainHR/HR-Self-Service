@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -40,6 +40,9 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const currentAssistantMessageId = useRef(null);
+  const bufferedContentRef = useRef('');
+  const updateTimerRef = useRef(null);
+  const isFirstChunkRef = useRef(true);
 
   // Set to false since we're removing offline mode
   const offlineMode = false;
@@ -77,7 +80,37 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Handle sending a message (Updated for Streaming)
+  // Debounced state update function
+  const applyBufferedUpdate = useCallback(() => {
+    if (bufferedContentRef.current === '' || !currentAssistantMessageId.current) return;
+
+    const contentToAdd = bufferedContentRef.current;
+    bufferedContentRef.current = '';
+    const targetId = currentAssistantMessageId.current;
+    
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === targetId) {
+        const newContent = isFirstChunkRef.current 
+          ? contentToAdd
+          : msg.content + contentToAdd;
+        isFirstChunkRef.current = false;
+        return { ...msg, content: newContent, isLoading: false }; 
+      } else {
+        return msg;
+      }
+    }));
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Handle sending a message (Updated for Streaming with Batching)
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -87,11 +120,14 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     setInput('');
     setSending(true);
     setServerError(false);
-    setError(null); // Clear previous errors
+    setError(null); 
+    bufferedContentRef.current = '';
+    if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+    updateTimerRef.current = null;
+    isFirstChunkRef.current = true;
     
-    // 1. Add user message to UI 
+    // 1. Add user message 
     const userMessage = {
-      // Use a more stable temp ID generation if possible, but Date.now() is simple for now
       id: `user-${Date.now()}`,
       role: 'user',
       content: messageText,
@@ -99,73 +135,68 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     };
     setMessages(prev => [...prev, userMessage]);
     
-    // 2. Add a placeholder for the bot's response
+    // 2. Add placeholder
     const assistantMessageId = `assistant-${Date.now()}`;
-    currentAssistantMessageId.current = assistantMessageId; // Store the ID
+    currentAssistantMessageId.current = assistantMessageId;
     const placeholderMessage = {
       id: assistantMessageId,
       role: 'assistant',
-      content: 'Thinking...', // Initialize with "Thinking..."
+      content: 'Thinking...',
       created_at: new Date().toISOString(),
-      isLoading: true // Indicate loading state
+      isLoading: true 
     };
     setMessages(prev => [...prev, placeholderMessage]);
     
     try {
       // 3. Call the streaming API function
-      let isFirstChunk = true; // Flag to track the first chunk
       await chatApi.sendMessage(sessionId, messageText, (chunk) => {
         if (chunk === null) {
           // Stream finished
-          setMessages(prev => prev.map(msg => 
-            msg.id === currentAssistantMessageId.current
-              ? { ...msg, isLoading: false } // Mark final message as not loading
-              : msg
-          ));
-          currentAssistantMessageId.current = null; // Reset tracker
-          setSending(false); // Allow user to send again
-          // Optional: Check if content is still "Thinking..." or empty after stream ends, indicating an error
+          if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+          updateTimerRef.current = null;
+          applyBufferedUpdate();
+          
           setMessages(prev => {
             const finalMsg = prev.find(m => m.id === assistantMessageId);
-            if (finalMsg && (finalMsg.content === 'Thinking...' || finalMsg.content === '')) {
+            if (finalMsg && finalMsg.content.trim() === '') {
+                console.warn("Stream ended with empty content.");
                 return prev.map(m => m.id === assistantMessageId ? { ...m, content: 'Error: No response received.', isError: true, isLoading: false } : m);
-            }
-            return prev;
-          });
-        } else {
-          // Process chunk
-          setMessages(prev => prev.map(msg => {
-            if (msg.id === currentAssistantMessageId.current) {
-              const newContent = isFirstChunk ? chunk : msg.content + chunk;
-              isFirstChunk = false; // Unset flag after processing first chunk
-              return { ...msg, content: newContent, isLoading: false };
             } else {
-              return msg;
+                return prev.map(m => m.id === assistantMessageId ? { ...m, isLoading: false } : m);
             }
-          }));
+          });
+
+          currentAssistantMessageId.current = null; 
+          setSending(false); 
+
+        } else {
+          // Append chunk to buffer
+          bufferedContentRef.current += chunk;
+          // Schedule update if timer isn't already running
+          if (!updateTimerRef.current) {
+            updateTimerRef.current = setTimeout(() => {
+              applyBufferedUpdate();
+              updateTimerRef.current = null;
+            }, 100);
+          }
         }
       });
 
     } catch (error) {
       console.error("Error sending/streaming message:", error);
-      // Update the placeholder message to show an error
+      if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+      updateTimerRef.current = null;
+      bufferedContentRef.current = '';
+      
       setMessages(prev => prev.map(msg => 
         msg.id === currentAssistantMessageId.current
-          ? {
-              ...msg, 
-              content: `Sorry, an error occurred: ${error.message || 'Network error'}`,
-              isLoading: false,
-              isError: true 
-            }
+          ? { ...msg, content: `Sorry, an error occurred: ${error.message || 'Network error'}`, isLoading: false, isError: true }
           : msg
       ));
-      currentAssistantMessageId.current = null; // Reset tracker
-      setSending(false); // Allow user to send again
-      setServerError(true); // Indicate server error
-      // Optionally set the top-level error state as well
-      // setError(`Failed to get response: ${error.message || 'Network error'}`);
+      currentAssistantMessageId.current = null;
+      setSending(false); 
+      setServerError(true); 
     } 
-    // Removed finally block for setSending(false) as it's handled by the stream callback/catch
   };
 
   // Display the status badge
