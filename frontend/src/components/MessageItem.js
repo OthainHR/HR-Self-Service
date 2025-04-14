@@ -162,6 +162,11 @@ function MessageItem({ message }) {
           </Typography>
         ) : (
           <Box sx={{ 
+            transition: theme.transitions.create(['opacity', 'color'], {
+              duration: theme.transitions.duration.short,
+            }),
+            opacity: message.isLoading ? 0.5 : 1,
+            color: message.isLoading ? 'transparent' : theme.palette.text.primary,
             '& p': { 
               m: 0, 
               mb: 1.5,
@@ -209,7 +214,7 @@ function MessageItem({ message }) {
               fontSize: '0.875em',
             }
           }}>
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+            <ReactMarkdown>{message.content === 'Thinking...' && message.isLoading ? ' ' : message.content}</ReactMarkdown>
           </Box>
         )}
         
