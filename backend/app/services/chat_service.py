@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 # Import models
 from app.models.chat import ChatSession, Message, ChatRequest, ChatResponse 
 # Import OpenAI and vector store utils
-from app.utils.openai_utils import get_chat_completion
+from app.utils.openai_utils import get_chat_completion, get_chat_completion_stream
 from app.utils.vector_store import vector_store
 # Import Supabase chat utility functions
 from app.utils.supabase_chat_utils import (
@@ -87,10 +87,11 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     system_message = {
         "role": "system",
         "content": (
-            "You are an HR assistant for Othain. Answer questions about HR policies, "
+            "You are an HR assistant for Othain. Answer questions about Othain's HR policies, "
             "benefits, leave, payroll, and other HR-related topics based on the provided context. "
             "If you don't know the answer or the information is not in the context, say so politely and tell the user to contact hr@othainsoft.com."
             "Refer to yourself as Othain Self Service, and when talking about the company, refer to it as Othain."
+            "Every response should be playful and friendly, and you should be able to keep any conversation going, then after a few messages default back to the topic of Othain and HR."
         )
     }
     openai_messages.append(system_message)
@@ -124,6 +125,84 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         message=assistant_response, # Corrected field name
         session_id=session_id
     )
+
+async def process_chat_request_stream(request: ChatRequest, user_email: Optional[str] = None):
+    """Process a chat request and stream the response back."""
+    session_id = request.session_id
+    user_id = request.user_id
+    message_content = request.message
+
+    # 1. Ensure session exists (similar logic as non-stream)
+    if not session_id:
+        # Handle error or session creation as needed
+        print("Error: Streaming requires an existing session_id.")
+        raise HTTPException(status_code=400, detail="Session ID is required for streaming.")
+
+    # Check if session exists and user has access (reuse part of db_get_chat_messages logic)
+    # This check might need refinement depending on db_get_chat_messages structure
+    try:
+        session_check = supabase_admin_client.table("chat_sessions")\
+            .select("id")\
+            .eq("id", session_id)\
+            .eq("user_id", user_id)\
+            .maybe_single()\
+            .execute()
+        if not session_check.data:
+             print(f"Stream: Session {session_id} not found or access denied for user {user_id}")
+             raise HTTPException(status_code=404, detail="Chat session not found or access denied")
+    except Exception as e:
+        print(f"Stream: Error checking session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error verifying session access")
+
+    # 2. Add user message to Supabase (do this before streaming starts)
+    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
+
+    # 3. Prepare messages for OpenAI (get history, context, etc.)
+    # Similar logic to non-streaming version
+    recent_messages_db = db_get_chat_messages(session_id, user_id)
+    if recent_messages_db is None:
+        # This shouldn't happen if the check above passed, but handle defensively
+        print(f"Stream: Error fetching messages post-check for session {session_id}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve message history")
+
+    openai_messages = []
+    system_message = {
+        "role": "system",
+        "content": (
+            "You are an HR assistant for Othain..." # Keep your full prompt here
+        )
+    }
+    openai_messages.append(system_message)
+    context = get_relevant_context(message_content)
+    if context:
+        openai_messages.append({"role": "system", "content": context})
+    history_limit = 10
+    for msg in recent_messages_db[-history_limit:]:
+        openai_messages.append({"role": msg['role'], "content": msg['content']})
+    if not openai_messages or openai_messages[-1]['content'] != message_content:
+        openai_messages.append({"role": "user", "content": message_content})
+
+    # --- Streaming Logic --- 
+    full_response = ""
+    try:
+        async for chunk in get_chat_completion_stream(openai_messages):
+            full_response += chunk
+            yield chunk # Yield chunk back to the caller (router)
+    except Exception as e:
+        print(f"Stream Error during OpenAI call: {e}")
+        yield "Sorry, an error occurred while generating the response." # Yield an error message chunk
+        # Optionally raise an exception here if you want the request to fail entirely
+
+    # 4. Add complete assistant response to Supabase *after* streaming finishes
+    # We need to be careful about potential partial responses if errors occurred mid-stream
+    if full_response and not full_response.startswith("Sorry, an error occurred"): # Basic check
+        db_add_chat_message(session_id, "assistant", full_response)
+    else:
+        print(f"Stream: Assistant response was empty or an error occurred. Not saving to DB.")
+
+# --- Keep non-streaming function for now if needed elsewhere --- 
+# def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
+#    ...
 
 # --- Add Service functions to interact with routers --- 
 

@@ -101,18 +101,17 @@ function MessageItem({ message }) {
           p: 2,
           px: 2.5,
           maxWidth: { xs: '85%', md: '70%' },
-          borderRadius: isUser 
-            ? '18px 18px 18px 18px' 
-            : '18px 18px 18px 18px',
-          bgcolor: 'transparent',
+          borderRadius: '18px 18px 18px 18px',
           background: isUser 
-            ? `linear-gradient(135deg, rgba(67, 97, 238, 0.85) 0%, rgba(76, 110, 245, 0.9) 100%)` 
+            ? theme.palette.grey[800]
             : isLoading
               ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
               : isError
                 ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
                 : isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)',
-          color: isUser ? 'white' : theme.palette.text.primary,
+          color: isUser 
+            ? 'white'
+            : theme.palette.text.primary,
           position: 'relative',
           zIndex: 1,
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -123,7 +122,7 @@ function MessageItem({ message }) {
           },
           border: '1px solid',
           borderColor: isUser 
-            ? 'rgba(255, 255, 255, 0.3)' 
+            ? 'rgba(255, 255, 255, 0.1)'
             : isLoading 
               ? isDarkMode ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.3)'
               : isError 
@@ -131,7 +130,7 @@ function MessageItem({ message }) {
                 : isDarkMode ? 'rgba(60, 60, 60, 0.5)' : 'rgba(255, 255, 255, 0.5)',
           backdropFilter: 'blur(10px)',
           boxShadow: isUser 
-            ? '0 4px 15px rgba(67, 97, 238, 0.2)'
+            ? theme.shadows[3]
             : '0 4px 15px rgba(0, 0, 0, 0.05)',
           overflow: 'hidden',
           '&::before': {
@@ -142,7 +141,7 @@ function MessageItem({ message }) {
             right: 0,
             height: '100%',
             backgroundImage: isUser
-              ? 'radial-gradient(circle at top right, rgba(255,255,255,0.12), transparent 65%)'
+              ? 'radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 65%)'
               : isDarkMode
                 ? 'linear-gradient(to bottom, rgba(60,60,60,0.3), rgba(50,50,50,0.1))'
                 : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
@@ -157,7 +156,6 @@ function MessageItem({ message }) {
               fontWeight: 400,
               lineHeight: 1.5,
               letterSpacing: '0.01em',
-              textShadow: isUser ? '0 1px 1px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             {message.content}
@@ -304,7 +302,7 @@ function MessageItem({ message }) {
         >
           <Avatar 
             sx={{ 
-              bgcolor: isDarkMode ? 'white' : 'primary.main', 
+              bgcolor: 'rgba(255, 255, 255, 0.1)', 
               ml: 1,
               boxShadow: theme.shadows[2],
               width: 38,
@@ -318,7 +316,7 @@ function MessageItem({ message }) {
               border: isDarkMode ? '2px solid rgba(30, 30, 30, 0.9)' : '2px solid white',
             }}
           >
-            <PersonIcon />
+            <PersonIcon fontSize="small" sx={{ color: isDarkMode ? 'white' : 'black' }} />
           </Avatar>
         </Tooltip>
       )}

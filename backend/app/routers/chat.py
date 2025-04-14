@@ -7,6 +7,8 @@ from app.utils.auth_utils import get_current_supabase_user
 from typing import List
 from pydantic import BaseModel
 from datetime import datetime
+from fastapi.responses import StreamingResponse
+import asyncio
 
 router = APIRouter()
 
@@ -195,16 +197,16 @@ async def create_chat_session(
          raise HTTPException(status_code=500, detail="Failed to create chat session")
     return session
 
-@router.post("/sessions/{session_id}/messages", response_model=dict)
-async def send_message(
+@router.post("/sessions/{session_id}/messages")
+async def send_message_stream(
     session_id: str,
     message: SessionMessageRequest,
     current_user: dict = Depends(get_current_supabase_user),
-    # db: Session = Depends(get_db) # db likely not needed anymore
 ):
-    """Send a message to a specific chat session via the service."""
+    """Send a message and stream the assistant's response back."""
+    print("--- Entered send_message_stream endpoint ---") # Add log
     supabase_user_id = current_user.get('id')
-    user_email = current_user.get('email') # Get user email
+    user_email = current_user.get('email')
     
     # Construct the ChatRequest model expected by the service
     request = ChatRequest(
@@ -212,21 +214,27 @@ async def send_message(
         session_id=session_id,
         user_id=supabase_user_id 
     )
-    # Call the main processing function, passing the email
-    response = chat_service.process_chat_request(request, user_email=user_email)
     
-    # The process_chat_request now returns ChatResponse model.
-    # We need to adapt the return structure if frontend expects something different.
-    # Assuming frontend expects {"message": {<assistant_message_details>}}
-    return {
-        "message": {
-            # ID might not be easily available here, maybe return full response?
-            "id": None, # Placeholder 
-            "role": "assistant",
-            "content": response.message,
-            "timestamp": datetime.now().isoformat() # Approximate timestamp
-        }
-    }
+    # Define the async generator function to pass to StreamingResponse
+    async def stream_generator():
+        print("--- Starting stream_generator ---") # Add log
+        try:
+            async for chunk in chat_service.process_chat_request_stream(request, user_email=user_email):
+                print(f"--- Yielding chunk: {chunk[:50]}... ---") # Add log for yielded chunk
+                yield chunk
+        except HTTPException as e:
+            # Handle potential HTTPExceptions raised by the service (like 404)
+            print(f"Stream Error (HTTPException): {e.detail}") # Log
+            yield f"Error: {e.detail}"
+        except Exception as e:
+            # Handle other unexpected errors
+            print(f"Stream Error (Unexpected): {e}") # Log
+            yield "Sorry, an unexpected error occurred during streaming."
+        print("--- Finished stream_generator ---") # Add log
+
+    # Return the StreamingResponse
+    print("--- Returning StreamingResponse --- ") # Add log
+    return StreamingResponse(stream_generator(), media_type="text/plain")
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(

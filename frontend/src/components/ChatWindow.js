@@ -39,6 +39,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const messagesEndRef = useRef(null);
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
+  const currentAssistantMessageId = useRef(null);
 
   // Set to false since we're removing offline mode
   const offlineMode = false;
@@ -76,7 +77,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Handle sending a message
+  // Handle sending a message (Updated for Streaming)
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -86,103 +87,85 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     setInput('');
     setSending(true);
     setServerError(false);
+    setError(null); // Clear previous errors
     
-    // Immediately add user message to UI for better responsiveness
+    // 1. Add user message to UI 
     const userMessage = {
-      id: Date.now() + '-user',
+      // Use a more stable temp ID generation if possible, but Date.now() is simple for now
+      id: `user-${Date.now()}`,
       role: 'user',
       content: messageText,
       created_at: new Date().toISOString()
     };
-    
     setMessages(prev => [...prev, userMessage]);
     
-    // Add a temporary placeholder for the bot's response
-    const tempId = Date.now() + '-temp';
-    const loadingMessage = {
-      id: tempId,
+    // 2. Add a placeholder for the bot's response
+    const assistantMessageId = `assistant-${Date.now()}`;
+    currentAssistantMessageId.current = assistantMessageId; // Store the ID
+    const placeholderMessage = {
+      id: assistantMessageId,
       role: 'assistant',
-      content: 'Thinking...',
+      content: 'Thinking...', // Initialize with "Thinking..."
       created_at: new Date().toISOString(),
-      isLoading: true
+      isLoading: true // Indicate loading state
     };
-    
-    setMessages(prev => [...prev, loadingMessage]);
-    
-    // Set a timeout for the AI response
-    const responseTimeout = setTimeout(() => {
-      // If we're still waiting after 10 seconds, update the loading message
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId 
-          ? { ...msg, content: "Taking longer than usual to respond...", isLongWait: true }
-          : msg
-      ));
-    }, 10000);
+    setMessages(prev => [...prev, placeholderMessage]);
     
     try {
-      const result = await chatApi.sendMessage(sessionId, messageText);
-      
-      // Clear the timeout
-      clearTimeout(responseTimeout);
-      
-      // Remove the loading message
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      
-      // If result has messages array, use it directly (only add the bot response)
-      if (result.messages && Array.isArray(result.messages)) {
-        // Find the assistant message in the result
-        const assistantMessage = result.messages.find(msg => msg.role === 'assistant');
-        if (assistantMessage) {
-          setMessages(prev => [...prev, assistantMessage]);
+      // 3. Call the streaming API function
+      let isFirstChunk = true; // Flag to track the first chunk
+      await chatApi.sendMessage(sessionId, messageText, (chunk) => {
+        if (chunk === null) {
+          // Stream finished
+          setMessages(prev => prev.map(msg => 
+            msg.id === currentAssistantMessageId.current
+              ? { ...msg, isLoading: false } // Mark final message as not loading
+              : msg
+          ));
+          currentAssistantMessageId.current = null; // Reset tracker
+          setSending(false); // Allow user to send again
+          // Optional: Check if content is still "Thinking..." or empty after stream ends, indicating an error
+          setMessages(prev => {
+            const finalMsg = prev.find(m => m.id === assistantMessageId);
+            if (finalMsg && (finalMsg.content === 'Thinking...' || finalMsg.content === '')) {
+                return prev.map(m => m.id === assistantMessageId ? { ...m, content: 'Error: No response received.', isError: true, isLoading: false } : m);
+            }
+            return prev;
+          });
+        } else {
+          // Process chunk
+          setMessages(prev => prev.map(msg => {
+            if (msg.id === currentAssistantMessageId.current) {
+              const newContent = isFirstChunk ? chunk : msg.content + chunk;
+              isFirstChunk = false; // Unset flag after processing first chunk
+              return { ...msg, content: newContent, isLoading: false };
+            } else {
+              return msg;
+            }
+          }));
         }
-      } 
-      // If result has traditional format with message property
-      else if (result.message) {
-        setMessages(prev => [...prev, result.message]);
-      }
-      // If result has response property (backwards compatibility)
-      else if (result.response) {
-        // Add assistant response
-        const assistantMessage = {
-          id: Date.now() + '-assistant',
-          role: 'assistant',
-          content: result.response.content,
-          created_at: result.response.timestamp || new Date().toISOString()
-        };
-        
-        setMessages(prev => [...prev, assistantMessage]);
-      }
+      });
+
     } catch (error) {
-      
-      // Clear the timeout
-      clearTimeout(responseTimeout);
-      
-      // Remove the loading message
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      
-      // Add an error message from the bot
-      const errorMessage = {
-        id: Date.now() + '-error',
-        role: 'assistant',
-        content: 'Sorry, I encountered an error processing your message. This might be due to a connection issue or authentication problem. Please try again later or sign out and sign back in.',
-        created_at: new Date().toISOString(),
-        isError: true
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
-      
-      // Show an error alert to the user
-      setError('Failed to send message. Please check your connection and try again.');
-      
-      // Clear the error after 5 seconds
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      
-      setServerError(true);
-    } finally {
-      setSending(false);
-    }
+      console.error("Error sending/streaming message:", error);
+      // Update the placeholder message to show an error
+      setMessages(prev => prev.map(msg => 
+        msg.id === currentAssistantMessageId.current
+          ? {
+              ...msg, 
+              content: `Sorry, an error occurred: ${error.message || 'Network error'}`,
+              isLoading: false,
+              isError: true 
+            }
+          : msg
+      ));
+      currentAssistantMessageId.current = null; // Reset tracker
+      setSending(false); // Allow user to send again
+      setServerError(true); // Indicate server error
+      // Optionally set the top-level error state as well
+      // setError(`Failed to get response: ${error.message || 'Network error'}`);
+    } 
+    // Removed finally block for setSending(false) as it's handled by the stream callback/catch
   };
 
   // Display the status badge
@@ -405,13 +388,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                 >
                   <Button
                     variant="outlined"
-                    color="primary"
                     onClick={() => setInput('Is there a work-from-home policy at Othain, and what guidelines do employees need to follow?')}
                     sx={{
                       py: 1.5,
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
+                      color: isDarkMode ? 'white' : 'black',
                       bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
@@ -427,13 +410,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   
                   <Button
                     variant="outlined"
-                    color="primary"
                     onClick={() => setInput('What is the process for an employee to apply for leave and obtain approval?')}
                     sx={{
                       py: 1.5,
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
+                      color: isDarkMode ? 'white' : 'black',
                       bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
@@ -449,13 +432,13 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   
                   <Button
                     variant="outlined"
-                    color="primary"
                     onClick={() => setInput('When can I expect my salary to be credited each month?')}
                     sx={{
                       py: 1.5,
                       px: 3,
                       borderRadius: 2,
                       justifyContent: 'flex-start',
+                      color: isDarkMode ? 'white' : 'black',
                       bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
@@ -475,7 +458,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         ) : (
           messages.map((message, index) => (
             <MessageItem
-              key={message.id || `msg-${index}-${Date.now()}`}
+              key={message.id ? message.id : `temp-msg-${index}`}
               message={message}
               isLast={index === messages.length - 1}
             />
@@ -538,19 +521,26 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               <InputAdornment position="end">
                 <Button
                   type="submit"
-                  color="primary"
                   variant="contained"
                   disabled={!sessionId || sending || !input.trim()}
-                  sx={{ 
-                    borderRadius: '50%', 
-                    minWidth: 'auto', 
-                    width: 40, 
+                  sx={{
+                    bgcolor: theme.palette.primary?.main || '#1976d2',
+                    color: theme.palette.primary?.contrastText || 'white',
+                    borderRadius: '50%',
+                    minWidth: 'auto',
+                    width: 40,
                     height: 40,
                     p: 0,
                     boxShadow: '0 4px 8px rgba(67, 97, 238, 0.3)',
                     transition: 'all 0.2s ease',
                     '&:hover': {
+                      bgcolor: theme.palette.primary?.dark || '#1565c0',
                       boxShadow: '0 6px 12px rgba(67, 97, 238, 0.4)',
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: theme.palette.action?.disabledBackground || 'rgba(0, 0, 0, 0.12)',
+                      color: theme.palette.action?.disabled || 'rgba(0, 0, 0, 0.26)',
+                      boxShadow: 'none',
                     }
                   }}
                 >

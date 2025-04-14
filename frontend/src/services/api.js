@@ -201,43 +201,65 @@ export const chatApi = {
     }
   },
 
-  sendMessage: async (sessionId, message) => {
-    
+  // Modified sendMessage to handle streaming responses
+  sendMessage: async (sessionId, message, onChunkReceived) => {
     const payload = { content: message };
-    let endpoint = ''; // Will be determined by interceptor implicitly
-    let useAuthenticated = false;
-
-    // Logic to determine endpoint based on token is now handled by interceptor
-    // Simplified logic: assume if session exists, interceptor adds token for authenticated endpoint
-    // If not, it defaults to public (though backend might still require auth for some endpoints)
-    
-    // We can't reliably check token here easily without duplicating interceptor logic.
-    // Assume interceptor handles adding token if session exists.
-    // The primary path determination should ideally be based on context (are we logged in?)
-    // For now, we'll simplify and rely on the interceptor and backend rules.
-    // Let's try the authenticated endpoint first, backend will reject if no valid token
-    endpoint = `/chat/sessions/${sessionId}/messages`;
-    useAuthenticated = true; // Assume we try authenticated first
+    const endpoint = `/chat/sessions/${sessionId}/messages`;
     
     try {
-      // Use the authenticated endpoint by default
-      const response = await axiosInstance.post(endpoint, payload);
+      // Get the token directly before making the fetch call
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Error getting session for streaming:", sessionError);
+        throw new Error("Authentication error");
+      }
+      if (!session?.access_token) {
+        console.error("No session token found for streaming.");
+        throw new Error("User not authenticated");
+      }
       
+      const response = await fetch(`${API_URL}${endpoint}`, { // Use fetch API
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // Add auth token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        // Handle HTTP errors (like 404, 500 from the backend)
+        const errorText = await response.text();
+        console.error(`Streaming API Error ${response.status}:`, errorText);
+        throw new Error(`Request failed with status code ${response.status}: ${errorText}`);
+      }
       
-      // Response handling might need adjustment based on backend's actual response
-      // Assuming authenticated response returns the assistant message object:
-      return {
-          messages: [
-              { role: 'user', content: message, created_at: new Date().toISOString() }, // Simulate user message
-              response.data.message // Assuming response.data.message contains the assistant's reply object
-          ]
-      };
+      // Check if the response body exists and is readable
+      if (!response.body) {
+        throw new Error("Response body is missing or not readable.");
+      }
+
+      // Process the stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          onChunkReceived(chunk); // Call the callback with the new chunk
+        }
+      }
+      
+      // Indicate stream completion (optional)
+      onChunkReceived(null); // Pass null or a specific signal
       
     } catch (error) {
-      
-      // If 401/403, maybe try public endpoint as fallback if applicable?
-      // Or just let the error propagate
-      throw error;
+      console.error('sendMessage stream error:', error);
+      // Propagate the error so the UI can handle it
+      throw error; 
     }
   },
 

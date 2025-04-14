@@ -36,6 +36,30 @@ def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
         print(f"Error calling OpenAI API: {e}")
         return f"Sorry, I encountered an error: {str(e)}"
 
+def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-4o"):
+    """
+    Get a chat completion stream from OpenAI API.
+    
+    Args:
+        messages: List of message objects with role and content
+        model: OpenAI model to use
+        
+    Yields:
+        Chunks of the assistant's response text as they arrive.
+    """
+    try:
+        stream = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            stream=True,
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        print(f"Error calling OpenAI stream API: {e}")
+        yield f"Sorry, I encountered an error during streaming: {str(e)}"
+
 def get_mock_embedding(text: str, dimension: int = 1536) -> List[float]:
     """
     Generate a mock embedding for testing purposes.
