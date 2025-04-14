@@ -3,6 +3,9 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException, status
 
+# Import Supabase admin client
+from app.utils.supabase_client import supabase_admin_client
+
 # Import models
 from app.models.chat import ChatSession, Message, ChatRequest, ChatResponse 
 # Import OpenAI and vector store utils
