@@ -1,6 +1,7 @@
 import os
 import numpy as np
-from openai import OpenAI
+# Use AsyncOpenAI for async FastAPI app
+from openai import AsyncOpenAI
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 import hashlib
@@ -8,13 +9,13 @@ import hashlib
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize AsyncOpenAI client
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Check if we should use mock embeddings (for testing without OpenAI credits)
 USE_MOCK_EMBEDDINGS = os.getenv("USE_MOCK_EMBEDDINGS", "false").lower() == "true"
 
-def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
+async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
     """
     Get a chat completion from OpenAI API.
     
@@ -26,7 +27,8 @@ def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
         The assistant's response text
     """
     try:
-        response = client.chat.completions.create(
+        # Use await with the async client
+        response = await client.chat.completions.create(
             model=model,
             messages=messages
         )
@@ -36,9 +38,9 @@ def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4o"):
         print(f"Error calling OpenAI API: {e}")
         return f"Sorry, I encountered an error: {str(e)}"
 
-def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-4o"):
+async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-4o"):
     """
-    Get a chat completion stream from OpenAI API.
+    Get a chat completion stream from OpenAI API (async).
     
     Args:
         messages: List of message objects with role and content
@@ -48,12 +50,14 @@ def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt
         Chunks of the assistant's response text as they arrive.
     """
     try:
-        stream = client.chat.completions.create(
+        # Use await with the async client
+        stream = await client.chat.completions.create(
             model=model,
             messages=messages,
             stream=True,
         )
-        for chunk in stream:
+        # Use async for with the async stream
+        async for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
     except Exception as e:
