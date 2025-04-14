@@ -253,7 +253,7 @@ function Chat() {
           <Grid container spacing={2} sx={{ height: 'calc(100vh - 120px)' }}>
             <Grid item xs={12} md={3}>
               <Paper elevation={2} sx={{ 
-                  height: '90%', 
+                  height: '100%', 
                   display: 'flex', 
                   flexDirection: 'column', 
                   borderRadius: 2, 
@@ -275,6 +275,7 @@ function Chat() {
                   onClick={handleNewChat}
                   sx={{ 
                     py: 1.5,
+                    flexShrink: 0,
                     borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
                     bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                     '&:hover': { 
@@ -293,11 +294,15 @@ function Chat() {
                 {loading ? (
                     renderSkeletons()
                 ) : serverError ? (
-                    <Alert severity="error" sx={{m: 2}}>Error connecting to server.</Alert>
+                    <Alert severity="error" sx={{m: 2, flexShrink: 0}}>Error connecting to server.</Alert>
                 ) : sessions.length === 0 ? (
-                    <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>No chat sessions yet.</Typography>
+                    <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary', flexShrink: 0 }}>No chat sessions yet.</Typography>
                 ) : (
-                  <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
+                  <List sx={{ 
+                      flexGrow: 1, 
+                      overflowY: 'auto', 
+                      p: 0 
+                  }}>
                     {sessions.map((session, index) => (
                       <ListItemButton
                         key={session.id}
