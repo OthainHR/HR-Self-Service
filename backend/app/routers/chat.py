@@ -220,7 +220,7 @@ async def send_message_stream(
         print("--- Starting stream_generator ---") # Add log
         try:
             async for chunk in chat_service.process_chat_request_stream(request, user_email=user_email):
-                print(f"--- Yielding chunk: {chunk[:50]}... ---") # Add log for yielded chunk
+                # print(f"--- Yielding chunk: {chunk[:50]}... ---") # Comment out verbose chunk logging
                 yield chunk
         except HTTPException as e:
             # Handle potential HTTPExceptions raised by the service (like 404)
