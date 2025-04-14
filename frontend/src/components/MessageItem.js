@@ -239,15 +239,12 @@ function MessageItem({ message }) {
               fontWeight: 500,
             }}
           >
-            {message.timestamp && !isNaN(new Date(message.timestamp).getTime()) 
-              ? new Date(message.timestamp).toLocaleTimeString([], {
+            {message.created_at && !isNaN(new Date(message.created_at).getTime()) 
+              ? new Date(message.created_at).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })
-              : new Date().toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+              : '--:--'
             }
           </Typography>
           
