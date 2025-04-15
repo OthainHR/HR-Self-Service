@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, TextField, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TableSortLabel } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { axiosInstance } from '../services/api';
 import { saveAs } from 'file-saver'; // For CSV download
 
@@ -17,6 +18,7 @@ const columns = [
 ];
 
 const AdminReport = () => {
+  const theme = useTheme();
   const [startDate, setStartDate] = useState(formatDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
   const [endDate, setEndDate] = useState(formatDate(new Date()));
   const [loading, setLoading] = useState(false);
@@ -112,8 +114,8 @@ const AdminReport = () => {
       {loading && <CircularProgress />}
       {error && <Typography color="error">{error}</Typography>}
       {report && sortedRows.length > 0 && (
-        <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 3, borderRadius: 2 }}>
-          <Table size="small" sx={{ minWidth: 900 }}>
+        <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 3, borderRadius: 2, overflowX: 'auto', maxWidth: '100%' }}>
+          <Table size="small" sx={{ minWidth: 1000 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText', position: 'sticky', top: 0, zIndex: 1 }}>
                 {columns.map(col => (
@@ -126,6 +128,7 @@ const AdminReport = () => {
                       active={sortBy === col.id}
                       direction={sortBy === col.id ? sortDirection : 'asc'}
                       onClick={() => handleSort(col.id)}
+                      sx={{ color: 'inherit', '& .MuiTableSortLabel-icon': { color: 'inherit !important' } }}
                     >
                       {col.label}
                     </TableSortLabel>
@@ -134,23 +137,32 @@ const AdminReport = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedRows.map((row, idx) => (
-                <TableRow
-                  key={row.session_id + idx}
-                  sx={{
-                    backgroundColor: idx % 2 === 0 ? 'background.paper' : 'grey.100',
-                    '&:hover': { backgroundColor: 'grey.200' },
-                    transition: 'background 0.2s',
-                  }}
-                >
-                  <TableCell>{row.session_id}</TableCell>
-                  <TableCell>{row.user_email}</TableCell>
-                  <TableCell>{row.question}</TableCell>
-                  <TableCell>{row.answer}</TableCell>
-                  <TableCell>{row.asked_at}</TableCell>
-                  <TableCell>{row.answered_at}</TableCell>
-                </TableRow>
-              ))}
+              {sortedRows.map((row, idx) => {
+                // Theme-aware zebra striping and hover
+                const isDark = theme.palette.mode === 'dark';
+                const baseBg = isDark ? theme.palette.grey[900] : theme.palette.background.paper;
+                const altBg = isDark ? theme.palette.grey[800] : theme.palette.grey[100];
+                const hoverBg = isDark ? theme.palette.grey[700] : theme.palette.grey[200];
+                const textColor = isDark ? theme.palette.common.white : theme.palette.text.primary;
+                return (
+                  <TableRow
+                    key={row.session_id + idx}
+                    sx={{
+                      backgroundColor: idx % 2 === 0 ? baseBg : altBg,
+                      color: textColor,
+                      '&:hover': { backgroundColor: hoverBg },
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    <TableCell sx={{ color: textColor }}>{row.session_id}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{row.user_email}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{row.question}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{row.answer}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{row.asked_at}</TableCell>
+                    <TableCell sx={{ color: textColor }}>{row.answered_at}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>

@@ -33,7 +33,7 @@ axiosInstance.interceptors.request.use(
     if (error) {
         
     } else if (session?.access_token) {
-        console.log('[DEBUG] Attaching Supabase access token:', session.access_token); // Debug log
+        
         config.headers['Authorization'] = `Bearer ${session.access_token}`;
     } else {
         
