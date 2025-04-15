@@ -282,11 +282,9 @@ async def weekly_qa_report(
 ):
     """
     Returns a report of all user questions and assistant answers for all users in the given date range.
-    Only accessible to admin@example.com (customize as needed).
+    Accessible to any authenticated user.
     """
-    # Only allow admin (customize as needed)
-    if current_user.get("email", "").lower() != "admin@example.com":
-        raise HTTPException(status_code=403, detail="Only admin can access this report.")
+    # Removed admin-only check
 
     # Parse dates
     if end_date:
