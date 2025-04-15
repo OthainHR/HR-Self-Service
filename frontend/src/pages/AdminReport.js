@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, TextField, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-import apiService from '../services/api'; // Adjust import if needed
+import { axiosInstance } from '../services/api';
 import { saveAs } from 'file-saver'; // For CSV download
 
 function formatDate(date) {
@@ -18,12 +18,16 @@ const AdminReport = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await apiService.auth.axiosInstance.get('/chat/reports/weekly-qa', {
+      const res = await axiosInstance.get('/chat/reports/weekly-qa', {
         params: { start_date: startDate, end_date: endDate }
       });
       setReport(res.data.results);
     } catch (err) {
-      setError('Failed to fetch report. Are you logged in as admin?');
+      const errorMessage = 
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        `Failed to fetch report. Status: ${err?.response?.status || 'Network Error'}`;
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

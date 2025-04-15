@@ -33,7 +33,7 @@ axiosInstance.interceptors.request.use(
     if (error) {
         
     } else if (session?.access_token) {
-        
+        console.log('[DEBUG] Attaching Supabase access token:', session.access_token); // Debug log
         config.headers['Authorization'] = `Bearer ${session.access_token}`;
     } else {
         
@@ -332,3 +332,6 @@ const apiService = {
 };
 
 export default apiService; // Export combined or individual services as needed
+
+// Also export the configured axios instance directly
+export { axiosInstance };
