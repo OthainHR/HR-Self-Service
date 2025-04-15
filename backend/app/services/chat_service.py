@@ -77,7 +77,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         print(f"Created new session {session_id} during chat processing.")
     
     # 2. Add user message to Supabase
-    db_add_chat_message(session_id, "user", message_content)
+    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
     
     # 3. Get recent messages from Supabase for context
     # We need the user_id to fetch messages because db_get_chat_messages checks ownership
@@ -94,7 +94,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "benefits, leave, payroll, and other HR-related topics based on the provided context. "
             "If you don't know the answer or the information is not in the context, say so politely and tell the user to contact hr@othainsoft.com."
             "Refer to yourself as Othain Self Service, and when talking about the company, refer to it as Othain."
-            "Every response should be playful and friendly, and you should be able to keep any conversation going, then after a few messages default back to the topic of Othain and HR."
+            "Every response should ensure that user only speaks about Othain and HR policies, and never about other companies,products, or topics."
         )
     }
     openai_messages.append(system_message)
@@ -121,7 +121,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     assistant_response = get_chat_completion(openai_messages)
     
     # 6. Add assistant response to Supabase
-    db_add_chat_message(session_id, "assistant", assistant_response)
+    db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
     
     # 7. Return response
     return ChatResponse(
@@ -199,7 +199,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
     # 4. Add complete assistant response to Supabase *after* streaming finishes
     # We need to be careful about potential partial responses if errors occurred mid-stream
     if full_response and not full_response.startswith("Sorry, an error occurred"): # Basic check
-        db_add_chat_message(session_id, "assistant", full_response)
+        db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
     else:
         print(f"Stream: Assistant response was empty or an error occurred. Not saving to DB.")
 

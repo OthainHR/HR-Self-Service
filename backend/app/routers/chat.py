@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.chat import ChatRequest, ChatResponse, ChatSession
@@ -6,9 +6,10 @@ from app.services import chat_service
 from app.utils.auth_utils import get_current_supabase_user
 from typing import List
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse
 import asyncio
+from app.utils.supabase_chat_utils import supabase_admin_client
 
 router = APIRouter()
 
@@ -272,3 +273,69 @@ async def get_session_messages(
     # Format messages (already done in service?) - ensure matches frontend
     # Assuming service returns list of dicts ready for frontend
     return {"messages": messages}
+
+@router.get("/reports/weekly-qa")
+async def weekly_qa_report(
+    start_date: str = Query(None, description="Start date in ISO format (YYYY-MM-DD)", example="2024-06-01"),
+    end_date: str = Query(None, description="End date in ISO format (YYYY-MM-DD)", example="2024-06-07"),
+    current_user: dict = Depends(get_current_supabase_user)
+):
+    """
+    Returns a report of all user questions and assistant answers for all users in the given date range.
+    Only accessible to admin@example.com (customize as needed).
+    """
+    # Only allow admin (customize as needed)
+    if current_user.get("email", "").lower() != "admin@example.com":
+        raise HTTPException(status_code=403, detail="Only admin can access this report.")
+
+    # Parse dates
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+    else:
+        end_dt = datetime.utcnow()
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+    else:
+        start_dt = end_dt - timedelta(days=7)
+
+    # Fetch all messages in the date range
+    response = supabase_admin_client.table("chat_messages")\
+        .select("id, session_id, user_email, role, content, created_at")\
+        .gte("created_at", start_dt.isoformat())\
+        .lte("created_at", end_dt.isoformat())\
+        .order("created_at", desc=False)\
+        .execute()
+    messages = response.data or []
+
+    # Group by session and user_email
+    from collections import defaultdict
+    sessions = defaultdict(list)
+    for msg in messages:
+        key = (msg.get("session_id"), msg.get("user_email"))
+        sessions[key].append(msg)
+
+    # Pair user questions with next assistant answer
+    report = []
+    for (session_id, user_email), msgs in sessions.items():
+        qas = []
+        i = 0
+        while i < len(msgs):
+            if msgs[i]["role"] == "user":
+                question = msgs[i]["content"]
+                answer = ""
+                # Find next assistant message
+                j = i + 1
+                while j < len(msgs) and msgs[j]["role"] != "assistant":
+                    j += 1
+                if j < len(msgs):
+                    answer = msgs[j]["content"]
+                qas.append({"question": question, "answer": answer, "asked_at": msgs[i]["created_at"], "answered_at": msgs[j]["created_at"] if answer else None})
+                i = j
+            else:
+                i += 1
+        report.append({
+            "session_id": session_id,
+            "user_email": user_email,
+            "qas": qas
+        })
+    return {"start": start_dt.isoformat(), "end": end_dt.isoformat(), "results": report}

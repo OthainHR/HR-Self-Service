@@ -186,6 +186,31 @@ const NavBar = () => {
             />
           </ListItem>
         )}
+        
+        {isAdmin && (
+          <ListItem 
+            component={RouterLink} 
+            to="/admin/report" 
+            button
+            sx={{ 
+              my: 0.5, 
+              borderRadius: 1,
+              mx: 1,
+              '&:hover': {
+                background: 'rgba(67, 97, 238, 0.1)',
+              }
+            }}
+          >
+            <ListItemIcon><Book sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemText 
+              primary="Weekly Report" 
+              primaryTypographyProps={{ 
+                fontWeight: 500,
+                color: 'primary.main'
+              }}
+            />
+          </ListItem>
+        )}
       </List>
       
       <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.08)' }} />
@@ -438,6 +463,43 @@ const NavBar = () => {
                 }}
               >
                 Knowledge Base
+              </Button>
+            )}
+            
+            {isAdmin && (
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/admin/report"
+                sx={{ 
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+                    opacity: 0,
+                    transition: 'opacity 0.3s ease',
+                  },
+                  '&:hover::before': {
+                    opacity: 1
+                  }
+                }}
+              >
+                Weekly Report
               </Button>
             )}
           </Box>

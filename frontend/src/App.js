@@ -11,6 +11,7 @@ import {
 import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
+import AdminReport from './pages/AdminReport';
 
 // Components
 import NavBar from './components/NavBar';
@@ -292,6 +293,7 @@ const AppContent = () => {
               path="/knowledge"
               element={<AdminRoute><Knowledge /></AdminRoute>}
             />
+            <Route path="/admin/report" element={<AdminReport />} />
 
             {/* Redirect to homepage for any other route */}
             <Route path="*" element={<Navigate to="/" />} />
