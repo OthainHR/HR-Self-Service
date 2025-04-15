@@ -88,62 +88,44 @@ def get_mock_embedding(text: str, dimension: int = 1536) -> List[float]:
     print(f"Generated mock embedding for text (length {len(text)})")
     return embedding
 
-def get_embeddings(text: str, model: str = "text-embedding-3-small"):
+# Function to get embeddings for a given text using OpenAI API
+# Use async def for compatibility with async OpenAI client
+async def get_embeddings(text: str, model: str = "text-embedding-3-small") -> List[float]:
     """
-    Get embeddings for a given text using OpenAI's model.
-    
-    IMPORTANT: This function should ONLY be used for knowledge base items,
-    not for chat messages. For chat messages, use keyword matching instead.
-    
+    Generates embeddings for the given text using the specified OpenAI model.
+
     Args:
-        text: The text to generate embeddings for
-        model: The embedding model to use
-        
+        text (str): The input text to embed.
+        model (str): The OpenAI embedding model to use.
+
     Returns:
-        A list of floats representing the embedding vector or None if an error occurred
+        List[float]: The generated embedding vector, or None if an error occurs.
     """
+    print(f"Getting real embeddings for text: {text[:50]}...") # Keep this for debugging
     try:
-        # Check if using mock embeddings
-        if USE_MOCK_EMBEDDINGS:
-            print("Using mock embeddings (from .env)")
-            # Use hash of text to generate deterministic embedding
-            text_hash = hashlib.md5(text.encode()).hexdigest()
-            # Use the hash to seed a random number generator
-            np.random.seed(int(text_hash, 16) % (2**32 - 1))
-            # Generate embedding
-            mock_embedding = np.random.rand(1536).astype(np.float32) * 0.1
-            print(f"Generated mock embedding of shape {mock_embedding.shape}")
-            # Return as plain Python list
-            return mock_embedding.tolist()
-        
-        # For real embeddings, use OpenAI
-        print(f"Getting real embeddings for text: {text[:50]}...")
-        
-        # Ensure client is initialized
-        global client
-        if client is None:
-            initialize_openai()
-            if client is None:
-                print("Failed to initialize OpenAI client")
-                return None
-        
-        # Get the embedding from OpenAI
-        response = client.embeddings.create(
+        # Ensure client is initialized (consider moving initialization if not already done globally)
+        # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) # If using synchronous client
+        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY")) # Ensure using async client
+
+        # Get the embedding from OpenAI asynchronously
+        response = await client.embeddings.create(
             input=text,
             model=model
         )
-        
+
         # Extract the embedding
         embedding = response.data[0].embedding
-        print(f"Received embedding of length {len(embedding)}")
-        
-        # Ensure we return a list, not a numpy array
-        if hasattr(embedding, 'tolist'):
-            embedding = embedding.tolist()
-        
+        # print(f"Received embedding of length {len(embedding)}") # Optional: keep if needed
+
+        # Ensure we return a list, not a numpy array if applicable (unlikely with OpenAI client)
+        # if hasattr(embedding, 'tolist'):
+        #     embedding = embedding.tolist()
+
         return embedding
     except Exception as e:
         print(f"Error getting embeddings: {e}")
         import traceback
         print(traceback.format_exc())
-        return None
+        # Depending on desired behavior, either return None or re-raise
+        # return None
+        raise  # Re-raise the exception so the caller knows something went wrong

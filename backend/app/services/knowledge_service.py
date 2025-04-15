@@ -13,7 +13,8 @@ class Document(BaseModel):
     source: str
     category: str
 
-def add_document(document: Document) -> bool:
+# Make add_document async to await vector_store.add_document
+async def add_document(document: Document) -> bool:
     """
     Add a document to the knowledge base.
     
@@ -21,7 +22,7 @@ def add_document(document: Document) -> bool:
         document: Document to add
         
     Returns:
-        True if successful, False otherwise
+        True if successful, False otherwise (or raises HTTPException on error).
     """
     logger.info(f"Entered knowledge_service.add_document for title: {document.title}")
     try:
@@ -30,17 +31,29 @@ def add_document(document: Document) -> bool:
             "source": document.source,
             "category": document.category
         }
-        logger.info(f"Prepared metadata: {metadata}")
-        
+        # logger.info(f"Prepared metadata: {metadata}")
+
         logger.info("Calling vector_store.add_document...")
-        success = vector_store.add_document(document.text, metadata)
+        # Await the async vector_store method
+        success = await vector_store.add_document(document.text, metadata)
         logger.info(f"vector_store.add_document returned: {success}")
-        return success
+
+        # If vector_store.add_document returns False, treat it as an error
+        if not success:
+             logger.error("vector_store.add_document returned False, raising internal error.")
+             raise Exception("Vector store failed to add the document.") # Generic exception to be caught below
+
+        return success # Should be True if we reach here
+
     except Exception as e:
-        logger.exception("Exception caught in knowledge_service.add_document")
+        # Log the specific exception from vector_store or get_embeddings
+        logger.exception(f"Exception caught in knowledge_service.add_document: {e}")
+        # Re-raise as HTTPException for FastAPI to handle
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error adding document in service: {str(e)}"
+            # Provide a more specific detail if possible, but keep it general for the client
+            detail=f"Failed to add document in service"
+            # detail=f"Error adding document in service: {str(e)}" # Avoid exposing internal error details
         )
 
 def search_documents(query: str, top_k: int = 5) -> List[Dict[str, Any]]:

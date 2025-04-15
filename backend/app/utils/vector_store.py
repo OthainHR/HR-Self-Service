@@ -119,131 +119,133 @@ class VectorStore:
             print(f"Error saving documents to local storage: {e}")
             print(traceback.format_exc())
     
-    def add_document(self, text: str, metadata: Dict[str, Any]) -> bool:
+    async def add_document(self, text: str, metadata: Dict[str, Any]) -> bool:
         """
         Add a document to the vector store.
         
         Args:
-            text: The document text
-            metadata: Document metadata (title, source, etc.)
+            text: Document text
+            metadata: Document metadata
             
         Returns:
             True if successful, False otherwise
         """
+        logger.info(f"Attempting to add document: {metadata.get('title', 'No Title')}")
+        print(f"Attempting to add document: {metadata.get('title', 'No Title')}")
+
         try:
-            # Check if text is too large
+            # Basic validation
+            if not text or not metadata:
+                logger.warning("Missing text or metadata for adding document")
+                print("Missing text or metadata")
+                return False
+
+            # Optional: Check document size
             if len(text) > 100000:  # Adjust this limit as needed
                 logger.warning("Document too large")
                 print("Document too large")
                 return False
-            
-            # Get embeddings for the document
+
+            # Get embeddings for the document asynchronously
             logger.info("Generating embeddings for document")
             print(f"Generating embeddings for document: {text[:50]}...")
-            embedding = get_embeddings(text)
+            # Await the async get_embeddings function
+            embedding = await get_embeddings(text)
             if embedding is None:
-                logger.error("Failed to get embeddings for document")
-                print(f"Failed to get embeddings for document")
+                # The get_embeddings function now raises an exception on failure,
+                # so this check might be redundant if the exception isn't caught there.
+                # However, it's good practice to keep it.
+                logger.error("Failed to get embeddings for document (embedding is None)")
+                print(f"Failed to get embeddings for document (embedding is None)")
                 return False
-            
-            print(f"Got embeddings of length {len(embedding) if embedding else 'None'}")
-            
+
+            # print(f"Got embeddings of length {len(embedding) if embedding else 'None'}")
+
             if self.use_supabase:
                 logger.info(f"Adding document to Supabase table: {self.table_name}")
-                print(f"Adding document to Supabase table: {self.table_name}")
-                
+                # print(f"Adding document to Supabase table: {self.table_name}")
+
                 # Create document for Supabase
                 document_data = {
                     "text": text,
                     "metadata": metadata,
+                    # Embedding should already be a list from get_embeddings
                     "embedding": embedding
                 }
-                
-                logger.info(f"Document metadata: {metadata}")
-                print(f"Document data: Text length={len(text)}, Metadata={metadata}, Embedding length={len(embedding)}")
-                
-                # Make sure embedding is a list, not a numpy array
-                if hasattr(embedding, 'tolist'):
-                    document_data["embedding"] = embedding.tolist()
-                    print("Converted numpy array to list")
-                
+
+                # logger.info(f"Document metadata: {metadata}")
+                # print(f"Document data: Text length={len(text)}, Metadata={metadata}, Embedding length={len(embedding)}")
+
                 # Save to Supabase
                 try:
                     logger.info("Sending document to Supabase...")
-                    print("Sending document to Supabase...")
-                    
+                    # print("Sending document to Supabase...")
+
                     # Debug supabase client
                     if supabase_client is None:
+                        logger.critical("CRITICAL ERROR: supabase_client is None before insert!")
                         print("CRITICAL ERROR: supabase_client is None!")
                         return False
-                    
-                    # Show supabase URL
-                    print(f"Supabase URL: {os.getenv('SUPABASE_URL')}")
-                    
-                    # Debug the document data structure
-                    print(f"Document keys: {list(document_data.keys())}")
-                    print(f"Metadata type: {type(metadata)}")
-                    
+
+                    # print(f"Supabase URL: {os.getenv('SUPABASE_URL')}")
+                    # print(f"Document keys: {list(document_data.keys())}")
+                    # print(f"Metadata type: {type(metadata)}")
+
                     # Insert document
+                    # Note: Supabase Python client's insert might be blocking.
+                    # If performance becomes an issue, consider libraries like 'supabase-py-async'
+                    # or running this in a separate thread/process pool.
                     print("Executing Supabase insert...")
                     response = supabase_client.table(self.table_name).insert(document_data).execute()
-                    print("Insert executed.")
-                    
-                    # Print complete response for debugging
-                    print(f"Supabase response: {response.__dict__ if hasattr(response, '__dict__') else response}")
-                    
+                    # print("Insert executed.")
+                    # print(f"Supabase response: {response.__dict__ if hasattr(response, '__dict__') else response}")
+
                     if hasattr(response, 'error') and response.error:
-                        logger.error(f"Supabase error: {response.error}")
+                        logger.error(f"Supabase error during insert: {response.error}")
                         print(f"Error from Supabase: {response.error}")
                         return False
-                    
+
                     if hasattr(response, 'data') and response.data and len(response.data) > 0:
-                        # Add document to local list
                         document = document_data.copy()
                         document["id"] = response.data[0]["id"]
                         self.documents.append(document)
-                        
+
                         logger.info(f"Added document to Supabase with ID: {document['id']}")
                         print(f"Added document to Supabase with ID: {document['id']}")
-                        
-                        # Rebuild index
+
+                        # Rebuild index (synchronous for now)
                         self.build_index()
                         return True
                     else:
-                        logger.error("Failed to insert document into Supabase - empty response data")
+                        logger.error("Failed to insert document into Supabase - empty or error response data")
                         print("Error: Failed to insert document into Supabase")
                         if hasattr(response, 'error'):
                             print(f"Response error: {response.error}")
                         return False
                 except Exception as e:
-                    logger.exception(f"Supabase insert error: {e}")
+                    logger.exception(f"Supabase insert operation failed: {e}")
                     print(f"Supabase insert error: {e}")
                     print(traceback.format_exc())
                     return False
             else:
+                # Handle local storage (remains synchronous)
                 logger.info("Using local storage (Supabase not initialized)")
                 print("Using local storage (Supabase not initialized)")
-                # Create document for local storage
                 document = {
                     "id": str(len(self.documents)),
                     "text": text,
                     "metadata": metadata,
                     "embedding": embedding
                 }
-                
-                # Add to documents list
                 self.documents.append(document)
-                
-                # Save documents locally
                 self._save_documents_local()
-            
-            # Rebuild index
-            self.build_index()
-            
-            return True
+                self.build_index()
+                return True # Assuming local storage is successful
+
         except Exception as e:
-            logger.exception(f"Error adding document: {e}")
-            print(f"Error adding document: {e}")
+            # Catch errors from get_embeddings or other issues before Supabase/local save
+            logger.exception(f"Error in add_document method: {e}")
+            print(f"Error in add_document: {e}")
             print(traceback.format_exc())
             return False
     

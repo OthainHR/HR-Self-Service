@@ -63,7 +63,8 @@ async def add_document(
     
     logger.info("Calling knowledge_service.add_document...")
     try:
-        success = knowledge_service.add_document(document)
+        # Await the async service function
+        success = await knowledge_service.add_document(document)
         logger.info(f"knowledge_service.add_document returned: {success}")
         
         if not success:
@@ -125,7 +126,8 @@ async def upload_file(
         )
         
         logger.info("Calling knowledge_service.add_document for uploaded file...")
-        success = knowledge_service.add_document(doc_obj)
+        # Await the async service function
+        success = await knowledge_service.add_document(doc_obj)
         logger.info(f"knowledge_service.add_document returned: {success}")
         
         if not success:
@@ -177,9 +179,10 @@ async def check_openai_availability():
         if USE_MOCK_EMBEDDINGS:
             return {"available": True, "mode": "mock"}
             
-        # Try a small test embedding
+        # Try a small test embedding asynchronously
         text = "test"
-        embedding = get_embeddings(text)
+        # Await the async utility function
+        embedding = await get_embeddings(text)
         
         if embedding is not None:
             return {"available": True, "mode": "real"}
