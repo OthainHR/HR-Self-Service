@@ -43,8 +43,7 @@ def db_add_chat_message(session_id: str, role: str, content: str, user_email: Op
             "role": role,
             "content": content
         }
-        # Add user_email only for user messages
-        if role == "user" and user_email:
+        if user_email:
             message_data["user_email"] = user_email
             
         response = supabase_admin_client.table(MESSAGES_TABLE).insert(message_data).execute()
