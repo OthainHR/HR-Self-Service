@@ -270,7 +270,7 @@ function MessageItem({ message }) {
               }}
             >
               <CircularProgress size={10} color="inherit" sx={{ animationDuration: '1s' }} />
-              processing
+              Thinking...
             </Box>
           )}
           
