@@ -197,7 +197,7 @@ export const chatApi = {
       
       // Optionally create a local session as fallback? Be careful with this.
       // For now, just throw the error
-      throw error;
+        throw error;
     }
   },
 
@@ -259,7 +259,7 @@ export const chatApi = {
     } catch (error) {
       console.error('sendMessage stream error:', error);
       // Propagate the error so the UI can handle it
-      throw error; 
+      throw error;
     }
   },
 
@@ -330,13 +330,5 @@ const apiService = {
   knowledge: knowledgeApi,
   // Add other services if needed
 };
-
-// Remove the cors-fix script if it exists, as it might conflict
-const corsFixScript = document.getElementById('hr-chatbot-cors-fix-script');
-if (corsFixScript) {
-    corsFixScript.remove();
-    
-}
-
 
 export default apiService; // Export combined or individual services as needed
