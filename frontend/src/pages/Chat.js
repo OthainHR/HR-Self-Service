@@ -276,6 +276,9 @@ function Chat() {
                   sx={{ 
                     py: 1.5,
                     flexShrink: 0,
+                    height: 54, // Fixed height
+                    minHeight: 54, // Ensure minimum height
+                    maxHeight: 84, // Ensure maximum height
                     borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
                     bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                     '&:hover': { 
