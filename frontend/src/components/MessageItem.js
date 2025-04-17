@@ -2,6 +2,7 @@ import React from 'react';
 import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress } from '@mui/material';
 import { Person as PersonIcon, SmartToy as BotIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
 
 // Message component for displaying chat messages
@@ -13,6 +14,20 @@ function MessageItem({ message }) {
   const isError = !isUser && message.isError === true;
   const isLongWait = !isUser && message.isLongWait === true;
   
+  // Pre-process content to auto-link URLs
+  const linkifyContent = (text) => {
+    const urlRegex = /\b((?:https?:\/\/|www\.)[^\s]+)/gi;
+    return text.replace(urlRegex, (match) => {
+      // Separate trailing punctuation from URL
+      const boundaryRegex = /(.*?)([.,!?;:]*)$/;
+      const parts = boundaryRegex.exec(match);
+      const url = parts[1];
+      const suffix = parts[2] || '';
+      const href = url.startsWith('http') ? url : `https://${url}`;
+      return `[${url}](${href})${suffix}`;
+    });
+  };
+
   return (
     <Box
       sx={{
@@ -214,7 +229,11 @@ function MessageItem({ message }) {
               fontSize: '0.875em',
             }
           }}>
-            <ReactMarkdown>{message.content === 'Thinking...' && message.isLoading ? ' ' : message.content}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+            >{message.content === 'Thinking...' && message.isLoading ? ' ' :
+              linkifyContent(message.content)
+            }</ReactMarkdown>
           </Box>
         )}
         
