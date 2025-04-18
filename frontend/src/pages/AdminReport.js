@@ -93,6 +93,13 @@ const AdminReport = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>Weekly Q&A Report</Typography>
+      <Box sx={{ mt: 2, mb: 4, width: '100%', height: 600, overflow: 'hidden' }}>
+        <iframe
+          src={`${process.env.REACT_APP_BACKEND_URL}/qa-dashboard`}
+          title="QA Dashboard"
+          style={{ width: '100%', height: '100%', border: 'none' }}
+        />
+      </Box>
       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <TextField
           label="Start Date"

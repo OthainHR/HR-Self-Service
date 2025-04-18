@@ -19,7 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 origins = [
     "https://hr-self-service-inky.vercel.app",  # Your current Vercel domain
     "https://hr-self-service.vercel.app",       # Your production Vercel domain
-    "http://localhost:3000",                    # Local development
+    "http://localhost:3000",
+                      # Local development
     "*"                                         # Temporarily allow all origins for testing
 ]
 

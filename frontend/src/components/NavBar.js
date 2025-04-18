@@ -505,7 +505,7 @@ const NavBar = () => {
           </Box>
         )}
         
-        {/* Dark Mode Switch for desktop */}
+        {/* Dark Mode Switch for desktop Dark Mode Switch*/}
         {!isMobile && (
           <Box sx={{ mx: 1 }}>
             <DarkModeSwitch checked={isDarkMode} onChange={toggleDarkMode} />
