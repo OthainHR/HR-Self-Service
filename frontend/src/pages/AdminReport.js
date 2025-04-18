@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Button, Typography, TextField, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, TableSortLabel
+  TableRow, Paper, TableSortLabel, Divider
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { axiosInstance } from '../services/api';
 import { saveAs } from 'file-saver';
+import QADashboard from './QADashboard';
 
 const formatDate = d => d.toISOString().slice(0, 10);
 
@@ -39,11 +40,11 @@ export default function AdminReport () {
       });
       const flat = res.data.results.flatMap(r =>
         r.qas.map(qa => ({
-          session_id:   r.session_id,
-          user_email:   r.user_email,
+          session_id:      r.session_id,
+          user_email:      r.user_email,
           ...qa,
-          asked_at_ts:    qa.asked_at    ? Date.parse(qa.asked_at)    : 0,
-          answered_at_ts: qa.answered_at ? Date.parse(qa.answered_at) : 0
+          asked_at_ts:     qa.asked_at    ? Date.parse(qa.asked_at)    : 0,
+          answered_at_ts:  qa.answered_at ? Date.parse(qa.answered_at) : 0
         }))
       );
       setRows(flat);
@@ -55,7 +56,7 @@ export default function AdminReport () {
     } finally { setLoading(false); }
   };
 
-  /* auto‑load last 7 days on mount */
+  /* auto‑load last 7 days on mount */
   useEffect(() => { fetchReport(); /* eslint-disable-next-line */ }, []);
 
   /* csv export */
@@ -92,23 +93,10 @@ export default function AdminReport () {
     return out;
   }, [rows, sortBy, sortDirection]);
 
-  const baseUrl = import.meta.env.REACT_APP_BACKEND_URL || window.location.origin;
-
   /* ───────── UI ───────── */
   return (
     <Box sx={{ p:3 }}>
       <Typography variant="h5" gutterBottom>Weekly Q&A Report</Typography>
-
-      {/* embedded Streamlit dashboard */}
-      <Box sx={{ mt:2, mb:4, width:'100%', height:600 }}>
-        <Suspense fallback={<CircularProgress />}>
-          <iframe
-            title="QA Dashboard"
-            src={`${baseUrl}/qa-dashboard`}
-            style={{ width:'100%', height:'100%', border:'none' }}
-          />
-        </Suspense>
-      </Box>
 
       {/* date pickers + actions */}
       <Box sx={{ display:'flex', gap:2, flexWrap:'wrap', mb:2 }}>
@@ -123,8 +111,17 @@ export default function AdminReport () {
       {loading && <CircularProgress />}
       {error   && <Typography color="error">{error}</Typography>}
 
+      {/* Show React QA dashboard charts when data is available */}
       {!!rows.length && (
-        <TableContainer component={Paper} sx={{ mt:2, maxHeight:600, borderRadius:2 }}>
+        <>
+          <QADashboard rows={rows} />
+          <Divider sx={{ my: 3 }} />
+        </>
+      )}
+
+      {/* data table */}
+      {!!rows.length && (
+        <TableContainer component={Paper} sx={{ maxHeight:600, borderRadius:2 }}>
           <Table size="small" stickyHeader aria-label="Q and A data">
             <TableHead>
               <TableRow>
