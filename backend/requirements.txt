@@ -14,3 +14,6 @@ numpy==1.26.4; platform_system!="Windows"
 numpy==1.26.3; platform_system=="Windows"
 gunicorn==21.2.0
 email-validator==2.1.0
+streamlit>=1.35
+pandas>=2.2
+plotly>=5.22 
