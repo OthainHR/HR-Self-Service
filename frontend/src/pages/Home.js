@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Container, Typography, Paper, Box, Button, Grid } from '@mui/material';
-import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIcon } from '@mui/icons-material';
+import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIcon, OndemandVideo as OndemandVideoIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -75,6 +75,7 @@ const Home = () => {
               onClick={() => navigate('/chat')}
               sx={{ 
                 mt: 2,
+                mr: 2,
                 px: 3,
                 py: 1.2,
                 borderRadius: 2,
@@ -87,6 +88,50 @@ const Home = () => {
               }}
             >
               Start Chatting
+            </Button>
+          </Paper>
+
+          {/* New Dedicated Onboarding Section */}
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+              mb: 4, 
+              borderRadius: 3,
+              bgcolor: isDarkMode ? 'rgba(40, 40, 50, 0.85)' : 'rgba(230, 240, 255, 0.7)', // A slightly different shade for distinction
+              backdropFilter: 'blur(15px)',
+              border: isDarkMode ? '1px solid rgba(60, 60, 70, 0.6)' : '1px solid rgba(220, 230, 255, 0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.10)',
+              textAlign: 'center', // Center align content
+            }}
+          >
+            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'secondary.light' : 'secondary.main', mb: 2 }} />
+            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.dark' }}>
+            New to Othain or just need a refresher?
+            </Typography>
+            <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto' }}>
+            Welcome aboard! Our onboarding video is your express guide to navigating Othain with confidence. Discover essential HR policies, learn about your valuable employee benefits, and get acquainted with our performance management system. 
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="secondary" 
+              size="large"
+              startIcon={<OndemandVideoIcon />}
+              onClick={() => navigate('/onboarding')}
+              sx={{ 
+                mt: 1,
+                px: 4, // More horizontal padding for emphasis
+                py: 1.3,
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(247, 37, 133, 0.3)', // Using secondary color for shadow
+                background: isDarkMode ? 'linear-gradient(to right, #f72585, #d42070)' : 'linear-gradient(to right, #f72585, #e01e75)', // Adjusted gradient for dark/light
+                '&:hover': {
+                  boxShadow: '0 6px 25px rgba(247, 37, 133, 0.4)',
+                  background: isDarkMode ? 'linear-gradient(to right, #e01e75, #c31970)' : 'linear-gradient(to right, #d42070, #c31970)'
+                }
+              }}
+            >
+              Watch Onboarding Video
             </Button>
           </Paper>
 
@@ -140,7 +185,7 @@ const Home = () => {
                         }
                       }}
                     >
-                      Get Started
+                      Start Chatting
                     </Button>
                   </Box>
                 </Box>

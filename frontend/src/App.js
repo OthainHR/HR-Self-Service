@@ -26,6 +26,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Chat = lazy(() => import('./pages/Chat'));
 const Knowledge = lazy(() => import('./pages/Knowledge'));
 const Register = lazy(() => import('./pages/Register')); 
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 
 // --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
@@ -291,12 +292,13 @@ const AppContent = () => {
             {/* Admin routes */}
             <Route 
               path="/knowledge"
-              element={<AdminRoute><Knowledge /></AdminRoute>}
+              element={<ProtectedRoute><Knowledge /></ProtectedRoute>}
             />
-            <Route path="/admin/report" element={<AdminReport />} />
+            <Route path="/admin/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
+            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
 
             {/* Redirect to homepage for any other route */}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Container>
       </Box>
