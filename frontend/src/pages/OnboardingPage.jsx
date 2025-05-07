@@ -1,20 +1,54 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material'; // Import icons
+import QuizOverlay from '../components/QuizOverlay'; // Import the new component
+import { useDarkMode } from '../contexts/DarkModeContext'; // Assuming this path
+
+// Placeholder QuizOverlay component (we will create this file next)
+/*
+const QuizOverlay = ({ quizData, onSubmit, onClose }) => {
+  // ... (placeholder code removed) ...
+};
+*/
 
 const OnboardingPage = () => {
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null); // Ref for the video's parent div for fullscreen
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [completedChapters, setCompletedChapters] = useState(new Set());
+  const [chapterQuizCompleted, setChapterQuizCompleted] = useState(new Set());
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false); // New state for fullscreen status
+  const [quizOverlayVisible, setQuizOverlayVisible] = useState(false);
+  const [activeQuizData, setActiveQuizData] = useState(null);
+  const [quizAttemptKey, setQuizAttemptKey] = useState(0); // Key to force re-render/reset of QuizOverlay
+  const [quizFeedback, setQuizFeedback] = useState(null); // { message: string, incorrectIds?: string[], success?: boolean }
+  const { isDarkMode } = useDarkMode(); // Get dark mode state
 
   // Add timestamps (in seconds) to your chapters
   // PLEASE UPDATE THESE TIMESTAMPS TO MATCH YOUR VIDEO
   const chapters = [
     { id: 1, title: '1. Welcome to Othain', duration: '1 Min 48 Sec', timestamp: 0 },
     { id: 2, title: '2. About Our Team', duration: '1 Min 54 Sec', timestamp: 108 }, // e.g., 1 minute
-    { id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5 },// e.g., 2.5 minutes
+    {
+      id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5,
+      quiz: {
+        title: 'Onboarding Process Check',
+        questions: [
+          {
+            id: 'q1', 
+            text: 'What is the first step of the onboarding process mentioned?',
+            options: ['Fill forms', 'Meet team', 'Setup system', 'Watch intro video'],
+            correctAnswer: 'Watch intro video' // Or index 3
+          },
+          {
+            id: 'q2', 
+            text: 'Who should you contact for IT issues?',
+            options: ['HR Manager', 'Your Buddy', 'IT Support Desk', 'CEO'],
+            correctAnswer: 'IT Support Desk' // Or index 2
+          }
+        ]
+      }
+    },
     { id: 4, title: '4. Policies & Procedures: Attendance', duration: '4 Min 23 Sec', timestamp: 292 }, // e.g., 4.5 minutes
     { id: 5, title: '5. Policies & Procedures: Probation & Leave', duration: '2 Min 6 Sec', timestamp: 555.5 },
     { id: 6, title: '6. Policies & Procedures: Overtime & Sandwich Leave', duration: '1 Min 25 Sec', timestamp: 682 },
@@ -33,14 +67,28 @@ const OnboardingPage = () => {
       videoRef.current.currentTime = chapters[chapterIndex].timestamp;
       setCurrentChapterIndex(chapterIndex);
       if (autoPlay) {
-        videoRef.current.play().catch(error => console.error("Error attempting to play video:", error));
+        // If there's an incomplete quiz for this chapter, don't autoplay yet.
+        // Autoplay will be handled after quiz completion if needed.
+        const chapter = chapters[chapterIndex];
+        if (!(chapter.quiz && !chapterQuizCompleted.has(chapterIndex))) {
+            videoRef.current.play().catch(error => console.error("Error attempting to play video:", error));
+        }
+      } else {
+        // If not autoplaying, but seeking to a chapter with an incomplete quiz, ensure video is paused.
+        const chapter = chapters[chapterIndex];
+        if (chapter.quiz && !chapterQuizCompleted.has(chapterIndex)) {
+            if(videoRef.current && !videoRef.current.paused) videoRef.current.pause();
+        }
       }
     }
   };
 
   const handleNext = () => {
     if (currentChapterIndex < chapters.length - 1) {
-      navigateToTimestamp(currentChapterIndex + 1, true);
+      const nextChapterIndex = currentChapterIndex + 1;
+      // Check if current chapter had a quiz that was just completed, then proceed.
+      // Otherwise, standard navigation applies (which will be gated by quiz check later).
+      navigateToTimestamp(nextChapterIndex, true);
     }
   };
 
@@ -54,43 +102,114 @@ const OnboardingPage = () => {
     navigateToTimestamp(index, true);
   };
   
+  const showQuizForChapter = (chapterIndex) => {
+    const chapter = chapters[chapterIndex];
+    if (chapter && chapter.quiz && !chapterQuizCompleted.has(chapterIndex)) {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+      setActiveQuizData(chapter.quiz);
+      setQuizFeedback(null); // Clear previous feedback when a new quiz is shown
+      setQuizAttemptKey(prevKey => prevKey + 1); // Reset quiz form for a fresh attempt if re-entering
+      setQuizOverlayVisible(true);
+      return true;
+    }
+    return false;
+  };
+
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
     const currentTime = videoRef.current.currentTime;
     const newCompletedChapters = new Set(completedChapters);
-    let changed = false;
-
+    let changedViewCompletion = false;
+    // No change to how completedChapters (video view) is determined
     chapters.forEach((chapter, index) => {
-      if (index < chapters.length - 1) { // For all chapters except the last one
-        if (currentTime >= chapters[index + 1].timestamp) {
-          if (!newCompletedChapters.has(index)) {
-            newCompletedChapters.add(index);
-            changed = true;
-          }
-        }
-      } else { // For the last chapter, completion is handled by onEnded or if currentTime exceeds its start
-        // We can also consider the last chapter completed if the video plays a bit past its start time
-        // This is a fallback in case onEnded doesn't fire or for a different UX definition of "complete"
-        if (currentTime >= chapter.timestamp + (parseFloat(chapter.duration.split(' ')[0]) || 1) -1 && videoRef.current.duration - currentTime < 1 ) { // Check if near end
-            if (!newCompletedChapters.has(index)) {
-                newCompletedChapters.add(index);
-                changed = true;
-            }
+      const isChapterViewed = (index < chapters.length - 1) 
+        ? (currentTime >= chapters[index + 1].timestamp) 
+        : ( (currentTime >= chapter.timestamp + (parseFloat(chapter.duration.split(' ')[0]) || 1) -1 && videoRef.current.duration - currentTime < 1 ) || videoRef.current.ended );
+
+      if (isChapterViewed && !newCompletedChapters.has(index)) {
+        newCompletedChapters.add(index);
+        changedViewCompletion = true;
+        // If this chapter's video part is now viewed, and it has a quiz not yet passed, trigger it.
+        if (chapters[index].quiz && !chapterQuizCompleted.has(index)) {
+            showQuizForChapter(index);
         }
       }
     });
-
-    if (changed) {
+    if (changedViewCompletion) {
       setCompletedChapters(newCompletedChapters);
     }
   };
 
   const handleVideoEnded = () => {
-    if (chapters.length > 0 && !completedChapters.has(chapters.length - 1)) {
-      setCompletedChapters(prev => new Set(prev).add(chapters.length - 1));
+    if (chapters.length > 0) {
+        const lastChapterIndex = chapters.length - 1;
+        if (!completedChapters.has(lastChapterIndex)){
+            setCompletedChapters(prev => new Set(prev).add(lastChapterIndex));
+        }
+        if (chapters[lastChapterIndex].quiz && !chapterQuizCompleted.has(lastChapterIndex)) {
+            showQuizForChapter(lastChapterIndex);
+        }
     }
-    // Potentially mark all previous chapters as complete too, as a fallback
-    // setCompletedChapters(new Set(chapters.map((_, idx) => idx)));
+  };
+
+  const handleQuizSubmit = (submittedAnswers) => {
+    if (!activeQuizData || !activeQuizData.questions) return;
+
+    const incorrectQuestionIds = [];
+    activeQuizData.questions.forEach(question => {
+      if (submittedAnswers[question.id] !== question.correctAnswer) {
+        incorrectQuestionIds.push(question.id);
+      }
+    });
+
+    if (incorrectQuestionIds.length === 0) {
+      // Quiz Passed
+      setQuizAttemptKey(prevKey => prevKey + 1); // Increment key to force remount for success animation
+      setQuizFeedback({
+        success: true,
+        message: "Congratulations! You passed."
+      });
+      // Quiz overlay remains visible until user clicks 'Continue' via handleQuizSuccessContinue
+    } else {
+      // Quiz Failed
+      setQuizFeedback({
+        success: false,
+        message: "Some answers are incorrect. Please review and try again.",
+        incorrectIds: incorrectQuestionIds
+      });
+      setQuizAttemptKey(prevKey => prevKey + 1); // Keep this here too for re-rendering on failure
+    }
+  };
+
+  const handleQuizSuccessContinue = () => {
+    setChapterQuizCompleted(prev => new Set(prev).add(currentChapterIndex));
+    setQuizOverlayVisible(false);
+    setActiveQuizData(null);
+    setQuizFeedback(null); // Clear feedback
+
+    // Autoplay next section if not the last chapter
+    if (currentChapterIndex < chapters.length - 1) {
+      navigateToTimestamp(currentChapterIndex + 1, true);
+    } else {
+      // Optional: If it IS the last chapter and quiz, maybe do something else?
+      // For now, it just closes the quiz. User can replay or exit.
+      // If video was paused for the quiz, ensure it reflects playable state if needed
+      if (videoRef.current && videoRef.current.paused) {
+        // This might not be needed if there are no controls after the last chapter quiz
+        // setIsPlaying(false); // Reflect that it's not actively playing something new
+      }
+    }
+  };
+
+  const handleCloseQuiz = () => {
+    // This function is now primarily for if the user closes a failed quiz attempt, 
+    // or if a future design allows closing a quiz before attempting it.
+    setQuizOverlayVisible(false);
+    setActiveQuizData(null);
+    setQuizFeedback(null); 
+    setQuizAttemptKey(prevKey => prevKey + 1);
   };
 
   const togglePlayPause = () => {
@@ -168,11 +287,18 @@ const OnboardingPage = () => {
     }
   }, []);
 
+  const isNextButtonDisabled = 
+    currentChapterIndex === chapters.length - 1 || 
+    !completedChapters.has(currentChapterIndex) || // Video part of current chapter not done
+    (chapters[currentChapterIndex]?.quiz && !chapterQuizCompleted.has(currentChapterIndex)); // Quiz for current chapter exists but not passed
+
   return (
     <div style={{ display: 'flex', fontFamily: 'Arial, sans-serif', margin: '20px' }}>
       {/* Left Side: Video Player and Title */}
       <div style={{ flex: 3, marginRight: '20px' }}>
-        <h1 style={{ marginBottom: '10px' }}>{chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}</h1>
+        <h1 style={{ marginBottom: '10px', color: (isFullscreen || isDarkMode) ? '#fff' : '#000' }}>
+            {chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}
+        </h1>
         
         <div 
           ref={videoContainerRef}
@@ -189,13 +315,13 @@ const OnboardingPage = () => {
           <video 
             ref={videoRef}
             width="100%" 
-            style={{ display: 'block', borderRadius: '8px' }}
+            style={{ display: 'block', borderRadius: '8px', cursor: 'pointer' }}
             onLoadedMetadata={() => {
-              // Optional: if you want to ensure the first chapter timestamp is set after metadata loads
-              // if(currentChapterIndex === 0 && chapters[0]) videoRef.current.currentTime = chapters[0].timestamp;
+              // Optional: if (currentChapterIndex === 0 && chapters[0]) videoRef.current.currentTime = chapters[0].timestamp;
             }}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleVideoEnded}
+            onClick={togglePlayPause}
           >
             <source src={videoSrc} type="video/mp4" />
             Your browser does not support the video tag. Please try a different browser.
@@ -239,14 +365,8 @@ const OnboardingPage = () => {
             </button>
             <button 
               onClick={handleNext} 
-              disabled={ 
-                currentChapterIndex === chapters.length - 1 || 
-                (!completedChapters.has(currentChapterIndex) && currentChapterIndex < chapters.length - 1)
-              }
-              style={buttonStyle(
-                currentChapterIndex === chapters.length - 1 || 
-                (!completedChapters.has(currentChapterIndex) && currentChapterIndex < chapters.length - 1)
-              )}
+              disabled={isNextButtonDisabled}
+              style={buttonStyle(isNextButtonDisabled)}
             >
               Next Section
             </button>
@@ -259,7 +379,7 @@ const OnboardingPage = () => {
           </div>
         </div>
 
-        <div>
+        <div style={{color: (isFullscreen || isDarkMode) ? '#fff' : '#000'}}>
           <h2>About Othain Onboarding</h2>
           <p>
           Welcome to your Othain onboarding! This course is structured to give you a clear understanding of our company, from our team and processes to essential HR policies and employee benefits. Each section is designed to help you get started confidently and quickly. We recommend progressing through all sections to ensure you're fully acquainted with our platform and procedures.
@@ -267,24 +387,45 @@ const OnboardingPage = () => {
         </div>
       </div>
 
-      {/* Right Side: Chapter List */}
-      <div style={{ flex: 1, borderLeft: '1px solid #ccc', paddingLeft: '20px' }}>
+      {/* Right Side: Section List */}
+      <div style={{
+          flex: isFullscreen ? '0 0 30%' : 1, 
+          borderLeft: isFullscreen ? '1px solid #555' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
+          paddingLeft: isFullscreen ? '10px' : '20px', 
+          backgroundColor: isFullscreen ? '#333' : (isDarkMode ? '#1e1e1e' : 'transparent'),
+          color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
+          height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
+          overflowY: 'auto'
+      }}>
         <h2 style={{ marginBottom: '15px' }}>Sections</h2>
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {chapters.map((chapter, index) => (
             <li 
               key={chapter.id} 
-              style={chapterItemStyle(index === currentChapterIndex, completedChapters.has(index))}
+              style={chapterItemStyle(index === currentChapterIndex, completedChapters.has(index), isFullscreen, isDarkMode)}
               onClick={() => handleChapterClick(index)}
             >
               <div style={{ fontWeight: index === currentChapterIndex ? 'bold' : 'normal' }}>
                 {completedChapters.has(index) ? '✓ ' : ''}{chapter.title}
               </div>
-              <div style={{ fontSize: '0.9em', color: '#555' }}>{chapter.duration}</div>
+              <div style={{ fontSize: '0.9em', color: isFullscreen ? '#ccc' : (isDarkMode ? '#bbb' : '#555') }}>
+                {chapter.duration}
+              </div>
             </li>
           ))}
         </ul>
       </div>
+
+      {quizOverlayVisible && activeQuizData && (
+        <QuizOverlay 
+          key={quizAttemptKey}
+          quizData={activeQuizData} 
+          feedback={quizFeedback}
+          onSubmit={handleQuizSubmit} 
+          onClose={handleCloseQuiz} 
+          onSuccessContinue={handleQuizSuccessContinue}
+        />
+      )}
     </div>
   );
 };
@@ -302,16 +443,25 @@ const buttonStyle = (disabled) => ({
   margin: '0 3px',
 });
 
-// Helper for chapter item styling
-const chapterItemStyle = (isActive, isCompleted) => ({
+// Updated chapterItemStyle to handle general dark mode for non-fullscreen
+const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode) => ({
   padding: '12px 8px',
-  borderBottom: '1px solid #eee',
+  borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
-  backgroundColor: isActive ? '#e0e0e0' : (isCompleted ? '#e6ffe6' : 'transparent'),
-  transition: 'background-color 0.2s ease',
-  opacity: isCompleted && !isActive ? 0.7 : 1,
+  backgroundColor: (() => {
+    if (isFullscreenMode) return isActive ? '#555' : (isCompleted ? '#2a3a2a' : 'transparent');
+    if (isAppDarkMode) return isActive ? '#383838' : (isCompleted ? '#203020' : 'transparent');
+    return isActive ? '#e0e0e0' : (isCompleted ? '#e6ffe6' : 'transparent');
+  })(),
+  color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000', // Title text white in fullscreen OR app dark mode
+  transition: 'background-color 0.2s ease, color 0.2s ease',
+  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1, // Dimming only for light mode non-fullscreen completed items
   hover: {
-      backgroundColor: isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0'),
+    backgroundColor: (() => {
+      if (isFullscreenMode) return isActive ? '#666' : (isCompleted ? '#3a4a3a' : '#404040');
+      if (isAppDarkMode) return isActive ? '#484848' : (isCompleted ? '#304030' : '#2a2a2a');
+      return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0');
+    })(),
   }
 });
 
