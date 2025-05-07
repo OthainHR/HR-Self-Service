@@ -346,10 +346,7 @@ const OnboardingPage = () => {
   useEffect(() => {
     const videoElement = videoRef.current;
     const updateFullscreenStatus = () => {
-      setIsFullscreen(!!(document.fullscreenElement || 
-                        document.mozFullScreenElement || 
-                        document.webkitFullscreenElement || 
-                        document.msFullscreenElement));
+      setIsFullscreen(!!(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement));
     };
 
     if (videoElement) {
@@ -358,7 +355,18 @@ const OnboardingPage = () => {
 
       videoElement.addEventListener('play', handlePlay);
       videoElement.addEventListener('pause', handlePause);
+      // Initial state sync
       setIsPlaying(!videoElement.paused && !videoElement.ended);
+
+      // Attempt Autoplay on Mount
+      videoElement.play().then(() => {
+        // Autoplay started successfully
+        setIsPlaying(true);
+      }).catch(error => {
+        // Autoplay was prevented.
+        console.warn("Autoplay prevented by browser policy:", error);
+        setIsPlaying(false); // Ensure state reflects that it's not playing
+      });
 
       document.addEventListener('fullscreenchange', updateFullscreenStatus);
       document.addEventListener('webkitfullscreenchange', updateFullscreenStatus);
@@ -375,7 +383,7 @@ const OnboardingPage = () => {
         document.removeEventListener('MSFullscreenChange', updateFullscreenStatus);
       };
     }
-  }, []);
+  }, []); // Empty array ensures this runs only on mount
 
   const handleGoHome = () => {
     navigate('/'); // Navigate to home page
