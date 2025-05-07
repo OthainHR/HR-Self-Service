@@ -77,7 +77,16 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
         {/* Success Message Display */}
         {feedback && feedback.success && (
           <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p style={{ color: 'green', fontSize: '1.2em', marginBottom: '20px' }}>
+            <img 
+              src="/checkmark-svgrepo-com.svg" 
+              alt="Success" 
+              style={{ 
+                height: '60px', width: '60px', marginBottom: '15px', marginTop: '-15px',
+                opacity: 0,
+                animation: 'scaleInCheckmark 0.4s ease-out forwards'
+              }} 
+            />
+            <p style={{ color: 'green', fontSize: '1.2em', marginBottom: '20px', marginTop: '0' }}>
               {feedback.message}
             </p>
             <button 

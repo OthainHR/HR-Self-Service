@@ -1,7 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material'; // Import icons
-import QuizOverlay from '../components/QuizOverlay'; // Import the new component
-import { useDarkMode } from '../contexts/DarkModeContext'; // Assuming this path
+import { PlayArrow as PlayArrowIcon, Pause as PauseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import QuizOverlay from '../components/QuizOverlay';
+import CompletionOverlay from '../components/CompletionOverlay';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 // Placeholder QuizOverlay component (we will create this file next)
 /*
@@ -11,6 +13,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose }) => {
 */
 
 const OnboardingPage = () => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null); // Ref for the video's parent div for fullscreen
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
@@ -22,6 +25,7 @@ const OnboardingPage = () => {
   const [activeQuizData, setActiveQuizData] = useState(null);
   const [quizAttemptKey, setQuizAttemptKey] = useState(0); // Key to force re-render/reset of QuizOverlay
   const [quizFeedback, setQuizFeedback] = useState(null); // { message: string, incorrectIds?: string[], success?: boolean }
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
   const { isDarkMode } = useDarkMode(); // Get dark mode state
 
   // Add timestamps (in seconds) to your chapters
@@ -37,7 +41,7 @@ const OnboardingPage = () => {
             questions: [
               {
                 id: 'q1', 
-                text: 'Q1. At Othain’s Building B9, which clock-in/clock-out method must employees use?',
+                text: "Q1. At Othain's Building B9, which clock-in/clock-out method must employees use?",
                 options: [ 'A. Biometric scanner', 'B. Web clock-in/clock-out inside the office', 'C. Remote clock-in/clock-out from any location', 'D. Manual sign-in sheet'],
                 correctAnswer: 'B. Web clock-in/clock-out inside the office' // Or index 3
               }
@@ -59,8 +63,8 @@ const OnboardingPage = () => {
               {
                 id: 'q2', 
                 text: 'Q3. If you take three consecutive sick-leave days, what must you provide?',
-                options: ['A. No documentation is required', 'B. An email notification only', 'C. A doctor’s medical certificate and prescription', 'D. Your manager’s verbal approval'],
-                correctAnswer: 'C. A doctor’s medical certificate and prescription' // Or index 2
+                options: ["A. No documentation is required", "B. An email notification only", "C. A doctor's medical certificate and prescription", "D. Your manager's verbal approval"],
+                correctAnswer: "C. A doctor's medical certificate and prescription" // Or index 2
               },
               {
                 id: 'q3', 
@@ -78,7 +82,7 @@ const OnboardingPage = () => {
             questions: [
               {
                 id: 'q1', 
-                text: 'Q5. Othain’s official Performance Management System (PMS) evaluation cycle runs from:',
+                text: "Q5. Othain's official Performance Management System (PMS) evaluation cycle runs from:",
                 options: [ 'A. April – March', 'B. July – June', 'C. October – September', 'D. January – December'],
                 correctAnswer: 'D. January – December' // Or index 3
               },
@@ -109,6 +113,18 @@ const OnboardingPage = () => {
     
   ];
   const videoSrc = "/Onboarding_Video.mp4"; // User updated video path
+
+  const checkOverallCompletion = (currentChapterIdx) => {
+    const lastChapterIndex = chapters.length - 1;
+    const isLastChapter = currentChapterIdx === lastChapterIndex;
+    const lastChapter = chapters[lastChapterIndex];
+    const isLastChapterVideoViewed = completedChapters.has(lastChapterIndex);
+    const isLastChapterQuizCompleted = !lastChapter.quiz || chapterQuizCompleted.has(lastChapterIndex);
+
+    // Consider overall complete if the last chapter's video is viewed 
+    // AND its quiz (if it has one) is also completed.
+    return isLastChapterVideoViewed && isLastChapterQuizCompleted;
+  };
 
   const navigateToTimestamp = (chapterIndex, autoPlay = false) => {
     if (videoRef.current && chapters[chapterIndex]) {
@@ -170,7 +186,7 @@ const OnboardingPage = () => {
     const currentTime = videoRef.current.currentTime;
     const newCompletedChapters = new Set(completedChapters);
     let changedViewCompletion = false;
-    // No change to how completedChapters (video view) is determined
+    
     chapters.forEach((chapter, index) => {
       const isChapterViewed = (index < chapters.length - 1) 
         ? (currentTime >= chapters[index + 1].timestamp) 
@@ -181,6 +197,8 @@ const OnboardingPage = () => {
         changedViewCompletion = true;
         // If this chapter's video part is now viewed, and it has a quiz not yet passed, trigger it.
         if (chapters[index].quiz && !chapterQuizCompleted.has(index)) {
+            // Quiz is triggered, but don't check for overall completion here yet,
+            // wait for quiz result or video end.
             showQuizForChapter(index);
         }
       }
@@ -188,17 +206,31 @@ const OnboardingPage = () => {
     if (changedViewCompletion) {
       setCompletedChapters(newCompletedChapters);
     }
+    // Check for completion ONLY if the video is near the end AND the last chapter has no quiz
+    // Completion after a quiz is handled in handleQuizSuccessContinue or handleVideoEnded
+    const lastChapterIndex = chapters.length - 1;
+    if (!chapters[lastChapterIndex]?.quiz && videoRef.current.duration - currentTime < 1) {
+         if (checkOverallCompletion(lastChapterIndex)) {
+            setShowCompletionOverlay(true);
+        }
+    }
   };
 
   const handleVideoEnded = () => {
+    const lastChapterIndex = chapters.length - 1;
     if (chapters.length > 0) {
-        const lastChapterIndex = chapters.length - 1;
-        if (!completedChapters.has(lastChapterIndex)){
-            setCompletedChapters(prev => new Set(prev).add(lastChapterIndex));
-        }
-        if (chapters[lastChapterIndex].quiz && !chapterQuizCompleted.has(lastChapterIndex)) {
-            showQuizForChapter(lastChapterIndex);
-        }
+      // Ensure last chapter video view is marked complete
+      if (!completedChapters.has(lastChapterIndex)){
+        setCompletedChapters(prev => new Set(prev).add(lastChapterIndex));
+      }
+      // If last chapter has a quiz, trigger it if not done.
+      // If no quiz OR quiz already done, check for overall completion.
+      if (chapters[lastChapterIndex].quiz && !chapterQuizCompleted.has(lastChapterIndex)) {
+        showQuizForChapter(lastChapterIndex);
+      } else if (checkOverallCompletion(lastChapterIndex)) {
+        // Video ended, last chapter viewed, and quiz (if exists) is done.
+        setShowCompletionOverlay(true);
+      }
     }
   };
 
@@ -232,22 +264,32 @@ const OnboardingPage = () => {
   };
 
   const handleQuizSuccessContinue = () => {
-    setChapterQuizCompleted(prev => new Set(prev).add(currentChapterIndex));
+    const lastChapterIndex = chapters.length - 1;
+    const justCompletedQuizIndex = currentChapterIndex; // Quiz was for the current chapter
+
+    // Mark quiz as completed
+    setChapterQuizCompleted(prev => new Set(prev).add(justCompletedQuizIndex));
+    
+    // Hide regular quiz overlay components immediately
     setQuizOverlayVisible(false);
     setActiveQuizData(null);
-    setQuizFeedback(null); // Clear feedback
+    setQuizFeedback(null);
 
-    // Autoplay next section if not the last chapter
-    if (currentChapterIndex < chapters.length - 1) {
-      navigateToTimestamp(currentChapterIndex + 1, true);
-    } else {
-      // Optional: If it IS the last chapter and quiz, maybe do something else?
-      // For now, it just closes the quiz. User can replay or exit.
-      // If video was paused for the quiz, ensure it reflects playable state if needed
-      if (videoRef.current && videoRef.current.paused) {
-        // This might not be needed if there are no controls after the last chapter quiz
-        // setIsPlaying(false); // Reflect that it's not actively playing something new
-      }
+    // Now, check if this was the LAST chapter's quiz and if the video is done/ended
+    if (justCompletedQuizIndex === lastChapterIndex && (videoRef.current?.ended || (videoRef.current?.duration - videoRef.current?.currentTime < 1))) {
+        // Check overall completion (which should now be true)
+        if (checkOverallCompletion(lastChapterIndex)) {
+            setShowCompletionOverlay(true);
+        } else {
+            // Edge case: quiz passed, video ended, but somehow completion state isn't right?
+            // Or maybe just proceed to next step if video not *quite* ended?
+             if (currentChapterIndex < chapters.length - 1) {
+                navigateToTimestamp(currentChapterIndex + 1, true);
+            }
+        }
+    } else if (currentChapterIndex < chapters.length - 1) {
+         // If not the last chapter, autoplay the next section
+        navigateToTimestamp(currentChapterIndex + 1, true);
     }
   };
 
@@ -335,10 +377,11 @@ const OnboardingPage = () => {
     }
   }, []);
 
-  const isNextButtonDisabled = 
-    currentChapterIndex === chapters.length - 1 || 
-    !completedChapters.has(currentChapterIndex) || // Video part of current chapter not done
-    (chapters[currentChapterIndex]?.quiz && !chapterQuizCompleted.has(currentChapterIndex)); // Quiz for current chapter exists but not passed
+  const handleGoHome = () => {
+    navigate('/'); // Navigate to home page
+  };
+
+  const isNextButtonDisabled = true; // Always disable the Next Section button
 
   return (
     <div style={{ display: 'flex', fontFamily: 'Arial, sans-serif', margin: '20px' }}>
@@ -440,27 +483,56 @@ const OnboardingPage = () => {
           flex: isFullscreen ? '0 0 30%' : 1, 
           borderLeft: isFullscreen ? '1px solid #555' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
           paddingLeft: isFullscreen ? '10px' : '20px', 
+          borderRadius: '8px',
           backgroundColor: isFullscreen ? '#333' : (isDarkMode ? '#1e1e1e' : 'transparent'),
           color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
           height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
           overflowY: 'auto'
       }}>
-        <h2 style={{ marginBottom: '15px' }}>Sections</h2>
+        <h2 style={{ marginBottom: '15px', marginTop: '15px' }}>Sections</h2>
         <ul style={{ listStyleType: 'none', padding: 0 }}>
-          {chapters.map((chapter, index) => (
-            <li 
-              key={chapter.id} 
-              style={chapterItemStyle(index === currentChapterIndex, completedChapters.has(index), isFullscreen, isDarkMode)}
-              onClick={() => handleChapterClick(index)}
-            >
-              <div style={{ fontWeight: index === currentChapterIndex ? 'bold' : 'normal' }}>
-                {completedChapters.has(index) ? '✓ ' : ''}{chapter.title}
-              </div>
-              <div style={{ fontSize: '0.9em', color: isFullscreen ? '#ccc' : (isDarkMode ? '#bbb' : '#555') }}>
-                {chapter.duration}
-              </div>
-            </li>
-          ))}
+          {chapters.map((chapter, index) => {
+            const isCompleted = completedChapters.has(index);
+            const isActive = index === currentChapterIndex;
+            const durationColor = isFullscreen ? '#ccc' : (isDarkMode ? '#bbb' : '#555');
+            // const durationPaddingLeft = isCompleted ? '26px' : '0px'; // Reset padding logic if needed
+
+            return (
+              <li 
+                key={chapter.id} 
+                style={{
+                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode),
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+                onClick={() => handleChapterClick(index)}
+              >
+                {/* Text content div (Title + Duration) */}
+                <div> 
+                  <div style={{ fontWeight: isActive ? 'bold' : 'normal' }}>
+                    {chapter.title}
+                  </div>
+                  <div style={{ fontSize: '0.9em', color: durationColor }}> 
+                    {chapter.duration}
+                  </div>
+                </div>
+                
+                {/* Conditionally render SVG Icon on the right */}
+                {isCompleted && (
+                  <img 
+                    src="/checkmark-svgrepo-com.svg" 
+                    alt="Completed" 
+                    style={{ 
+                      height: '18px', // Adjust size as needed
+                      width: '18px',  // Adjust size as needed
+                      marginLeft: '10px' 
+                    }} 
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
@@ -472,6 +544,14 @@ const OnboardingPage = () => {
           onSubmit={handleQuizSubmit} 
           onClose={handleCloseQuiz} 
           onSuccessContinue={handleQuizSuccessContinue}
+        />
+      )}
+
+      {/* Conditionally render the Completion Overlay */} 
+      {showCompletionOverlay && (
+        <CompletionOverlay 
+          message="You have successfully completed the onboarding video."
+          onGoHome={handleGoHome}
         />
       )}
     </div>
@@ -497,6 +577,8 @@ const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode
   borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
   borderRadius: '8px',
+  marginBottom: '10px',
+  marginRight: '10px',
   backgroundColor: (() => {
     if (isFullscreenMode) return isActive ? '#555' : (isCompleted ? '#2a3a2a' : 'transparent');
     if (isAppDarkMode) return isActive ? '#383838' : (isCompleted ? '#203020' : 'transparent');
