@@ -110,7 +110,7 @@ const NavBar = () => {
         backdropFilter: 'blur(10px)',
         boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
       }}>
-        <img src="/othainwhite.png" alt="Othain Logo" height="60" style={{ filter: 'brightness(0) invert(1)' }} />
+        <img src="/othainwhite.png" alt="Othain Logo" height={30} style={{ filter: 'brightness(0) invert(1)' }} />
       </Box>
       <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.08)' }} />
       <List>
@@ -326,14 +326,16 @@ const NavBar = () => {
             opacity: 0.9,
           }
         }}>
-          <img 
+          <Box
+            component="img"
             src="/logowhite.png" 
             alt="Othain Logo" 
-            height="30" 
-            style={{ 
+            sx={{
+              height: { xs: '20px', sm: '30px' }, 
               filter: 'brightness(0) invert(1)', 
               marginRight: '8px',
               marginBottom: '10px',
+              marginTop: { xs: '9px', sm: '0' },
               transition: 'transform 0.2s ease'
             }} 
           />
@@ -348,7 +350,9 @@ const NavBar = () => {
             fontFamily: '"Lexend", sans-serif',
             fontWeight: 500,
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-            marginLeft: '-10px'
+            marginLeft: '-10px',
+            marginTop: { xs: '5px', sm: '0' },
+            fontSize: { xs: '0.6rem', sm: '1.25rem' }
           }}
         >
           Employee Self Service

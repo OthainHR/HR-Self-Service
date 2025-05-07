@@ -44,13 +44,13 @@ const Home = () => {
         }
       }}
     >
-      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 5 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, position: 'relative', zIndex: 5 }}>
         <Box sx={{ py: 4 }}>
           {/* Welcome section */}
           <Paper 
             elevation={0} 
             sx={{ 
-              p: 4, 
+              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
               mb: 4, 
               borderRadius: 3,
               bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.65)',
@@ -59,11 +59,29 @@ const Home = () => {
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
             }}
           >
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.main' }}>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              gutterBottom 
+              sx={{ 
+                fontWeight: 600, 
+                color: isDarkMode ? 'white' : 'primary.main',
+                fontSize: { xs: '1.8rem', sm: '2.0rem', md: '2.2rem' },
+                overflowWrap: 'break-word', // Allow long words/emails to break
+                wordBreak: 'break-word' // Adding word-break as well for broader compatibility
+              }}
+            >
               Welcome to Othain HR Self-Service
               {user && `, ${user.name || user.email}`}
             </Typography>
-            <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit' }}>
+            <Typography 
+                variant="body1" 
+                paragraph 
+                sx={{ 
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit',
+                    fontSize: { xs: '0.9rem', sm: '1rem'} // Slightly smaller body text on xs
+                }}
+            >
               Your interactive Employee Self-Service designed to help with policies, benefits, and workplace questions.
               Start a conversation to get instant answers to your HR-related inquiries.
             </Typography>

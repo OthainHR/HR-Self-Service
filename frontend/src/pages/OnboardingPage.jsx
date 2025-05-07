@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import QuizOverlay from '../components/QuizOverlay';
 import CompletionOverlay from '../components/CompletionOverlay';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 // Placeholder QuizOverlay component (we will create this file next)
 /*
@@ -27,6 +28,8 @@ const OnboardingPage = () => {
   const [quizFeedback, setQuizFeedback] = useState(null); // { message: string, incorrectIds?: string[], success?: boolean }
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
   const { isDarkMode } = useDarkMode(); // Get dark mode state
+  const theme = useTheme(); // MUI theme
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check for mobile screen size
 
   // Add timestamps (in seconds) to your chapters
   // PLEASE UPDATE THESE TIMESTAMPS TO MATCH YOUR VIDEO
@@ -392,10 +395,23 @@ const OnboardingPage = () => {
   const isNextButtonDisabled = true; // Always disable the Next Section button
 
   return (
-    <div style={{ display: 'flex', fontFamily: 'Arial, sans-serif', margin: '20px' }}>
-      {/* Left Side: Video Player and Title */}
-      <div style={{ flex: 3, marginRight: '20px' }}>
-        <h1 style={{ marginBottom: '10px', color: (isFullscreen || isDarkMode) ? '#fff' : '#000' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: isMobile ? 'column' : 'row', // Stack on mobile
+      fontFamily: 'Arial, sans-serif', 
+      margin: isMobile ? '10px' : '20px' // Reduced margin on mobile
+    }}>
+      {/* Left Side (or Top on Mobile): Video Player and Title */}
+      <div style={{ 
+        flex: isMobile ? '1 1 100%' : 3, // Full width on mobile
+        marginRight: isMobile ? '0px' : '20px', // No right margin on mobile
+        marginBottom: isMobile ? '20px' : '0px' // Margin below video section on mobile
+      }}>
+        <h1 style={{ 
+          marginBottom: '10px', 
+          color: (isFullscreen || isDarkMode) ? '#fff' : '#000',
+          fontSize: isMobile ? '1.5rem' : (isFullscreen ? '2rem' : '2.2rem') // Responsive title font
+        }}>
             {chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}
         </h1>
         
@@ -440,76 +456,84 @@ const OnboardingPage = () => {
               justifyContent: 'space-around',
               alignItems: 'center',
               zIndex: 10,
-              transition: 'opacity 0.3s ease'
+              transition: 'opacity 0.3s ease',
+              flexWrap: 'wrap' // Allow buttons to wrap in fullscreen mobile if needed
             } : {
               display: 'flex', 
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '10px 0',
+              padding: isMobile ? '8px 0' : '10px 0', // Adjusted padding slightly
+              flexWrap: 'wrap' 
             }}
           >
             
             <button
               onClick={togglePlayPause}
-              style={{...buttonStyle(false), minWidth: '50px', marginLeft: '10px'}}
+              style={{...buttonStyle(false, isMobile), minWidth: isMobile ? '40px' : '50px', marginLeft: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0'}}
             >
-              {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              {isPlaying ? <PauseIcon fontSize={isMobile ? "small" : "medium"} /> : <PlayArrowIcon fontSize={isMobile ? "small" : "medium"} />}
             </button>
             <button 
               onClick={handlePrevious} 
               disabled={currentChapterIndex === 0}
-              style={{...buttonStyle(currentChapterIndex === 0)}}
+              style={{...buttonStyle(currentChapterIndex === 0, isMobile), marginBottom: isMobile ? '5px' : '0'}}
             >
               Previous Section
             </button>
             <button 
               onClick={handleNext} 
               disabled={isNextButtonDisabled}
-              style={buttonStyle(isNextButtonDisabled)}
+              style={{...buttonStyle(isNextButtonDisabled, isMobile), marginBottom: isMobile ? '5px' : '0', marginRight: isMobile ? '10px' : '5px'}}
             >
               Next Section
             </button>
             <button
               onClick={handleToggleFullscreen}
-              style={{...buttonStyle(false), marginRight: '10px'}}
+              style={{...buttonStyle(false, isMobile), marginRight: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', marginTop: isMobile ? '5px' : '0', marginLeft: isMobile ? '5px' : '10px'}}
             >
               {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             </button>
           </div>
         </div>
 
-        <div style={{color: (isFullscreen || isDarkMode) ? '#fff' : '#000'}}>
-          <h2>About Othain Onboarding</h2>
-          <p>
+        <div style={{
+          color: (isFullscreen || isDarkMode) ? '#fff' : '#000'
+        }}>
+          <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>About Othain Onboarding</h2>
+          <p style={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
           Welcome to your Othain onboarding! This course is structured to give you a clear understanding of our company, from our team and processes to essential HR policies and employee benefits. Each section is designed to help you get started confidently and quickly. We recommend progressing through all sections to ensure you're fully acquainted with our platform and procedures.
           </p>
         </div>
       </div>
 
-      {/* Right Side: Section List */}
+      {/* Right Side (or Bottom on Mobile): Section List */}
       <div style={{
-          flex: isFullscreen ? '0 0 30%' : 1, 
-          borderLeft: isFullscreen ? '1px solid #555' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
-          paddingLeft: isFullscreen ? '10px' : '20px', 
+          flex: isMobile ? '1 1 100%' : (isFullscreen ? '0 0 30%' : 1),  // Full width on mobile
+          borderLeft: isMobile || isFullscreen ? 'none' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
+          paddingLeft: isMobile || isFullscreen ? '0px' : '20px', 
+          marginTop: isMobile ? '20px' : '0px', // Add margin top on mobile
           borderRadius: '8px',
           backgroundColor: isFullscreen ? '#333' : (isDarkMode ? '#1e1e1e' : 'transparent'),
           color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
           height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
           overflowY: 'auto'
       }}>
-        <h2 style={{ marginBottom: '15px', marginTop: '15px' }}>Sections</h2>
+        <h2 style={{ 
+          marginBottom: '15px', 
+          marginTop: isMobile ? '0px' : '15px', // No top margin if already spaced by parent
+          fontSize: isMobile ? '1.2rem' : '1.5rem' 
+        }}>Sections</h2>
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {chapters.map((chapter, index) => {
             const isCompleted = completedChapters.has(index);
             const isActive = index === currentChapterIndex;
             const durationColor = isFullscreen ? '#ccc' : (isDarkMode ? '#bbb' : '#555');
-            // const durationPaddingLeft = isCompleted ? '26px' : '0px'; // Reset padding logic if needed
 
             return (
               <li 
                 key={chapter.id} 
                 style={{
-                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode),
+                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode, isMobile), // Pass isMobile here
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center'
@@ -566,10 +590,10 @@ const OnboardingPage = () => {
   );
 };
 
-// Helper for button styling
-const buttonStyle = (disabled) => ({
-  padding: '8px 12px',
-  fontSize: '0.9em',
+// Helper for button styling - added isMobile for responsive font size
+const buttonStyle = (disabled, isMobile) => ({
+  padding: isMobile ? '4px 8px' : '8px 12px',      // Reduced mobile padding
+  fontSize: isMobile ? '0.7em' : '0.9em',     // Reduced mobile font size
   cursor: disabled ? 'not-allowed' : 'pointer',
   backgroundColor: disabled ? '#555' : '#4361ee',
   color: 'white',
@@ -580,8 +604,8 @@ const buttonStyle = (disabled) => ({
 });
 
 // Updated chapterItemStyle to handle general dark mode for non-fullscreen
-const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode) => ({
-  padding: '12px 8px',
+const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode, isMobile) => ({ // Added isMobile
+  padding: isMobile ? '10px 5px' : '12px 8px', // Adjust padding for mobile
   borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
   borderRadius: '8px',
@@ -590,15 +614,19 @@ const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode
   backgroundColor: (() => {
     if (isFullscreenMode) return isActive ? '#555' : (isCompleted ? '#2a3a2a' : 'transparent');
     if (isAppDarkMode) return isActive ? '#383838' : (isCompleted ? '#203020' : 'transparent');
+    // Mobile light mode can also have distinct styles if needed, otherwise falls to default light
     return isActive ? '#e0e0e0' : (isCompleted ? '#e6ffe6' : 'transparent');
   })(),
   color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000', // Title text white in fullscreen OR app dark mode
   transition: 'background-color 0.2s ease, color 0.2s ease',
-  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1, // Dimming only for light mode non-fullscreen completed items
-  hover: {
+  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1, 
+  // Adjust hover for mobile if needed, or use existing logic
+  '&:hover': { // Note: MUI sx prop handles hover like this
     backgroundColor: (() => {
       if (isFullscreenMode) return isActive ? '#666' : (isCompleted ? '#3a4a3a' : '#404040');
       if (isAppDarkMode) return isActive ? '#484848' : (isCompleted ? '#304030' : '#2a2a2a');
+      // Mobile light mode hover
+      if (isMobile) return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0'); 
       return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0');
     })(),
   }
