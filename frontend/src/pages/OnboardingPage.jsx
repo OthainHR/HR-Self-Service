@@ -521,7 +521,7 @@ const OnboardingPage = () => {
                 {/* Conditionally render SVG Icon on the right */}
                 {isCompleted && (
                   <img 
-                    src="/checkmark-svgrepo-com.svg" 
+                    src={process.env.PUBLIC_URL + '/checkmark-svgrepo-com.svg'}
                     alt="Completed" 
                     style={{ 
                       height: '18px', // Adjust size as needed

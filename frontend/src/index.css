@@ -15,6 +15,17 @@
     transform: scale(1); /* Scale to normal size and full opacity */
   }
 }
+
+@keyframes scaleInCheckmark {
+  from {
+    opacity: 0;
+    transform: scale(0.5); /* Start smaller and transparent */
+  }
+  to {
+    opacity: 1;
+    transform: scale(1); /* Scale to normal size and full opacity */
+  }
+}
 /* Make sure MUI components use Lexend */
 .MuiTypography-root,
 .MuiButton-root,

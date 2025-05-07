@@ -78,7 +78,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
         {feedback && feedback.success && (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <img 
-              src="/checkmark-svgrepo-com.svg" 
+              src={process.env.PUBLIC_URL + '/checkmark-svgrepo-com.svg'} 
               alt="Success" 
               style={{ 
                 height: '60px', width: '60px', marginBottom: '15px', marginTop: '-15px',
