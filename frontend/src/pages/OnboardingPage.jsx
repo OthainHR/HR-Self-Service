@@ -30,32 +30,80 @@ const OnboardingPage = () => {
     { id: 1, title: '1. Welcome to Othain', duration: '1 Min 48 Sec', timestamp: 0 },
     { id: 2, title: '2. About Our Team', duration: '1 Min 54 Sec', timestamp: 108 }, // e.g., 1 minute
     {
-      id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5,
-      quiz: {
-        title: 'Onboarding Process Check',
-        questions: [
-          {
-            id: 'q1', 
-            text: 'What is the first step of the onboarding process mentioned?',
-            options: ['Fill forms', 'Meet team', 'Setup system', 'Watch intro video'],
-            correctAnswer: 'Watch intro video' // Or index 3
-          },
-          {
-            id: 'q2', 
-            text: 'Who should you contact for IT issues?',
-            options: ['HR Manager', 'Your Buddy', 'IT Support Desk', 'CEO'],
-            correctAnswer: 'IT Support Desk' // Or index 2
+      id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5},
+    { id: 4, title: '4. Policies & Procedures: Attendance', duration: '4 Min 23 Sec', timestamp: 292,
+        quiz: {
+            title: 'Attendance Policy Quiz',
+            questions: [
+              {
+                id: 'q1', 
+                text: 'Q1. At Othain’s Building B9, which clock-in/clock-out method must employees use?',
+                options: [ 'A. Biometric scanner', 'B. Web clock-in/clock-out inside the office', 'C. Remote clock-in/clock-out from any location', 'D. Manual sign-in sheet'],
+                correctAnswer: 'B. Web clock-in/clock-out inside the office' // Or index 3
+              }
+            ]
           }
-        ]
-      }
-    },
-    { id: 4, title: '4. Policies & Procedures: Attendance', duration: '4 Min 23 Sec', timestamp: 292 }, // e.g., 4.5 minutes
+     }, // e.g., 4.5 minutes
     { id: 5, title: '5. Policies & Procedures: Probation & Leave', duration: '2 Min 6 Sec', timestamp: 555.5 },
     { id: 6, title: '6. Policies & Procedures: Overtime & Sandwich Leave', duration: '1 Min 25 Sec', timestamp: 682 },
-    { id: 7, title: '7. Policies & Procedures: Continued', duration: '1 Min 49 Sec', timestamp: 766.5 },
+    { id: 7, title: '7. Policies & Procedures: Continued', duration: '1 Min 49 Sec', timestamp: 766.5,
+        quiz: {
+            title: 'Policy & Procedures Quiz',
+            questions: [
+              {
+                id: 'q1', 
+                text: 'Q2. During the six-month probation period, which leave type listed below cannot be taken?',
+                options: [ 'A. Casual Leave', 'B. Sick Leave', 'C. Earned Leave (EL)', 'D. Compensatory Off'],
+                correctAnswer: 'C. Earned Leave (EL)' // Or index 3
+              },
+              {
+                id: 'q2', 
+                text: 'Q3. If you take three consecutive sick-leave days, what must you provide?',
+                options: ['A. No documentation is required', 'B. An email notification only', 'C. A doctor’s medical certificate and prescription', 'D. Your manager’s verbal approval'],
+                correctAnswer: 'C. A doctor’s medical certificate and prescription' // Or index 2
+              },
+              {
+                id: 'q3', 
+                text: 'Q4. Under the sandwich policy, if you are absent on both Friday and Monday without planning the leave two weeks in advance, how many leave days are deducted?',
+                options: ['A. 2 days', 'B. 4 days (Friday + weekend + Monday)', 'C. 3 days', 'D. 1 day'],
+                correctAnswer: 'B. 4 days (Friday + weekend + Monday)' // Or index 2
+              }
+            ]
+          }
+     },
     { id: 8, title: '8. PMS Cycle', duration: '1 Min 33 Sec', timestamp: 875.5 }, 
-    { id: 9, title: '9. Performance Management (PMP)', duration: '2 Min 49 Sec', timestamp: 968.5 },
-    { id: 10, title: '10. Employee Benefits', duration: '55 Sec', timestamp: 1137.5 },
+    { id: 9, title: '9. Performance Management (PMP)', duration: '2 Min 49 Sec', timestamp: 968.5, 
+        quiz: {
+            title: 'Performance Management Quiz',
+            questions: [
+              {
+                id: 'q1', 
+                text: 'Q5. Othain’s official Performance Management System (PMS) evaluation cycle runs from:',
+                options: [ 'A. April – March', 'B. July – June', 'C. October – September', 'D. January – December'],
+                correctAnswer: 'D. January – December' // Or index 3
+              },
+              {
+                id: 'q2', 
+                text: 'Q6. In the goal-setting framework for new employees, what percentage of goals relate to customers?',
+                options: ['A. 20 %', 'B. 60 %', 'C. 40 %', 'D. 80 %'],
+                correctAnswer: 'B. 60 %' // Or index 2
+              }
+            ]
+          }
+    },
+    { id: 10, title: '10. Employee Benefits', duration: '55 Sec', timestamp: 1137.5, 
+        quiz: {
+            title: 'Employee Benefits Quiz',
+            questions: [
+              {
+                id: 'q1', 
+                text: 'Q7. What is the default medical-insurance coverage amount provided through ICICI Lombard?',
+                options: [ 'A. ₹1 lakh', 'B. ₹5 lakhs', 'C. ₹10 lakhs', 'D. ₹2.5 lakhs'],
+                correctAnswer: 'D. ₹2.5 lakhs' // Or index 3
+              }
+            ]
+          }
+     },
     { id: 11, title: '11. Questions', duration: '17 Sec', timestamp: 1192 },
     { id: 12, title: '12. Thank you!', duration: '9 Sec', timestamp: 1209 },
     
@@ -448,6 +496,7 @@ const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode
   padding: '12px 8px',
   borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
+  borderRadius: '8px',
   backgroundColor: (() => {
     if (isFullscreenMode) return isActive ? '#555' : (isCompleted ? '#2a3a2a' : 'transparent');
     if (isAppDarkMode) return isActive ? '#383838' : (isCompleted ? '#203020' : 'transparent');
