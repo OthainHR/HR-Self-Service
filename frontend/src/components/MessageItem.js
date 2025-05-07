@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
 
 // Message component for displaying chat messages
-function MessageItem({ message }) {
+function MessageItem({ message, isLast, isMobile }) {
   const theme = useTheme();
   const { isDarkMode } = useDarkMode();
   const isUser = message.role === 'user';
@@ -27,6 +27,13 @@ function MessageItem({ message }) {
       return `[${url}](${href})${suffix}`;
     });
   };
+
+  const bubbleColor = isUser 
+    ? (isDarkMode ? theme.palette.primary.dark : theme.palette.primary.main) 
+    : (isDarkMode ? theme.palette.grey[700] : theme.palette.grey[200]);
+  const textColor = isUser 
+    ? theme.palette.primary.contrastText 
+    : (isDarkMode ? theme.palette.text.primary : theme.palette.grey[800]);
 
   return (
     <Box
@@ -167,9 +174,14 @@ function MessageItem({ message }) {
         {isUser ? (
           <Typography 
             variant="body1" 
+            component="div" 
             sx={{ 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-word', 
+              color: textColor,
+              fontSize: isMobile ? '0.875rem' : '1rem', 
+              lineHeight: isMobile ? '1.4' : '1.5', 
               fontWeight: 400,
-              lineHeight: 1.5,
               letterSpacing: '0.01em',
             }}
           >
@@ -186,6 +198,7 @@ function MessageItem({ message }) {
               m: 0, 
               mb: 1.5,
               lineHeight: 1.6,
+              fontSize: isMobile ? '0.875rem' : '1rem',
               '&:last-child': {
                 mb: 0
               }
@@ -194,6 +207,7 @@ function MessageItem({ message }) {
               color: 'primary.main',
               textDecoration: 'none',
               fontWeight: 500,
+              fontSize: isMobile ? '0.875rem' : '1rem',
               position: 'relative',
               '&:hover': {
                 textDecoration: 'none',
@@ -204,6 +218,7 @@ function MessageItem({ message }) {
               '&::after': {
                 content: '""',
                 position: 'absolute',
+                fontSize: isMobile ? '0.875rem' : '1rem',
                 bottom: 0,
                 left: 0,
                 width: 0,
@@ -214,10 +229,12 @@ function MessageItem({ message }) {
             },
             '& ul, & ol': {
               pl: 2.5,
-              mb: 1.5
+              mb: 1.5,
+              fontSize: isMobile ? '0.875rem' : '1rem'
             },
             '& li': {
               mb: 0.5,
+              fontSize: isMobile ? '0.875rem' : '1rem'
             },
             '& code': {
               backgroundColor: isDarkMode 
@@ -226,7 +243,7 @@ function MessageItem({ message }) {
               padding: '2px 4px',
               borderRadius: '4px',
               fontFamily: 'monospace',
-              fontSize: '0.875em',
+              fontSize: isMobile ? '0.875rem' : '1rem',
             }
           }}>
             <ReactMarkdown
@@ -303,7 +320,7 @@ function MessageItem({ message }) {
                 px: 0.75,
                 py: 0.25,
                 borderRadius: '10px',
-                fontSize: '0.65rem',
+                fontSize: '0.5rem',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.4,

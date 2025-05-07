@@ -13,7 +13,8 @@ import {
   Alert,
   Chip,
   Avatar,
-  useTheme
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import { 
   Send as SendIcon, 
@@ -39,6 +40,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const messagesEndRef = useRef(null);
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const currentAssistantMessageId = useRef(null);
   const bufferedContentRef = useRef('');
   const updateTimerRef = useRef(null);
@@ -366,7 +368,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
         sx={{ 
           flexGrow: 1, 
           overflow: 'auto',
-          p: 3,
+          p: { xs: 1, sm: 2, md: 3 },
           display: 'flex',
           flexDirection: 'column',
           bgcolor: isDarkMode ? 'rgba(25, 25, 25, 0.7)' : 'rgba(245, 247, 250, 0.5)',
@@ -492,6 +494,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               key={message.id ? message.id : `temp-msg-${index}`}
               message={message}
               isLast={index === messages.length - 1}
+              isMobile={isMobile}
             />
           ))
         )}
@@ -537,6 +540,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               borderRadius: 3,
               backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(5px)',
+              fontSize: isMobile ? '0.875rem' : '1rem',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               transition: 'all 0.2s ease',
               '&:hover': {
