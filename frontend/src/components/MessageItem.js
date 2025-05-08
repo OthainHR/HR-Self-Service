@@ -54,8 +54,8 @@ function MessageItem({ message, isLast, isMobile }) {
         throw new Error(sessionError?.message || 'User not authenticated. Please log in.');
       }
 
-      // console.log('Supabase URL for fetch:', process.env.REACT_APP_SUPABASE_URL); // DEBUG LINE - No longer calling Supabase directly
-      const response = await fetch(`/api/v1/feedback`, { // Updated to call the Python backend endpoint
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || ''; // Use REACT_APP_BACKEND_URL
+      const response = await fetch(`${apiUrl}/api/v1/feedback`, { // Use the absolute API base URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
