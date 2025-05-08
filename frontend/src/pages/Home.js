@@ -11,6 +11,30 @@ const Home = () => {
   const { isDarkMode } = useDarkMode();
   const isAdmin = user?.user_metadata?.role === 'admin';
 
+  const getDisplayName = () => {
+    if (user?.name) {
+      return user.name;
+    }
+    if (user?.email) {
+      try {
+        const emailParts = user.email.split('@');
+        const namePart = emailParts[0];
+        const firstName = namePart.split('.')[0];
+        if (firstName) {
+          return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+        }
+      } catch (e) {
+        // Parsing failed, fall back to full email
+        console.error("Failed to parse first name from email:", e);
+        return user.email; 
+      }
+      return user.email; // Fallback if splitting somehow fails without error but no firstname
+    }
+    return ''; // No user name or email
+  };
+
+  const displayName = getDisplayName();
+
   return (
     <Box
       sx={{
@@ -66,20 +90,20 @@ const Home = () => {
               sx={{ 
                 fontWeight: 600, 
                 color: isDarkMode ? 'white' : 'primary.main',
-                fontSize: { xs: '1.8rem', sm: '2.0rem', md: '2.2rem' },
+                fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' },
                 overflowWrap: 'break-word', // Allow long words/emails to break
                 wordBreak: 'break-word' // Adding word-break as well for broader compatibility
               }}
             >
               Welcome to Othain HR Self-Service
-              {user && `, ${user.name || user.email}`}
+              {displayName && `, ${displayName}`}
             </Typography>
             <Typography 
                 variant="body1" 
                 paragraph 
                 sx={{ 
                     color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit',
-                    fontSize: { xs: '0.9rem', sm: '1rem'} // Slightly smaller body text on xs
+                    fontSize: { xs: '0.8rem', sm: '1rem'} // Slightly smaller body text on xs
                 }}
             >
               Your interactive Employee Self-Service designed to help with policies, benefits, and workplace questions.
@@ -124,10 +148,10 @@ const Home = () => {
             }}
           >
             <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'secondary.light' : 'secondary.main', mb: 2 }} />
-            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.dark' }}>
+            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.dark' }}>
             New to Othain or just need a refresher?
             </Typography>
-            <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto' }}>
+            <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
             Welcome aboard! Our onboarding video is your express guide to navigating Othain with confidence. Discover essential HR policies, learn about your valuable employee benefits, and get acquainted with our performance management system. 
             </Typography>
             <Button 
@@ -141,11 +165,11 @@ const Home = () => {
                 px: 4, // More horizontal padding for emphasis
                 py: 1.3,
                 borderRadius: 2,
-                boxShadow: '0 4px 20px rgba(247, 37, 133, 0.3)', // Using secondary color for shadow
-                background: isDarkMode ? 'linear-gradient(to right, #f72585, #d42070)' : 'linear-gradient(to right, #f72585, #e01e75)', // Adjusted gradient for dark/light
+                boxShadow: '0 4px 20px rgba(37, 247, 118, 0.3)', // Using secondary color for shadow
+                background: isDarkMode ? 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))' : 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))', // Adjusted gradient for dark/light
                 '&:hover': {
-                  boxShadow: '0 6px 25px rgba(247, 37, 133, 0.4)',
-                  background: isDarkMode ? 'linear-gradient(to right, #e01e75, #c31970)' : 'linear-gradient(to right, #d42070, #c31970)'
+                  boxShadow: '0 6px 25px rgba(37, 247, 55, 0.4)',
+                  background: isDarkMode ? 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))' : 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))'
                 }
               }}
             >
@@ -176,11 +200,11 @@ const Home = () => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <QuestionAnswerIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.main' }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.main' }}>
                       Ask Questions
                     </Typography>
                   </Box>
-                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit' }}>
+                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
                     Ask about company policies, benefits, time-off, workplace guidelines, and more.
                     The HR chatbot uses AI to understand your questions and provide accurate information.
                   </Typography>
@@ -231,11 +255,11 @@ const Home = () => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <InfoIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.main' }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.main' }}>
                       Knowledge Base
                     </Typography>
                   </Box>
-                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit' }}>
+                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
                     The HR chatbot is connected to a comprehensive knowledge base of company information.
                     {isAdmin && ' As an administrator, you can manage this knowledge base to keep information accurate and up-to-date.'}
                   </Typography>

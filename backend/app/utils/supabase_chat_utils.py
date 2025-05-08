@@ -59,25 +59,24 @@ def db_add_chat_message(session_id: str, role: str, content: str, user_email: Op
         return None
 
 def db_get_chat_sessions(user_id: str) -> List[Dict[str, Any]]:
-    """Gets all chat sessions for a user from Supabase."""
+    """Gets all non-deleted chat sessions for a user from Supabase."""
     if not supabase_admin_client:
         print("ERROR: Supabase client not available for db_get_chat_sessions")
         return []
     try:
-        # Select session columns AND a count of related messages
+        # Select session columns AND count of related messages, filtering out soft-deleted ones
         response = supabase_admin_client.table(SESSIONS_TABLE)\
             .select("id, user_id, created_at, updated_at, chat_messages(count)")\
             .eq("user_id", user_id)\
+            .eq("is_deleted_by_user", False)\
             .order("updated_at", desc=True)\
             .execute()
         
         if response.data:
-            # The count will be nested, e.g., data[0]['chat_messages'][0]['count']
-            print(f"Supabase: Fetched {len(response.data)} sessions for user {user_id} with message counts.") 
-            # Example: print(response.data[0]['chat_messages'][0]['count'])
+            print(f"Supabase: Fetched {len(response.data)} non-deleted sessions for user {user_id} with message counts.") 
             return response.data
         else:
-            print(f"Supabase: No sessions found for user {user_id} or error: {response}")
+            print(f"Supabase: No non-deleted sessions found for user {user_id} or error: {response}")
             return []
     except Exception as e:
         print(f"Exception in db_get_chat_sessions: {e}")
@@ -120,43 +119,33 @@ def db_get_chat_messages(session_id: str, user_id: str) -> Optional[List[Dict[st
         return None
         
 def db_delete_chat_session(session_id: str, user_id: str) -> bool:
-    """Deletes a chat session and its messages from Supabase, verifying ownership."""
+    """Soft deletes a chat session by setting is_deleted_by_user=true, verifying ownership."""
     if not supabase_admin_client:
         print("ERROR: Supabase client not available for db_delete_chat_session")
         return False
     try:
-        # Verify ownership before deleting
-        session_response = supabase_admin_client.table(SESSIONS_TABLE)\
-            .select("id")\
+        # We still verify ownership by checking if the session exists for the user,
+        # but the actual operation is an update.
+        update_response = supabase_admin_client.table(SESSIONS_TABLE)\
+            .update({"is_deleted_by_user": True})\
             .eq("id", session_id)\
             .eq("user_id", user_id)\
-            .maybe_single()\
             .execute()
             
-        if not session_response.data:
-             print(f"Supabase: Session {session_id} not found or access denied for user {user_id} during delete attempt.")
-             return False # Indicate failure (not found or forbidden)
-
-        # --- REMOVED ACTUAL DELETION --- 
-        # # Delete messages first (optional, depends on cascade settings)
-        # # If cascade delete is set up in Supabase, this might not be needed.
-        # print(f"Supabase: Deleting messages for session {session_id}")
-        # supabase_admin_client.table(MESSAGES_TABLE).delete().eq("session_id", session_id).execute()
-
-        # # Delete session
-        # print(f"Supabase: Deleting session {session_id}")
-        # delete_response = supabase_admin_client.table(SESSIONS_TABLE).delete().eq("id", session_id).execute()
-        
-        # # Check if delete was successful (usually response.data is empty on success)
-        # # A more robust check might involve checking status code if available
-        # if hasattr(delete_response, 'error') and delete_response.error:
-        #     print(f"Supabase: Error deleting session {session_id}: {delete_response.error}")
-        #     return False
-        # --- END REMOVED ACTUAL DELETION --- 
-            
-        print(f"Supabase: Session {session_id} marked for deletion (record kept). User {user_id} verified.")
-        return True # Indicate success (ownership verified) even though we didn't delete
+        # Check if the update operation affected any rows (i.e., found a matching row)
+        # Note: Supabase update response might vary. Often, response.data contains the updated records.
+        # If response.data is empty after matching on id AND user_id, it means no row was updated (not found or wrong user).
+        if update_response.data and len(update_response.data) > 0:
+            print(f"Supabase: Soft deleted session {session_id} for user {user_id}.")
+            return True
+        else:
+             # This could mean session_id doesn't exist OR user_id doesn't match.
+             print(f"Supabase: Session {session_id} not found or access denied for user {user_id} during soft delete attempt.")
+             # Check for specific errors if possible from response object, otherwise assume not found/forbidden.
+             # if hasattr(update_response, 'error') and update_response.error:
+             #     print(f"Supabase error during update: {update_response.error}")
+             return False
 
     except Exception as e:
-        print(f"Exception in db_delete_chat_session: {e}")
+        print(f"Exception in db_delete_chat_session (soft delete): {e}")
         return False 

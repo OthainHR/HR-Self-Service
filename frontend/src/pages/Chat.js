@@ -24,14 +24,18 @@ import {
   Skeleton,
   DialogContentText,
   Snackbar,
-  Alert as MuiAlert
+  Alert as MuiAlert,
+  Drawer,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import { 
   Add as AddIcon, 
   Message as MessageIcon,
   Login as LoginIcon,
   Logout as LogoutIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Menu as MenuIcon
 } from '@mui/icons-material';
 import ChatWindow from '../components/ChatWindow';
 import { chatApi } from '../services/api';
@@ -55,15 +59,21 @@ function Chat() {
   const [serverError, setServerError] = useState(false);
   const navigate = useNavigate();
   
-  // State for delete confirmation dialog
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false); // State for deletion loading
+  const [isDeleting, setIsDeleting] = useState(false);
   
-  // State for Snackbar feedback
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' or 'error'
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+
+  const handleDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
   
   useEffect(() => {
     if (!authLoading && isAuthenticated) { 
@@ -88,6 +98,7 @@ function Chat() {
       } else {
         setSessions([]);
       }
+      return sessionsData;
     } catch (error) {
       setSessions([]);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -95,6 +106,7 @@ function Chat() {
       } else {
           setServerError(true);
       }
+      return [];
     } finally {
       setLoading(false);
     }
@@ -102,6 +114,9 @@ function Chat() {
   
   const handleSessionChange = (sessionId) => {
     setSelectedSessionId(sessionId);
+    if (isMobile) {
+      setMobileDrawerOpen(false);
+    }
   };
   
   const handleNewChat = async () => {
@@ -109,15 +124,16 @@ function Chat() {
       const newSession = await chatApi.createSession();
       
       if (newSession && newSession.id) {
-        setSessions(prevSessions => [newSession, ...prevSessions]);
-        
+        setSessions(prevSessions => [newSession, ...prevSessions].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
         setSelectedSessionId(newSession.id);
+        if (isMobile) {
+          setMobileDrawerOpen(false);
+        }
       } else {
-        
+        showSnackbar('Failed to create new chat session.', 'error');
       }
     } catch (error) {
-      
-      alert('Failed to create a new chat. Please try again.');
+      showSnackbar('Failed to create a new chat. Please try again.', 'error');
     }
   };
   
@@ -134,7 +150,7 @@ function Chat() {
   };
 
   const handleCloseDeleteDialog = () => {
-    if (isDeleting) return; // Prevent closing while deleting
+    if (isDeleting) return;
     setIsDeleteDialogOpen(false);
     setSessionToDelete(null);
   };
@@ -157,7 +173,6 @@ function Chat() {
     
     const sessionId = sessionToDelete;
     setIsDeleting(true);
-    // Keep dialog open but maybe disable buttons? Or close it? Let's close it for now.
     setIsDeleteDialogOpen(false); 
 
     try {
@@ -175,7 +190,7 @@ function Chat() {
       showSnackbar(errorMsg, 'error');
     } finally {
       setIsDeleting(false);
-      setSessionToDelete(null); // Clear the target session ID after operation
+      setSessionToDelete(null);
     }
   };
   // --- End Delete Handling ---
@@ -210,6 +225,82 @@ function Chat() {
         </ListItemButton>
       ))}
     </List>
+  );
+  
+  const renderChatHistoryPanel = () => (
+    <Paper elevation={isMobile ? 0 : 2} sx={{
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        borderRadius: isMobile ? 0 : 2, 
+        overflow: 'hidden',
+        bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: isMobile ? 'none' : 'blur(10px)',
+        border: isMobile ? 'none' : (isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)'),
+        color: theme => theme.palette.text.primary
+    }}>
+      <Box sx={{ 
+        p: 2, 
+        borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)', 
+        textAlign: 'center'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
+      </Box>
+      
+      <ListItemButton 
+        onClick={handleNewChat}
+        sx={{ 
+          py: 1.5, flexShrink: 0, height: 54, minHeight: 54, maxHeight: 84,
+          borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+          bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+          '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)' },
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1
+        }}
+      >
+        <AddIcon fontSize="small" /> 
+        <Typography variant="button" sx={{ fontWeight: 600 }}>New Chat</Typography>
+      </ListItemButton>
+
+      {loading ? (
+          renderSkeletons()
+      ) : serverError ? (
+          <Alert severity="error" sx={{m: 2, flexShrink: 0}}>Error connecting to server.</Alert>
+      ) : sessions.length === 0 ? (
+          <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary', flexShrink: 0 }}>No chat sessions yet.</Typography>
+      ) : (
+        <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
+          {sessions.map((session, index) => (
+            <ListItemButton
+              key={session.id}
+              selected={selectedSessionId === session.id}
+              onClick={() => handleSessionChange(session.id)}
+              sx={{ 
+                  borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+                  '&.Mui-selected': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.2)' : 'rgba(67, 97, 238, 0.1)' },
+                  '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.1)' : 'rgba(67, 97, 238, 0.05)' }
+              }}
+            >
+              <ListItemText 
+                primary={`Chat ${sessions.length - index}`}
+                secondary={`Updated: ${formatDate(session.updated_at)}`}
+                primaryTypographyProps={{ fontWeight: 500 }}
+              />
+               <IconButton 
+                  edge="end" aria-label="delete" 
+                  onClick={(e) => handleDeleteSessionRequest(e, session.id)} 
+                  size="small"
+                  disabled={isDeleting && sessionToDelete === session.id}
+               >
+                 {(isDeleting && sessionToDelete === session.id) 
+                   ? <CircularProgress size={20} /> 
+                   : <DeleteIcon fontSize="small" />
+                 }
+               </IconButton>
+            </ListItemButton>
+          ))}
+        </List>
+      )}
+    </Paper>
   );
   
   return (
@@ -248,111 +339,115 @@ function Chat() {
           }
         }}
       />
-      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 5, pt: 4, pb: 8, minHeight: 'calc(100vh - 100px)' }}>
+      <Container maxWidth="xl" sx={{ 
+          position: 'relative', zIndex: 5, 
+          pt: isMobile ? 1 : 4,
+          pb: 8, 
+          height: 'calc(100vh - 64px)',
+          display: 'flex',
+          flexDirection: 'column'
+      }}>
+        {isMobile && isAuthenticated && (
+          <Box sx={{ position: 'fixed', top: 76, left: 58, zIndex: 1301, display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Button
+              variant="outlined"
+              onClick={handleDrawerToggle}
+              sx={{
+                bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: isDarkMode ? 'white' : 'black',
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                border: 'none',
+                backdropFilter: 'blur(5px)',
+                textTransform: 'none',
+                borderRadius: '20px',
+                padding: '8px 12px',
+                fontSize: '0.8rem',
+
+                lineHeight: '1.2',
+                minWidth: 'auto',
+                boxShadow: 'none',
+                '&:hover': {
+                  bgcolor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                  boxShadow: 'none',
+                }
+              }}
+            >
+              Chat History
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon fontSize="small" />}
+              onClick={handleNewChat}
+              sx={{
+                bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: isDarkMode ? 'white' : 'black',
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                border: 'none',
+                backdropFilter: 'blur(5px)',
+                textTransform: 'none',
+                borderRadius: '20px',
+                padding: '6px 12px',
+                fontSize: '0.8rem',
+                lineHeight: '1.2',
+                minWidth: 'auto',
+                boxShadow: 'none',
+                '&:hover': {
+                  bgcolor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                  boxShadow: 'none',
+                }
+              }}
+            >
+              New Chat
+            </Button>
+          </Box>
+        )}
+
         {isAuthenticated ? (
-          <Grid container spacing={2} sx={{ height: 'calc(100vh - 120px)' }}>
-            <Grid item xs={12} md={3}>
-              <Paper elevation={2} sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  borderRadius: 2, 
-                  overflow: 'hidden',
-                  bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.75)',
-                  backdropFilter: 'blur(10px)',
-                  border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
-                  color: theme => theme.palette.text.primary
+          isMobile ? (
+            <>
+              <Drawer
+                variant="temporary"
+                open={mobileDrawerOpen}
+                onClose={handleDrawerToggle}
+                ModalProps={{ keepMounted: true }}
+                sx={{
+                  display: { xs: 'block', md: 'none' },
+                  '& .MuiDrawer-paper': { 
+                    boxSizing: 'border-box', 
+                    width: 280,
+                  },
+                }}
+              >
+                {renderChatHistoryPanel()}
+              </Drawer>
+              <Box sx={{ 
+                height: '100%',
+                width: '100%',
+                pt: isMobile ? '80px' : 0,
+                boxSizing: 'border-box'
               }}>
-                <Box sx={{ 
-                  p: 2, 
-                  borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)', 
-                  textAlign: 'center'
-                }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
-                </Box>
-                
-                <ListItemButton 
-                  onClick={handleNewChat}
-                  sx={{ 
-                    py: 1.5,
-                    flexShrink: 0,
-                    height: 54, // Fixed height
-                    minHeight: 54, // Ensure minimum height
-                    maxHeight: 84, // Ensure maximum height
-                    borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
-                    bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-                    '&:hover': { 
-                      bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)', 
-                    },
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1
-                  }}
-                >
-                  <AddIcon fontSize="small" /> 
-                  <Typography variant="button" sx={{ fontWeight: 600 }}>New Chat</Typography>
-                </ListItemButton>
-
-                {loading ? (
-                    renderSkeletons()
-                ) : serverError ? (
-                    <Alert severity="error" sx={{m: 2, flexShrink: 0}}>Error connecting to server.</Alert>
-                ) : sessions.length === 0 ? (
-                    <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary', flexShrink: 0 }}>No chat sessions yet.</Typography>
-                ) : (
-                  <List sx={{ 
-                      flexGrow: 1, 
-                      overflowY: 'auto', 
-                      p: 0 
-                  }}>
-                    {sessions.map((session, index) => (
-                      <ListItemButton
-                        key={session.id}
-                        selected={selectedSessionId === session.id}
-                        onClick={() => handleSessionChange(session.id)}
-                        sx={{ 
-                            borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
-                            '&.Mui-selected': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.2)' : 'rgba(67, 97, 238, 0.1)' },
-                            '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.1)' : 'rgba(67, 97, 238, 0.05)' }
-                        }}
-                      >
-                        <ListItemText 
-                          primary={`Chat ${sessions.length - index}`}
-                          secondary={`Updated: ${formatDate(session.updated_at)}`}
-                          primaryTypographyProps={{ fontWeight: 500 }}
-                        />
-                         <IconButton 
-                            edge="end" 
-                            aria-label="delete" 
-                            onClick={(e) => handleDeleteSessionRequest(e, session.id)} 
-                            size="small"
-                            disabled={isDeleting && sessionToDelete === session.id} // Disable button if it's being deleted
-                         >
-                           {(isDeleting && sessionToDelete === session.id) 
-                             ? <CircularProgress size={20} /> 
-                             : <DeleteIcon fontSize="small" />
-                           }
-                         </IconButton>
-                      </ListItemButton>
-                    ))}
-                  </List>
-                )}
-              </Paper>
+                <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
+              </Box>
+            </>
+          ) : (
+            <Grid container spacing={2} sx={{ height: '100%'}}>
+              <Grid item md={3} sx={{height: '100%'}}> 
+                {renderChatHistoryPanel()}
+              </Grid>
+              <Grid item md={9} sx={{height: '100%'}}>
+                <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
+              </Grid>
             </Grid>
-
-            <Grid item xs={12} md={9}>
-              <ChatWindow sessionId={selectedSessionId} />
-            </Grid>
-          </Grid>
+          )
         ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <Box sx={{ flexGrow:1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
              {!authLoading && <Typography>Please log in to use the chat.</Typography>} 
           </Box>
         )}
       </Container>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={isDeleteDialogOpen}
         onClose={handleCloseDeleteDialog}
@@ -375,17 +470,16 @@ function Chat() {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for Feedback */}
       <Snackbar style={{ marginLeft: '140px', marginRight: 'auto' }}
         open={snackbarOpen} 
-        autoHideDuration={6000} // Hide after 6 seconds
+        autoHideDuration={6000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center'}}
       >
         <SnackbarAlert 
             onClose={handleSnackbarClose} 
             severity={snackbarSeverity} 
-            sx={{ width: '100%', color: 'white' }} // Add color: 'white' here
+            sx={{ width: '100%', color: 'white' }}
         >
           {snackbarMessage}
         </SnackbarAlert>

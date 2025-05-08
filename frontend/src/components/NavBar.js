@@ -328,6 +328,7 @@ const NavBar = () => {
         }}>
           <Box
             component="img"
+            onClick={() => navigate('/')}
             src="/logowhite.png" 
             alt="Othain Logo" 
             sx={{

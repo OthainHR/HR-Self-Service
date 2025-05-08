@@ -248,10 +248,10 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           height={isDarkMode ? "60" : "50"}
           style={{ marginBottom: theme.spacing(2), opacity: 1 }}
         />
-        <Typography variant="h5" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
+        <Typography variant="h5" color="text.primary" align="center" sx={{ mb: 1, fontWeight: 500,fontSize: isMobile ? '16px' : '25px' }}>
           Welcome to Othain Employee Self Service
         </Typography>
-        <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3, maxWidth: 500 }}>
+        <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3, maxWidth: 500, fontSize: isMobile ? '13px' : '16px' }}>
           Select an existing chat from the sidebar or start a new conversation to get assistance with HR-related questions.
         </Typography>
         
@@ -274,7 +274,9 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             sx={{ 
               borderRadius: 2,
               display: 'flex', 
-              alignItems: 'center' 
+              alignItems: 'center',
+              marginBottom: isMobile ? '280px' : '20px',
+              fontSize: isMobile ? '10px' : '16px'
             }}
           >
             Connected to Othain ESS
@@ -404,10 +406,10 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           height={isDarkMode ? "50" : "42"}
           style={{ marginBottom: theme.spacing(2), opacity: 1 }}
         />
-              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: theme => theme.palette.text.primary }}>
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, fontSize: isMobile ? '16px' : '20px', color: theme => theme.palette.text.primary }}>
                 Start a conversation
               </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+              <Typography variant="body2" color="textSecondary"  sx={{ mb: 3, fontSize: isMobile ? '10px' : '16px' }}>
                 Ask me anything about HR policies, benefits, or employment questions.
               </Typography>
               
@@ -432,6 +434,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                       border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
+                      fontSize: isMobile ? '10px' : '12px',
                       '&:hover': {
                         bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
@@ -454,6 +457,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                       border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
+                      fontSize: isMobile ? '10px' : '12px',
                       '&:hover': {
                         bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
@@ -476,6 +480,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       backdropFilter: 'blur(5px)',
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                       border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
+                      fontSize: isMobile ? '10px' : '12px',
                       '&:hover': {
                         bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                         boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
