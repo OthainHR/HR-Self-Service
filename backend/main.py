@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routers import auth, chat, knowledge
+from app.routers import auth, chat, knowledge, feedback
 from app.db.init_db import init_db
 
 # Load environment variables
@@ -108,6 +108,7 @@ async def public_chat_endpoint(request: Request):
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["Knowledge"])
+app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
 
 @app.get("/")
 async def root():
