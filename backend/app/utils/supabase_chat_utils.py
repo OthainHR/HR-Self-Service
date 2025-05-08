@@ -3,10 +3,12 @@ from fastapi import HTTPException
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import uuid
+from app.models.feedback import FeedbackPayload
 
 # Table names
 SESSIONS_TABLE = "chat_sessions"
 MESSAGES_TABLE = "chat_messages"
+FEEDBACK_TABLE = "message_feedback"
 
 def db_create_chat_session(user_id: str, user_email: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Creates a new chat session in Supabase and returns it."""
@@ -148,4 +150,35 @@ def db_delete_chat_session(session_id: str, user_id: str) -> bool:
 
     except Exception as e:
         print(f"Exception in db_delete_chat_session (soft delete): {e}")
-        return False 
+        return False
+
+def db_add_message_feedback(
+    user_id: str,
+    feedback_data: FeedbackPayload
+) -> Optional[Dict[str, Any]]:
+    """Adds message feedback to the database."""
+    if not supabase_admin_client:
+        print("ERROR: Supabase admin client not available for db_add_message_feedback")
+        return None
+    
+    try:
+        insert_data = {
+            "user_id": user_id,
+            "message_id": feedback_data.message_id,
+            "feedback_type": feedback_data.feedback_type,
+            "message_content": feedback_data.message_content,
+            "chat_session_id": feedback_data.chat_session_id,
+        }
+        
+        response = supabase_admin_client.table(FEEDBACK_TABLE).insert(insert_data).execute()
+        
+        if response.data and len(response.data) > 0:
+            print(f"Supabase: Added feedback for message {feedback_data.message_id} by user {user_id}")
+            return response.data[0]
+        else:
+            error_info = getattr(response, 'error', None) or getattr(response, 'message', str(response))
+            print(f"Supabase Error adding feedback: {error_info}")
+            return None
+    except Exception as e:
+        print(f"Exception in db_add_message_feedback: {e}")
+        return None 

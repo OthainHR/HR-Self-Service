@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -34,6 +34,7 @@ const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isAuthenticated = !!user;
+  const location = useLocation();
 
   // ---- START RE-ADDED DEBUG LOG ----
   useEffect(() => {
@@ -89,6 +90,9 @@ const NavBar = () => {
     setDrawerOpen(open);
   };
   
+  // Helper function to determine if a link is active
+  const isActive = (path) => location.pathname === path;
+  
   // Drawer content
   const drawerContent = () => (
     <Box
@@ -118,10 +122,12 @@ const NavBar = () => {
           component={RouterLink} 
           to="/" 
           button
+          selected={isActive('/')}
           sx={{ 
             my: 0.5, 
             borderRadius: 1,
             mx: 1,
+            backgroundColor: isActive('/') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
             '&:hover': {
               background: 'rgba(67, 97, 238, 0.1)',
             }
@@ -131,7 +137,7 @@ const NavBar = () => {
           <ListItemText 
             primary="Home" 
             primaryTypographyProps={{ 
-              fontWeight: 500,
+              fontWeight: isActive('/') ? 700 : 500,
               color: 'primary.main'
             }}
           />
@@ -142,10 +148,12 @@ const NavBar = () => {
             component={RouterLink} 
             to="/chat" 
             button
+            selected={isActive('/chat')}
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
+              backgroundColor: isActive('/chat') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
               '&:hover': {
                 background: 'rgba(67, 97, 238, 0.1)',
               }
@@ -155,7 +163,7 @@ const NavBar = () => {
             <ListItemText 
               primary="Chat" 
               primaryTypographyProps={{ 
-                fontWeight: 500,
+                fontWeight: isActive('/chat') ? 700 : 500,
                 color: 'primary.main'
               }}
             />
@@ -167,10 +175,12 @@ const NavBar = () => {
             component={RouterLink} 
             to="/knowledge" 
             button
+            selected={isActive('/knowledge')}
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
+              backgroundColor: isActive('/knowledge') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
               '&:hover': {
                 background: 'rgba(67, 97, 238, 0.1)',
               }
@@ -180,7 +190,7 @@ const NavBar = () => {
             <ListItemText 
               primary="Knowledge Base" 
               primaryTypographyProps={{ 
-                fontWeight: 500,
+                fontWeight: isActive('/knowledge') ? 700 : 500,
                 color: 'primary.main'
               }}
             />
@@ -192,10 +202,12 @@ const NavBar = () => {
             component={RouterLink} 
             to="/admin/report" 
             button
+            selected={isActive('/admin/report')}
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
+              backgroundColor: isActive('/admin/report') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
               '&:hover': {
                 background: 'rgba(67, 97, 238, 0.1)',
               }
@@ -205,7 +217,7 @@ const NavBar = () => {
             <ListItemText 
               primary="Weekly Report" 
               primaryTypographyProps={{ 
-                fontWeight: 500,
+                fontWeight: isActive('/admin/report') ? 700 : 500,
                 color: 'primary.main'
               }}
             />
@@ -243,10 +255,12 @@ const NavBar = () => {
             component={RouterLink} 
             to="/login" 
             button
+            selected={isActive('/login')}
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
+              backgroundColor: isActive('/login') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
               '&:hover': {
                 background: 'rgba(67, 97, 238, 0.1)',
               }
@@ -256,7 +270,7 @@ const NavBar = () => {
             <ListItemText 
               primary="Login" 
               primaryTypographyProps={{ 
-                fontWeight: 500,
+                fontWeight: isActive('/login') ? 700 : 500,
                 color: 'primary.main'
               }}
             />
@@ -371,7 +385,8 @@ const NavBar = () => {
                 py: 1,
                 borderRadius: 2,
                 fontSize: '0.875rem',
-                fontWeight: 500,
+                fontWeight: isActive('/') ? 700 : 500,
+                backgroundColor: isActive('/') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                 position: 'relative',
                 overflow: 'hidden',
                 '&:hover': {
@@ -407,7 +422,8 @@ const NavBar = () => {
                   py: 1,
                   borderRadius: 2,
                   fontSize: '0.875rem',
-                  fontWeight: 500,
+                  fontWeight: isActive('/chat') ? 700 : 500,
+                  backgroundColor: isActive('/chat') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -444,7 +460,8 @@ const NavBar = () => {
                   py: 1,
                   borderRadius: 2,
                   fontSize: '0.875rem',
-                  fontWeight: 500,
+                  fontWeight: isActive('/knowledge') ? 700 : 500,
+                  backgroundColor: isActive('/knowledge') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -481,7 +498,8 @@ const NavBar = () => {
                   py: 1,
                   borderRadius: 2,
                   fontSize: '0.875rem',
-                  fontWeight: 500,
+                  fontWeight: isActive('/admin/report') ? 700 : 500,
+                  backgroundColor: isActive('/admin/report') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -600,8 +618,8 @@ const NavBar = () => {
                 py: 0.7,
                 borderRadius: 2,
                 fontSize: '0.875rem',
-                fontWeight: 500,
-                background: 'rgba(255, 255, 255, 0.1)',
+                fontWeight: isActive('/login') ? 700 : 500,
+                backgroundColor: isActive('/login') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                 backdropFilter: 'blur(5px)',
                 '&:hover': {
                   background: 'rgba(255, 255, 255, 0.2)',

@@ -147,7 +147,7 @@ const Home = () => {
               textAlign: 'center', // Center align content
             }}
           >
-            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'secondary.light' : 'secondary.main', mb: 2 }} />
+            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? '#3fc380' : '#3fc380', mb: 2 }} />
             <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.dark' }}>
             New to Othain or just need a refresher?
             </Typography>

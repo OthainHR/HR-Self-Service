@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import chat, auth, knowledge
+from app.routers import chat, auth, knowledge, user_management, feedback
 from app.core.config import settings
 
 app = FastAPI(
@@ -29,6 +29,8 @@ app.add_middleware(
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
+app.include_router(user_management.router, prefix="/api/user-management", tags=["user-management"])
+app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 
 @app.get("/")
 async def root():

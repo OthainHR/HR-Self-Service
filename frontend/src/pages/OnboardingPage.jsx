@@ -1,4 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  LinearProgress
+} from '@mui/material';
 import { PlayArrow as PlayArrowIcon, Pause as PauseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import QuizOverlay from '../components/QuizOverlay';
@@ -394,6 +399,8 @@ const OnboardingPage = () => {
 
   const isNextButtonDisabled = true; // Always disable the Next Section button
 
+  const progressValue = chapters.length > 0 ? (completedChapters.size / chapters.length) * 100 : 0;
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -407,6 +414,30 @@ const OnboardingPage = () => {
         marginRight: isMobile ? '0px' : '20px', // No right margin on mobile
         marginBottom: isMobile ? '20px' : '0px' // Margin below video section on mobile
       }}>
+        {/* Progress Bar Section */}
+        <Box sx={{ mb: 2, width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography variant="body2" sx={{ color: (isFullscreen || isDarkMode) ? '#ccc' : 'text.secondary', fontWeight: 500 }}>
+              Onboarding Progress
+            </Typography>
+            <Typography variant="caption" sx={{ color: (isFullscreen || isDarkMode) ? '#bbb' : 'text.secondary' }}>
+              {completedChapters.size} / {chapters.length} Sections
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={progressValue} 
+            sx={{ 
+              height: 8, 
+              borderRadius: 4, 
+              backgroundColor: isDarkMode ? '#555' : '#e0e0e0', // Set background color for contrast
+              '& .MuiLinearProgress-bar': { 
+                backgroundColor: '#3fc380' // Set the bar color
+              }
+            }} 
+          />
+        </Box>
+
         <h1 style={{ 
           marginBottom: '10px', 
           color: (isFullscreen || isDarkMode) ? '#fff' : '#000',
@@ -601,6 +632,11 @@ const buttonStyle = (disabled, isMobile) => ({
   borderRadius: '4px',
   opacity: disabled ? 0.6 : 1,
   margin: '0 3px',
+  transition: 'background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease', // Added transition
+  '&:hover': {
+     backgroundColor: disabled ? '#555' : '#3a56d4', // Darken on hover (if not disabled)
+     transform: disabled ? 'none' : 'scale(1.03)' // Slight scale on hover
+  }
 });
 
 // Updated chapterItemStyle to handle general dark mode for non-fullscreen
@@ -618,17 +654,17 @@ const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode
     return isActive ? '#e0e0e0' : (isCompleted ? '#e6ffe6' : 'transparent');
   })(),
   color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000', // Title text white in fullscreen OR app dark mode
-  transition: 'background-color 0.2s ease, color 0.2s ease',
+  transition: 'background-color 0.2s ease, color 0.2s ease, transform 0.15s ease', // Ensure transition includes transform
   opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1, 
-  // Adjust hover for mobile if needed, or use existing logic
-  '&:hover': { // Note: MUI sx prop handles hover like this
+  '&:hover': { 
+    transform: 'translateX(3px)', // Example hover effect: slight move right
     backgroundColor: (() => {
       if (isFullscreenMode) return isActive ? '#666' : (isCompleted ? '#3a4a3a' : '#404040');
       if (isAppDarkMode) return isActive ? '#484848' : (isCompleted ? '#304030' : '#2a2a2a');
       // Mobile light mode hover
       if (isMobile) return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0'); 
       return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0');
-    })(),
+    })()
   }
 });
 

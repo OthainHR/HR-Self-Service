@@ -1,9 +1,10 @@
-import React from 'react';
-import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress } from '@mui/material';
-import { Person as PersonIcon, SmartToy as BotIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress, IconButton } from '@mui/material';
+import { Person as PersonIcon, SmartToy as BotIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import supabase from '../supabaseClient';
 
 // Message component for displaying chat messages
 function MessageItem({ message, isLast, isMobile }) {
@@ -13,6 +14,10 @@ function MessageItem({ message, isLast, isMobile }) {
   const isLoading = !isUser && message.isLoading === true;
   const isError = !isUser && message.isError === true;
   const isLongWait = !isUser && message.isLongWait === true;
+  
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState(null);
   
   // Pre-process content to auto-link URLs
   const linkifyContent = (text) => {
@@ -34,6 +39,49 @@ function MessageItem({ message, isLast, isMobile }) {
   const textColor = isUser 
     ? theme.palette.primary.contrastText 
     : (isDarkMode ? theme.palette.text.primary : theme.palette.grey[800]);
+
+  const handleFeedback = async (feedbackType) => {
+    if (!message.id || feedbackSubmitted || isSubmittingFeedback) {
+      return;
+    }
+    setIsSubmittingFeedback(true);
+    setFeedbackError(null);
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error(sessionError?.message || 'User not authenticated. Please log in.');
+      }
+
+      // console.log('Supabase URL for fetch:', process.env.REACT_APP_SUPABASE_URL); // DEBUG LINE - No longer calling Supabase directly
+      const response = await fetch(`/api/v1/feedback`, { // Updated to call the Python backend endpoint
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          // 'Apikey': process.env.REACT_APP_SUPABASE_ANON_KEY, // No longer needed for calling own backend
+        },
+        body: JSON.stringify({
+          message_id: message.id,
+          feedback_type: feedbackType,
+          message_content: message.content,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to submit feedback. Status: ${response.status}`);
+      }
+
+      setFeedbackSubmitted(feedbackType);
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      setFeedbackError(error.message || 'Could not submit feedback.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   return (
     <Box
@@ -254,6 +302,55 @@ function MessageItem({ message, isLast, isMobile }) {
           </Box>
         )}
         
+        {!isUser && !isLoading && !isError && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: 0.5, minHeight: '24px' }}>
+            {feedbackError && (
+              <Typography variant="caption" color="error" sx={{ mr: 1 }}>
+                {feedbackError}
+              </Typography>
+            )}
+            {!feedbackSubmitted ? (
+              <>
+                <Tooltip title="Helpful">
+                  <span>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleFeedback('thumbs_up')} 
+                      disabled={isSubmittingFeedback || !!feedbackSubmitted}
+                      sx={{ 
+                        color: isSubmittingFeedback && !feedbackError ? theme.palette.text.disabled : theme.palette.text.secondary, 
+                        '&:hover': { color: !(isSubmittingFeedback || !!feedbackSubmitted) ? theme.palette.success.main : undefined }
+                      }}
+                    >
+                      {isSubmittingFeedback ? <CircularProgress size={16} color="inherit" /> : <ThumbUpIcon fontSize="inherit" />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Not Helpful">
+                  <span>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleFeedback('thumbs_down')} 
+                      disabled={isSubmittingFeedback || !!feedbackSubmitted}
+                      sx={{ 
+                        color: isSubmittingFeedback && !feedbackError ? theme.palette.text.disabled : theme.palette.text.secondary, 
+                        '&:hover': { color: !(isSubmittingFeedback || !!feedbackSubmitted) ? theme.palette.error.main : undefined }
+                      }}
+                    >
+                      {isSubmittingFeedback ? <CircularProgress size={16} color="inherit" /> : <ThumbDownIcon fontSize="inherit" />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', color: theme.palette.success.main }}>
+                <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />
+                <Typography variant="caption">Thanks for your feedback!</Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
         <Box
           sx={{
             display: 'flex',
