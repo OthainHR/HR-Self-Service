@@ -56,8 +56,8 @@ CORS_ORIGINS=http://localhost:3000,https://your-frontend-domain.com
 Create a `.env` file in the frontend directory:
 ```
 REACT_APP_API_URL=http://localhost:8000
-REACT_APP_SUPABASE_URL=https://sethhceiojxrevvpzupf.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NDcyMDAsImV4cCI6MjA1ODEyMzIwMH0.dYLDhmxgP9k-fOAGAddH8UNCETMF8fHKNhSPWpDNisM
+REACT_APP_SUPABASE_URL=URL
+REACT_APP_SUPABASE_ANON_KEY=URL
 ```
 
 ## Installation
