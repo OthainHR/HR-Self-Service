@@ -206,7 +206,7 @@ const Home = () => {
                   </Box>
                   <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
                     Ask about company policies, benefits, time-off, workplace guidelines, and more.
-                    The HR chatbot uses AI to understand your questions and provide accurate information.
+                    
                   </Typography>
                   <Box sx={{ mt: 'auto' }}>
                     <Button 
