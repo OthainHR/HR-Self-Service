@@ -42,7 +42,7 @@ const CompletionOverlay = ({ message, onGoHome }) => {
             backgroundColor: '#4361ee', 
             color: 'white', 
             border: 'none', 
-            borderRadius: '5px', 
+            borderRadius: '20px', 
             cursor: 'pointer',
             fontSize: '1.1em',
             fontWeight: 'bold'

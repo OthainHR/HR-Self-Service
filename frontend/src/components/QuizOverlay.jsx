@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@react-hook/window-size';
 
-const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue }) => {
+const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFullscreen }) => {
   // State to store user's answers { questionId: selectedOption }
   const [userAnswers, setUserAnswers] = useState({});
   const [runConfetti, setRunConfetti] = useState(false);
@@ -15,20 +15,22 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
   }, [quizData, feedback]); // Listen to feedback as well
 
   useEffect(() => {
-    if (feedback && feedback.success) {
+    // Only run confetti if success is strictly true (not 'maxedOut')
+    if (feedback && feedback.success === true) { 
       setRunConfetti(true);
     } else {
       setRunConfetti(false);
     }
   }, [feedback]);
 
-  if (!quizData || !quizData.questions) {
-    // If quizData itself is gone, but we have a success feedback, show success message still
-    if (feedback && feedback.success) {
-      // Allow success message to render even if quizData is transiently null
-    } else {
-      return null;
-    }
+  // Determine if the user can proceed (either passed or maxed out attempts)
+  const canProceed = feedback && (feedback.success === true || feedback.success === 'maxedOut');
+  const showQuizContent = !canProceed && quizData && quizData.questions;
+  const showFailureFeedback = feedback && feedback.success === false; // Only for active failures, not maxedOut for this specific display block
+
+  // If there's no quiz data and we're not in a proceed state, don't render anything (or a minimal message)
+  if (!quizData && !canProceed) {
+      return null; // Or a loading/error placeholder if appropriate
   }
 
   const handleOptionChange = (questionId, option) => {
@@ -51,7 +53,8 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
       fontFamily: 'Arial, sans-serif',
       animation: 'scaleIn 0.3s ease-in-out forwards'
     }}>
-      {runConfetti && feedback && feedback.success && (
+      {/* Only show confetti on true success */}
+      {runConfetti && feedback && feedback.success === true && (
         <Confetti
           width={width}
           height={height}
@@ -70,60 +73,32 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
         zIndex: 1
       }}>
         <h2 style={{ marginTop: 0, marginBottom: '15px', textAlign: 'center', color: '#333333' }}>
-          {/* Show quiz title or default to 'Quiz Results' if in success state without quizData (edge case) */}
-          {(feedback && feedback.success) ? 'Quiz Results' : (quizData?.title || 'Quiz')}
+          {/* Title Logic */}
+          {canProceed ? 'Quiz Results' : (quizData?.title || 'Quiz')}
         </h2>
         
-        {/* Success Message Display */}
-        {feedback && feedback.success && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <img 
-              src={process.env.PUBLIC_URL + '/checkmark-svgrepo-com.svg'} 
-              alt="Success" 
-              style={{ 
-                height: '60px', width: '60px', marginBottom: '15px', marginTop: '-15px',
-                opacity: 0,
-                animation: 'scaleInCheckmark 0.4s ease-out forwards'
-              }} 
-            />
-            <p style={{ color: 'green', fontSize: '1.2em', marginBottom: '20px', marginTop: '0' }}>
-              {feedback.message}
-            </p>
-            <button 
-              onClick={onSuccessContinue} 
-              style={{
-                padding: '10px 25px', 
-                backgroundColor: '#28a745', // Green color for success continue
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '5px', 
-                cursor: 'pointer',
-                fontSize: '1em'
-              }}
-            >
-              Continue
-            </button>
-          </div>
+        {/* Feedback Message Display (for all types of feedback: success, maxedOut, failure) */}
+        {feedback && feedback.message && (
+            <div style={{
+              textAlign: 'center', 
+              padding: '15px', 
+              marginBottom: '20px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: `${feedback.success === true ? '#155724' : (feedback.success === 'maxedOut' ? '#856404' : '#721c24')}`,
+              borderRadius: '20px'
+            }}>
+                {/* Optional: Add an icon based on feedback type */}
+                {feedback.success === true && 
+                    <img src={process.env.PUBLIC_URL + '/checkmark-svgrepo-com.svg'} alt="Success" style={{ height: '40px', width: '40px', marginBottom: '0px'}} />
+                }
+                 <p style={{ margin: 0, fontSize: '1.1em' }}>{feedback.message}</p>
+            </div>
         )}
         
-        {/* Quiz Questions - Render only if NOT in success state */}
-        {!(feedback && feedback.success) && quizData && quizData.questions && (
+        {/* Quiz Questions - Render only if quiz content should be shown */}
+        {showQuizContent && (
           <>
-            {/* Display Feedback Message for errors */}
-            {feedback && !feedback.success && feedback.message && (
-              <p style={{
-                color: 'red',
-                textAlign: 'center',
-                marginBottom: '20px',
-                padding: '10px',
-                backgroundColor: '#ffebee',
-                border: `1px solid #e57373`,
-                borderRadius: '4px'
-              }}>
-                {feedback.message}
-              </p>
-            )}
-            
             {quizData.questions.map((question) => {
               const isIncorrect = feedback && feedback.incorrectIds && feedback.incorrectIds.includes(question.id);
               return (
@@ -131,9 +106,9 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
                   key={question.id} 
                   style={{
                     marginBottom: '25px',
-                    padding: isIncorrect ? '10px' : '0', // Add padding if incorrect
-                    border: isIncorrect ? '2px solid red' : 'none', // Red border for incorrect questions
-                    borderRadius: isIncorrect ? '5px' : '0'   // Rounded border for incorrect questions
+                    padding: isIncorrect ? '10px' : '0',
+                    border: isIncorrect ? '2px solid red' : 'none',
+                    borderRadius: isIncorrect ? '20px' : '0'
                   }}
                 >
                   <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#444444' }}>
@@ -147,9 +122,9 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
                           display: 'block', 
                           padding: '10px',
                           margin: '5px 0',
-                          borderRadius: '5px',
+                          borderRadius: '20px',
                           border: userAnswers[question.id] === option ? '2px solid #4361ee' : '1px solid #ddd',
-                          backgroundColor: userAnswers[question.id] === option ? '#eef2ff' : (isIncorrect && userAnswers[question.id] === option ? '#ffcdd2' : '#f9f9f9'), // Highlight selected incorrect option
+                          backgroundColor: userAnswers[question.id] === option ? '#eef2ff' : (isIncorrect && userAnswers[question.id] === option ? '#ffcdd2' : '#f9f9f9'),
                           cursor: 'pointer',
                           transition: 'background-color 0.2s, border-color 0.2s',
                           color: '#333333'
@@ -170,41 +145,62 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onSuccessContinue 
                 </div>
               );
             })}
-            
-            <div style={{ marginTop: '30px', textAlign: 'right' }}>
-              {onClose && (
-                <button 
-                  onClick={onClose} 
-                  style={{
-                    padding: '10px 20px', 
-                    marginRight: '10px', 
-                    backgroundColor: '#6c757d', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '5px', 
-                    cursor: 'pointer'
-                  }}
-                >
-                  Close
-                </button>
-              )}
-              <button 
-                onClick={handleSubmit} 
-                style={{
-                  padding: '10px 20px', 
-                  backgroundColor: '#4361ee', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '5px', 
-                  cursor: 'pointer'
-                }}
-              >
-                {feedback && feedback.incorrectIds && feedback.incorrectIds.length > 0 ? 'Try Again' : 'Submit Answers'}
-              </button>
-            </div>
           </>
         )}
+        
+        {/* Action Buttons Section */}
+        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+            {/* Show Submit button if quiz content is visible and we are not yet in a proceed state */} 
+            {showQuizContent && (
+                <button 
+                  onClick={handleSubmit} 
+                  style={{
+                    padding: '10px 25px', 
+                    backgroundColor: '#4361ee', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '20px', 
+                    cursor: 'pointer',
+                    fontSize: '1em',
+                  }}
+                >
+                  Submit Answers
+                </button>
+            )}
+
+            {/* Show Continue button if canProceed is true */} 
+            {canProceed && (
+              <button 
+                onClick={onProceed}
+                style={{
+                  padding: '10px 25px', 
+                  backgroundColor: feedback.success === true ? '#28a745' : '#ffc107', 
+                  color: feedback.success === true ? 'white' : '#333',
+                  border: 'none', 
+                  borderRadius: '20px', 
+                  cursor: 'pointer',
+                  fontSize: '1em',
+                  
+                }}
+              >
+                Continue
+              </button>
+            )}
+        </div>
+
       </div>
+      <style>
+        {`
+          @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+          @keyframes scaleInCheckmark {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}
+      </style>
     </div>
   );
 };

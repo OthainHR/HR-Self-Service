@@ -10,6 +10,7 @@ import QuizOverlay from '../components/QuizOverlay';
 import CompletionOverlay from '../components/CompletionOverlay';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useTheme, useMediaQuery } from '@mui/material';
+import ReactDOM from 'react-dom'; // Ensure this import is present
 
 // Placeholder QuizOverlay component (we will create this file next)
 /*
@@ -35,6 +36,7 @@ const OnboardingPage = () => {
   const { isDarkMode } = useDarkMode(); // Get dark mode state
   const theme = useTheme(); // MUI theme
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check for mobile screen size
+  const [quizAttempts, setQuizAttempts] = useState(0); // ADDED: For quiz attempts
 
   // Add timestamps (in seconds) to your chapters
   // PLEASE UPDATE THESE TIMESTAMPS TO MATCH YOUR VIDEO
@@ -181,8 +183,9 @@ const OnboardingPage = () => {
         videoRef.current.pause();
       }
       setActiveQuizData(chapter.quiz);
-      setQuizFeedback(null); // Clear previous feedback when a new quiz is shown
-      setQuizAttemptKey(prevKey => prevKey + 1); // Reset quiz form for a fresh attempt if re-entering
+      setQuizFeedback(null); // Clear previous feedback
+      setQuizAttemptKey(prevKey => prevKey + 1); // Reset quiz form for a fresh attempt
+      setQuizAttempts(0); // <<<< MODIFIED: Reset attempts for the new quiz
       setQuizOverlayVisible(true);
       return true;
     }
@@ -215,7 +218,7 @@ const OnboardingPage = () => {
       setCompletedChapters(newCompletedChapters);
     }
     // Check for completion ONLY if the video is near the end AND the last chapter has no quiz
-    // Completion after a quiz is handled in handleQuizSuccessContinue or handleVideoEnded
+    // Completion after a quiz is handled in handleProceedAfterQuizAttempt or handleVideoEnded
     const lastChapterIndex = chapters.length - 1;
     if (!chapters[lastChapterIndex]?.quiz && videoRef.current.duration - currentTime < 1) {
          if (checkOverallCompletion(lastChapterIndex)) {
@@ -252,52 +255,63 @@ const OnboardingPage = () => {
       }
     });
 
+    const newAttempts = quizAttempts + 1;
+    setQuizAttempts(newAttempts); // Update attempt count immediately
+
     if (incorrectQuestionIds.length === 0) {
       // Quiz Passed
-      setQuizAttemptKey(prevKey => prevKey + 1); // Increment key to force remount for success animation
       setQuizFeedback({
         success: true,
-        message: "Congratulations! You passed."
+        message: "Excellent! You got it right."
       });
-      // Quiz overlay remains visible until user clicks 'Continue' via handleQuizSuccessContinue
     } else {
       // Quiz Failed
-      setQuizFeedback({
-        success: false,
-        message: "Some answers are incorrect. Please review and try again.",
-        incorrectIds: incorrectQuestionIds
-      });
-      setQuizAttemptKey(prevKey => prevKey + 1); // Keep this here too for re-rendering on failure
+      if (newAttempts < 3) {
+        setQuizFeedback({
+          success: false,
+          message: `Oops! Not quite. (Attempt ${newAttempts} of 3). Give it another shot!`,
+          incorrectIds: incorrectQuestionIds
+        });
+      } else { // Max attempts (3) reached
+        setQuizFeedback({
+          success: 'maxedOut', // Special state for max attempts but proceed
+          message: `That was the last try for this one. No worries, the main thing is to stay engaged! Let\'s move on.`,
+          incorrectIds: incorrectQuestionIds // Still useful to show what was incorrect
+        });
+      }
     }
+    setQuizAttemptKey(prevKey => prevKey + 1); // Force re-render/reset of QuizOverlay with new feedback
   };
 
-  const handleQuizSuccessContinue = () => {
+  const handleProceedAfterQuizAttempt = () => {
     const lastChapterIndex = chapters.length - 1;
-    const justCompletedQuizIndex = currentChapterIndex; // Quiz was for the current chapter
+    const justCompletedQuizIndex = currentChapterIndex;
 
-    // Mark quiz as completed
     setChapterQuizCompleted(prev => new Set(prev).add(justCompletedQuizIndex));
     
-    // Hide regular quiz overlay components immediately
     setQuizOverlayVisible(false);
     setActiveQuizData(null);
     setQuizFeedback(null);
+    // quizAttempts will be reset by showQuizForChapter if another quiz is shown
 
-    // Now, check if this was the LAST chapter's quiz and if the video is done/ended
     if (justCompletedQuizIndex === lastChapterIndex && (videoRef.current?.ended || (videoRef.current?.duration - videoRef.current?.currentTime < 1))) {
-        // Check overall completion (which should now be true)
         if (checkOverallCompletion(lastChapterIndex)) {
             setShowCompletionOverlay(true);
         } else {
-            // Edge case: quiz passed, video ended, but somehow completion state isn't right?
-            // Or maybe just proceed to next step if video not *quite* ended?
-             if (currentChapterIndex < chapters.length - 1) {
+             if (currentChapterIndex < chapters.length - 1) { 
                 navigateToTimestamp(currentChapterIndex + 1, true);
+            } else if (videoRef.current && videoRef.current.paused && !videoRef.current.ended) {
+                videoRef.current.play().catch(e => console.error("Error playing video to end:", e));
             }
         }
     } else if (currentChapterIndex < chapters.length - 1) {
-         // If not the last chapter, autoplay the next section
         navigateToTimestamp(currentChapterIndex + 1, true);
+    } else if (justCompletedQuizIndex === lastChapterIndex) { 
+        if (checkOverallCompletion(lastChapterIndex)) { 
+            setShowCompletionOverlay(true);
+        } else if (videoRef.current && videoRef.current.paused && !videoRef.current.ended) {
+            videoRef.current.play().catch(e => console.error("Error resuming video on last chapter:", e));
+        }
     }
   };
 
@@ -429,7 +443,7 @@ const OnboardingPage = () => {
             value={progressValue} 
             sx={{ 
               height: 8, 
-              borderRadius: 4, 
+              borderRadius: 20, 
               backgroundColor: isDarkMode ? '#555' : '#e0e0e0', // Set background color for contrast
               '& .MuiLinearProgress-bar': { 
                 backgroundColor: '#3fc380' // Set the bar color
@@ -451,17 +465,17 @@ const OnboardingPage = () => {
           style={{ 
             width: '100%', 
             backgroundColor: '#000',
-            borderRadius: '8px',
+            borderRadius: '20px',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             overflow: isFullscreen ? 'hidden' : 'visible',
-            position: 'relative',
+            position: 'relative', // Keep relative for portal target positioning
             marginBottom: '20px'
           }}
         >
           <video 
             ref={videoRef}
             width="100%" 
-            style={{ display: 'block', borderRadius: '8px', cursor: 'pointer' }}
+            style={{ display: 'block', borderRadius: '20px', cursor: 'pointer' }}
             onLoadedMetadata={() => {
               // Optional: if (currentChapterIndex === 0 && chapters[0]) videoRef.current.currentTime = chapters[0].timestamp;
             }}
@@ -482,18 +496,18 @@ const OnboardingPage = () => {
               maxWidth: '600px',
               padding: '5px 10px',
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              borderRadius: '5px',
+              borderRadius: '20px',
               display: 'flex', 
               justifyContent: 'space-around',
               alignItems: 'center',
-              zIndex: 10,
+              zIndex: 10, // zIndex for controls
               transition: 'opacity 0.3s ease',
-              flexWrap: 'wrap' // Allow buttons to wrap in fullscreen mobile if needed
+              flexWrap: 'wrap' 
             } : {
               display: 'flex', 
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: isMobile ? '8px 0' : '10px 0', // Adjusted padding slightly
+              padding: isMobile ? '8px 0' : '10px 0', 
               flexWrap: 'wrap' 
             }}
           >
@@ -525,6 +539,19 @@ const OnboardingPage = () => {
               {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             </button>
           </div>
+          {/* Portal Target for Overlays */}
+          <div 
+            id="fullscreen-overlay-portal-target" 
+            style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              width: '100%', 
+              height: '100%', 
+              zIndex: 100, // Higher than video controls if they are also absolute positioned within
+              pointerEvents: (quizOverlayVisible || showCompletionOverlay) ? 'auto' : 'none' // Allow interaction only when overlay is visible
+            }}
+          ></div>
         </div>
 
         <div style={{
@@ -543,7 +570,7 @@ const OnboardingPage = () => {
           borderLeft: isMobile || isFullscreen ? 'none' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
           paddingLeft: isMobile || isFullscreen ? '0px' : '20px', 
           marginTop: isMobile ? '20px' : '0px', // Add margin top on mobile
-          borderRadius: '8px',
+          borderRadius: '20px',
           backgroundColor: isFullscreen ? '#333' : (isDarkMode ? '#1e1e1e' : 'transparent'),
           color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
           height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
@@ -599,23 +626,31 @@ const OnboardingPage = () => {
         </ul>
       </div>
 
-      {quizOverlayVisible && activeQuizData && (
-        <QuizOverlay 
-          key={quizAttemptKey}
-          quizData={activeQuizData} 
-          feedback={quizFeedback}
-          onSubmit={handleQuizSubmit} 
-          onClose={handleCloseQuiz} 
-          onSuccessContinue={handleQuizSuccessContinue}
-        />
+      {/* Portaled Overlays - MODIFIED prop name */}
+      {quizOverlayVisible && activeQuizData && document.getElementById('fullscreen-overlay-portal-target') && (
+        ReactDOM.createPortal(
+          <QuizOverlay 
+            key={quizAttemptKey}
+            quizData={activeQuizData} 
+            feedback={quizFeedback}
+            onSubmit={handleQuizSubmit} 
+            onClose={handleCloseQuiz} 
+            onProceed={handleProceedAfterQuizAttempt} // MODIFIED: Renamed from onSuccessContinue
+            isFullscreen={isFullscreen} 
+          />,
+          document.getElementById('fullscreen-overlay-portal-target')
+        )
       )}
 
-      {/* Conditionally render the Completion Overlay */} 
-      {showCompletionOverlay && (
-        <CompletionOverlay 
-          message="You have successfully completed the onboarding video."
-          onGoHome={handleGoHome}
-        />
+      {showCompletionOverlay && document.getElementById('fullscreen-overlay-portal-target') && (
+        ReactDOM.createPortal(
+          <CompletionOverlay 
+            message="You have successfully completed the onboarding video."
+            onGoHome={handleGoHome}
+            isFullscreen={isFullscreen}
+          />,
+          document.getElementById('fullscreen-overlay-portal-target')
+        )
       )}
     </div>
   );
@@ -629,7 +664,7 @@ const buttonStyle = (disabled, isMobile) => ({
   backgroundColor: disabled ? '#555' : '#4361ee',
   color: 'white',
   border: 'none',
-  borderRadius: '4px',
+  borderRadius: '20px',
   opacity: disabled ? 0.6 : 1,
   margin: '0 3px',
   transition: 'background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease', // Added transition
@@ -644,7 +679,7 @@ const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode
   padding: isMobile ? '10px 5px' : '12px 8px', // Adjust padding for mobile
   borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
-  borderRadius: '8px',
+  borderRadius: '20px',
   marginBottom: '10px',
   marginRight: '10px',
   backgroundColor: (() => {
