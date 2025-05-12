@@ -40,11 +40,11 @@ TICKET_LINK_TEXT = "Create A Ticket"
 def should_show_ticket_link(message: str) -> bool:
     msg = message.lower()
     # check any multi-word phrases first
-    for phrase in ("access request", "get it help", "hardware and software"):
+    for phrase in ("access request", "get it help", "hardware and software", "not working", "not working properly", "I'm having trouble", "I cannot", "I cannot access", "I cannot login", "I cannot sign in", "I cannot sign up", "I am unable", "I am unable to", "I am unable to access", "I am unable to login", "I am unable to sign in", "I am unable to sign up"):
         if phrase in msg:
             return True
     # then individual keywords
-    for kw in ("access", "desktop", "laptop", "support", "hardware", "software", "login", "account"):
+    for kw in ("access", "desktop", "laptop", "support", "hardware", "software", "login", "account", "reset", "vpn", "network", "cannot", "unable", "trouble", "issue", "problem", "error", "fix"):
         if kw in msg:
             return True
     return False
@@ -128,10 +128,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "\"Don't worry, our IT heroes are standing by!\"\n\n"
-
-            "Then end with:\n\n"
-            "\"👉 Create a ticket so they can dive in right away.\""
+            "\"Don't worry, our IT heroes are standing by!\""
         )
     }
     openai_messages.append(system_message)
@@ -145,12 +142,8 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 4️⃣ If it's an IT-support question AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append your link BEFORE saving
-    if (
-        should_show_ticket_link(message) 
-        and TICKET_LINK_TEXT.lower() not in assistant_response.lower() 
-        and TICKET_LINK_MARKDOWN not in assistant_response
-    ):
+    # 4️⃣ If it's an IT-support question, append the link BEFORE saving
+    if should_show_ticket_link(message):
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified assistant's reply to DB
@@ -205,10 +198,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "\"Don't worry, our IT heroes are standing by!\"\n\n"
-
-            "Then end with:\n\n"
-            "\"👉 Create a ticket so they can dive in right away.\""
+            "\"Don't worry, our IT heroes are standing by!\""
         )
     }
     openai_messages.append(system_message)
@@ -226,12 +216,8 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 4️⃣ If it matches an IT-support trigger AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append the ticket link to the full response BEFORE saving
-    if (
-        should_show_ticket_link(message) 
-        and TICKET_LINK_TEXT.lower() not in full_response.lower() 
-        and TICKET_LINK_MARKDOWN not in full_response
-    ):
+    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving
+    if should_show_ticket_link(message):
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified full assistant response to DB
