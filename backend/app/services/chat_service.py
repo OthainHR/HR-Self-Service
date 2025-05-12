@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException, status
+import re
 
 # Import Supabase admin client
 from app.utils.supabase_client import supabase_admin_client
@@ -128,7 +129,8 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "\"Don't worry, our IT heroes are standing by!\""
+            "\"Don't worry, our IT heroes are standing by!\"\n\n"
+            "\"👉 You can create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -142,8 +144,11 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 4️⃣ If it's an IT-support question, append the link BEFORE saving
-    if should_show_ticket_link(message):
+    # Replace any plain 'create a ticket' (case-insensitive) in the AI response with the Markdown link
+    assistant_response = re.sub(r"(?i)\bcreate a ticket\b", TICKET_LINK_MARKDOWN, assistant_response)
+
+    # 4️⃣ If it's an IT-support question, append the link BEFORE saving (if not already added)
+    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in assistant_response:
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified assistant's reply to DB
@@ -198,7 +203,8 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "\"Don't worry, our IT heroes are standing by!\""
+            "\"Don't worry, our IT heroes are standing by!\"\n\n"
+            "\"👉 You can create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -216,8 +222,11 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving
-    if should_show_ticket_link(message):
+    # Replace any plain 'create a ticket' (case-insensitive) in the streamed response with the Markdown link
+    full_response = re.sub(r"(?i)\bcreate a ticket\b", TICKET_LINK_MARKDOWN, full_response)
+
+    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving (if not already added)
+    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in full_response:
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified full assistant response to DB
