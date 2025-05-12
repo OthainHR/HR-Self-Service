@@ -29,7 +29,7 @@ TICKET_TRIGGER_KEYWORDS = [
     "desktop", "laptop", "support", 
     "get it help", 
     "hardware", "software", 
-    "login", "account", "accounts"
+    "login", "account", "accounts", 
 ]
 
 TICKET_LINK_MARKDOWN = "[Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1)"
@@ -97,25 +97,25 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     system_message = {
         "role": "system",
         "content": (
-        "You are an HR assistant for Othain, branded as “Othain Self Service.” "
-    "Answer questions about Othain’s HR policies, benefits, leave, payroll, and other HR-related topics "
-    "based on the provided context. "
-    "If you don’t know the answer or the information isn’t in the context, say so politely and direct the user to contact hr@othainsoft.com. "
-    "Always refer to the company as “Othain” and never discuss other companies, products, or topics.\n\n"
+            "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
+            "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
+            "based on the provided context. "
+            "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
+            "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
 
-    "If someone asks about anything outside of HR (for example: hardware issues, software problems, login or account access, "
-    "laptop/desktop support, etc.), you should first categorize the issue into one of four ticket types, then respond with a polite fallback.  "
-    "The categories are:\n"
-    "  • Access Request — for Logins and Accounts, Applications\n"
-    "  • Desktop/Laptop Support — for General IT Requests and Hardware/Software Issues\n"
-    "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
-    "  • Request an AI Task — for AI-specific tasks\n\n"
+            "If someone asks about anything outside of HR (for example: hardware issues, software problems, login or account access, "
+            "laptop/desktop support, etc.), you should first categorize the issue into one of four ticket types, then respond with a polite fallback.  "
+            "The categories are:\n"
+            "  • Access Request — for Logins and Accounts, Applications\n"
+            "  • Desktop/Laptop Support — for General IT Requests and Hardware/Software Issues\n"
+            "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
+            "  • Request an AI Task — for AI-specific tasks\n\n"
 
-    "Once categorized, respond exactly:\n\n"
-    "“I’m sorry, but I can’t help with that—our IT team can assist you right away.”\n\n"
+            "Once categorized, respond exactly:\n\n"
+            "\"I'm sorry, but I can't help with that—our IT team can assist you right away.\"\n\n"
 
-    "Your code will then append the “Create A Ticket” link, which will automatically open the ticket in the correct queue "
-    "based on your classification."
+            "Your code will then append the \"Create A Ticket\" link, which will automatically open the ticket in the correct queue "
+            "based on your classification."
         )
     }
     openai_messages.append(system_message)
@@ -129,11 +129,11 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 4️⃣ If it’s an IT-support question, append your link BEFORE saving
-    if should_show_ticket_link(message):
+    # 4️⃣ If it's an IT-support question AND the AI didn't already include the full markdown link, append your link BEFORE saving
+    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in assistant_response:
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
 
-    # 3️⃣ Log the potentially modified assistant’s reply to DB
+    # 3️⃣ Log the potentially modified assistant's reply to DB
     db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
 
     return ChatResponse(
@@ -157,25 +157,25 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
     system_message = {
         "role": "system",
         "content": (
-            "You are an HR assistant for Othain, branded as “Othain Self Service.” "
-    "Answer questions about Othain’s HR policies, benefits, leave, payroll, and other HR-related topics "
-    "based on the provided context. "
-    "If you don’t know the answer or the information isn’t in the context, say so politely and direct the user to contact hr@othainsoft.com. "
-    "Always refer to the company as “Othain” and never discuss other companies, products, or topics.\n\n"
+            "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
+            "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
+            "based on the provided context. "
+            "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
+            "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
 
-    "If someone asks about anything outside of HR (for example: hardware issues, software problems, login or account access, "
-    "laptop/desktop support, etc.), you should first categorize the issue into one of four ticket types, then respond with a polite fallback.  "
-    "The categories are:\n"
-    "  • Access Request — for Logins and Accounts, Applications\n"
-    "  • Desktop/Laptop Support — for General IT Requests and Hardware/Software Issues\n"
-    "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
-    "  • Request an AI Task — for AI-specific tasks\n\n"
+            "If someone asks about anything outside of HR (for example: hardware issues, software problems, login or account access, "
+            "laptop/desktop support, etc.), you should first categorize the issue into one of four ticket types, then respond with a polite fallback.  "
+            "The categories are:\n"
+            "  • Access Request — for Logins and Accounts, Applications\n"
+            "  • Desktop/Laptop Support — for General IT Requests and Hardware/Software Issues\n"
+            "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
+            "  • Request an AI Task — for AI-specific tasks\n\n"
 
-    "Once categorized, respond exactly:\n\n"
-    "“I’m sorry, but I can’t help with that—our IT team can assist you right away.”\n\n"
+            "Once categorized, respond exactly:\n\n"
+            "\"I'm sorry, but I can't help with that—our IT team can assist you right away.\"\n\n"
 
-    "Your code will then append the “Create A Ticket” link, which will automatically open the ticket in the correct queue "
-    "based on your classification."
+            "Your code will then append the \"Create A Ticket\" link, which will automatically open the ticket in the correct queue "
+            "based on your classification."
         )
     }
     openai_messages.append(system_message)
@@ -193,8 +193,8 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving
-    if should_show_ticket_link(message):
+    # 4️⃣ If it matches an IT-support trigger AND the AI didn't already include the full markdown link, append the ticket link to the full response BEFORE saving
+    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in full_response:
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified full assistant response to DB
