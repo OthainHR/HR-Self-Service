@@ -121,12 +121,14 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
             "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
             "  – “😣 Oh no, that blue-screen is a pain.”\n"
+            "  – “😣 Oh no—blue screens are the worst.”\n"
             "  – “😭 Bummer, that blue-screen sounds rough.”\n"
             "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
+            "  – “😟 Yikes, a blue-screen must be so frustrating.”\n"
             "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
 
             "Follow with exactly:\n\n"
-            "“While I can’t jump in and fix it myself, our IT heroes are standing by!”\n\n"
+            "“Don’t worry, our IT heroes are standing by!”\n\n"
 
             "Then end with:\n\n"
             "“👉 Create a ticket so they can dive in right away.”"
@@ -196,12 +198,14 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
             "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
             "  – “😣 Oh no, that blue-screen is a pain.”\n"
+            "  – “😣 Oh no—blue screens are the worst.”\n"
             "  – “😭 Bummer, that blue-screen sounds rough.”\n"
             "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
+            "  – “😟 Yikes, a blue-screen must be so frustrating.”\n"
             "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
 
             "Follow with exactly:\n\n"
-            "“While I can’t jump in and fix it myself, our IT heroes are standing by!”\n\n"
+            "“Don’t worry, our IT heroes are standing by!”\n\n"
 
             "Then end with:\n\n"
             "“👉 Create a ticket so they can dive in right away.”"
