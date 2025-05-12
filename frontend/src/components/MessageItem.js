@@ -19,20 +19,6 @@ function MessageItem({ message, isLast, isMobile }) {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   
-  // Pre-process content to auto-link URLs
-  const linkifyContent = (text) => {
-    const urlRegex = /\b((?:https?:\/\/|www\.)[^\s]+)/gi;
-    return text.replace(urlRegex, (match) => {
-      // Separate trailing punctuation from URL
-      const boundaryRegex = /(.*?)([.,!?;:]*)$/;
-      const parts = boundaryRegex.exec(match);
-      const url = parts[1];
-      const suffix = parts[2] || '';
-      const href = url.startsWith('http') ? url : `https://${url}`;
-      return `[${url}](${href})${suffix}`;
-    });
-  };
-
   const bubbleColor = isUser 
     ? (isDarkMode ? theme.palette.primary.dark : theme.palette.primary.main) 
     : (isDarkMode ? theme.palette.grey[700] : theme.palette.grey[200]);
@@ -233,7 +219,7 @@ function MessageItem({ message, isLast, isMobile }) {
               letterSpacing: '0.01em',
             }}
           >
-            {message.content}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
           </Typography>
         ) : (
           <Box sx={{ 
@@ -297,7 +283,7 @@ function MessageItem({ message, isLast, isMobile }) {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
             >{message.content === 'Thinking...' && message.isLoading ? ' ' :
-              linkifyContent(message.content)
+              message.content
             }</ReactMarkdown>
           </Box>
         )}
