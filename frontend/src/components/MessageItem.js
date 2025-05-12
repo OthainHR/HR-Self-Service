@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress, IconButton } from '@mui/material';
+import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress, IconButton, Button } from '@mui/material';
 import { Person as PersonIcon, SmartToy as BotIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -298,6 +298,18 @@ function MessageItem({ message, isLast, isMobile }) {
             >{message.content === 'Thinking...' && message.isLoading ? ' ' :
               message.content
             }</ReactMarkdown>
+            {/* Ticket Link Button for better UX */}
+            {!message.isLoading && message.content.includes('[Create A Ticket]') && (
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => window.open('https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1', '_blank')}
+                >
+                  Create A Ticket
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
         
