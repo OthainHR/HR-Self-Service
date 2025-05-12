@@ -6,21 +6,36 @@ import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import supabase from '../supabaseClient';
 
-// Custom link renderer to open links in a new tab and override ticket URL display
-const LinkRenderer = ({ href, children }) => {
-  const ticketUrl = 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1';
-  const displayText = href === ticketUrl ? 'Create A Ticket' : children;
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer">
-      {displayText}
-    </a>
-  );
-};
-
 // Message component for displaying chat messages
 function MessageItem({ message, isLast, isMobile }) {
   const theme = useTheme();
   const { isDarkMode } = useDarkMode();
+  // Custom link renderer inside MessageItem to hide raw ticket URL when button is shown
+  const ticketUrl = 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1';
+  const showTicketButton = !message.isLoading && (
+    message.content.includes('Ticket type:') || message.content.includes('Create a ticket')
+  );
+  const LinkRenderer = ({ href, children }) => {
+    if (href === ticketUrl) {
+      // Hide raw ticket link when the ticket button is rendered
+      if (showTicketButton) {
+        return null;
+      }
+      // If the link text is exactly the URL, display 'Create A Ticket'
+      if (`${children}` === ticketUrl) {
+        return (
+          <a href={href} target="_blank" rel="noopener noreferrer">
+            Create A Ticket
+          </a>
+        );
+      }
+    }
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    );
+  };
   const isUser = message.role === 'user';
   const isLoading = !isUser && message.isLoading === true;
   const isError = !isUser && message.isError === true;
@@ -310,7 +325,7 @@ function MessageItem({ message, isLast, isMobile }) {
               message.content
             }</ReactMarkdown>
             {/* Ticket Link Button for better UX */}
-            {!message.isLoading && message.content.includes('Ticket type:') && (
+            {!message.isLoading && (message.content.includes('Ticket type:') || message.content.includes('Create a ticket')) && (
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
