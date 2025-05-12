@@ -148,7 +148,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     # 4️⃣ If it's an IT-support question AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append your link BEFORE saving
     if (
         should_show_ticket_link(message) 
-        and "create a ticket" not in assistant_response.lower() 
+        and TICKET_LINK_TEXT.lower() not in assistant_response.lower() 
         and TICKET_LINK_MARKDOWN not in assistant_response
     ):
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
@@ -229,7 +229,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
     # 4️⃣ If it matches an IT-support trigger AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append the ticket link to the full response BEFORE saving
     if (
         should_show_ticket_link(message) 
-        and "create a ticket" not in full_response.lower() 
+        and TICKET_LINK_TEXT.lower() not in full_response.lower() 
         and TICKET_LINK_MARKDOWN not in full_response
     ):
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
