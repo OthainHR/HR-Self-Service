@@ -204,7 +204,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
 
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 You can create a ticket so they can dive in right away.\""
+            "\"👉 You can [Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1) so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
