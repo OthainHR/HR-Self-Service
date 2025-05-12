@@ -114,9 +114,22 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
             "  • Request an AI Task — for AI-specific tasks\n\n"
 
-            "Once categorized, respond exactly:\n\n"
-            "\"I'm sorry, but I can't help with that—our IT team can assist you right away.\"\n\n"
+            "After classifying, respond in this friendly format (*exactly* – your code will append the link):\n\n"
 
+            "🚩 Ticket type: <YourCategoryHere>\n\n"
+
+            "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
+            "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
+            "  – “😣 Oh no, that blue-screen is a pain.”\n"
+            "  – “😭 Bummer, that blue-screen sounds rough.”\n"
+            "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
+            "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
+
+            "Follow with exactly:\n\n"
+            "“While I can’t jump in and fix it myself, our IT heroes are standing by!”\n\n"
+
+            "Then end with:\n\n"
+            "“👉 Create a ticket so they can dive in right away.”"
         )
     }
     openai_messages.append(system_message)
@@ -176,8 +189,22 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
             "  • Request an AI Task — for AI-specific tasks\n\n"
 
-            "Once categorized, respond exactly:\n\n"
-            "\"I'm sorry, but I can't help with that—our IT team can assist you right away.\"\n\n"
+            "After classifying, respond in this friendly format (*exactly* – your code will append the link):\n\n"
+
+            "🚩 Ticket type: <YourCategoryHere>\n\n"
+
+            "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
+            "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
+            "  – “😣 Oh no, that blue-screen is a pain.”\n"
+            "  – “😭 Bummer, that blue-screen sounds rough.”\n"
+            "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
+            "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
+
+            "Follow with exactly:\n\n"
+            "“While I can’t jump in and fix it myself, our IT heroes are standing by!”\n\n"
+
+            "Then end with:\n\n"
+            "“👉 Create a ticket so they can dive in right away.”"
         )
     }
     openai_messages.append(system_message)
