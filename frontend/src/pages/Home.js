@@ -95,7 +95,7 @@ const Home = () => {
                 wordBreak: 'break-word' // Adding word-break as well for broader compatibility
               }}
             >
-              Welcome to Othain HR Self-Service
+              Welcome to Othain Employee Self-Service
               {displayName && `, ${displayName}`}
             </Typography>
             <Typography 
@@ -106,8 +106,8 @@ const Home = () => {
                     fontSize: { xs: '0.8rem', sm: '1rem'} // Slightly smaller body text on xs
                 }}
             >
-              Your interactive Employee Self-Service designed to help with policies, benefits, and workplace questions.
-              Start a conversation to get instant answers to your HR-related inquiries.
+              Your interactive Employee Self-Service designed to help with policies, benefits, workplace questions, and IT related issues.
+              Start a conversation to get instant answers to your HR and IT related inquiries.
             </Typography>
             <Button 
               variant="contained" 
@@ -205,7 +205,7 @@ const Home = () => {
                     </Typography>
                   </Box>
                   <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
-                    Ask about company policies, benefits, time-off, workplace guidelines, and more.
+                    Ask about company policies, benefits, time-off, workplace guidelines, IT related issues and more.
                     
                   </Typography>
                   <Box sx={{ mt: 'auto' }}>
