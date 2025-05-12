@@ -81,41 +81,18 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     return context
 
 def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
-    """Process a chat request using Supabase for persistence."""
-    # ── 0️⃣ Shortcut: ticket link for any IT‐support request ──
-    if should_show_ticket_link(request.message):
-        session_id = request.session_id or str(uuid.uuid4())
-        return ChatResponse(
-            message=TICKET_LINK_MARKDOWN,
-            session_id=session_id
-        )
-    # Force re-deploy test comment - v2
-    session_id = request.session_id
+    session_id = request.session_id or str(uuid.uuid4())
     user_id = request.user_id
-    message_content = request.message
+    message = request.message.strip()
 
-    # 1. Ensure session exists (or handle creation if session_id is None)
-    # Note: Current frontend flow seems to always create first, then send message.
-    # If a message could arrive without a session_id, logic to create one here is needed.
-    if not session_id:
-        # This case might indicate an issue in the frontend flow if it happens
-        print("Warning: process_chat_request called without session_id. Attempting to create.")
-        new_session = db_create_chat_session(user_id, user_email=user_email)
-        if not new_session:
-             raise HTTPException(status_code=500, detail="Failed to create chat session")
-        session_id = new_session['id']
-        print(f"Created new session {session_id} during chat processing.")
-    
-    # 2. Add user message to Supabase
-    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
-    
-    # 3. Get recent messages from Supabase for context
-    # We need the user_id to fetch messages because db_get_chat_messages checks ownership
+    # 1️⃣ Log the user message
+    db_add_chat_message(session_id, "user", message, user_email=user_email)
+
+    # 2️⃣ Build and send to OpenAI as before
+    # Build OpenAI messages (same as before)
     recent_messages_db = db_get_chat_messages(session_id, user_id)
-    if recent_messages_db is None: # Handle case where session doesn't exist or user doesn't own it
+    if recent_messages_db is None:
         raise HTTPException(status_code=404, detail="Chat session not found or access denied")
-
-    # Map DB messages to Message model if needed, or directly use dicts
     openai_messages = []
     system_message = {
         "role": "system",
@@ -129,81 +106,40 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         )
     }
     openai_messages.append(system_message)
-    
-    # 4. Get relevant context from knowledge base (as before)
-    context = get_relevant_context(message_content)
+    context = get_relevant_context(message)
     if context:
-        context_message = {"role": "system", "content": context}
-        openai_messages.append(context_message)
-
-    # Add recent conversation history (last N messages from DB)
-    history_limit = 10 # How many messages to include
+        openai_messages.append({"role": "system", "content": context})
+    history_limit = 10
     for msg in recent_messages_db[-history_limit:]:
-        openai_messages.append({
-            "role": msg['role'],
-            "content": msg['content']
-        })
-
-    # Ensure the user's *current* message is the last one in the list for OpenAI
-    if not openai_messages or openai_messages[-1]['content'] != message_content:
-         openai_messages.append({"role": "user", "content": message_content}) 
-            
-    # 5. Get response from OpenAI (as before)
+        openai_messages.append({"role": msg['role'], "content": msg['content']})
+    if not openai_messages or openai_messages[-1]['content'] != message:
+        openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
-    
-    # 6. Add assistant response to Supabase
+
+    # 3️⃣ Log the assistant's reply
     db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
-    
-    # 7. Return response
+
+    # 4️⃣ If it's an IT-support question, append your link
+    if should_show_ticket_link(message):
+        assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
+
     return ChatResponse(
-        message=assistant_response, # Corrected field name
+        message=assistant_response,
         session_id=session_id
     )
 
 async def process_chat_request_stream(request: ChatRequest, user_email: Optional[str] = None):
-    """Process a chat request and stream the response back."""
-    # ── 0️⃣ Shortcut: ticket link for any IT‐support request ──
-    if should_show_ticket_link(request.message):
-        session_id = request.session_id or str(uuid.uuid4())
-        yield TICKET_LINK_MARKDOWN
-        return
-    session_id = request.session_id
+    session_id = request.session_id or str(uuid.uuid4())
     user_id = request.user_id
-    message_content = request.message
+    message = request.message.strip()
 
-    # 1. Ensure session exists (similar logic as non-stream)
-    if not session_id:
-        # Handle error or session creation as needed
-        print("Error: Streaming requires an existing session_id.")
-        raise HTTPException(status_code=400, detail="Session ID is required for streaming.")
+    # 1️⃣ Log the user message
+    db_add_chat_message(session_id, "user", message, user_email=user_email)
 
-    # Check if session exists and user has access (reuse part of db_get_chat_messages logic)
-    # This check might need refinement depending on db_get_chat_messages structure
-    try:
-        session_check = supabase_admin_client.table("chat_sessions")\
-            .select("id")\
-            .eq("id", session_id)\
-            .eq("user_id", user_id)\
-            .maybe_single()\
-            .execute()
-        if not session_check.data:
-             print(f"Stream: Session {session_id} not found or access denied for user {user_id}")
-             raise HTTPException(status_code=404, detail="Chat session not found or access denied")
-    except Exception as e:
-        print(f"Stream: Error checking session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail="Error verifying session access")
-
-    # 2. Add user message to Supabase (do this before streaming starts)
-    db_add_chat_message(session_id, "user", message_content, user_email=user_email)
-
-    # 3. Prepare messages for OpenAI (get history, context, etc.)
-    # Similar logic to non-streaming version
+    # 2️⃣ Build context and stream from OpenAI
     recent_messages_db = db_get_chat_messages(session_id, user_id)
     if recent_messages_db is None:
-        # This shouldn't happen if the check above passed, but handle defensively
-        print(f"Stream: Error fetching messages post-check for session {session_id}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve message history")
-
+        raise HTTPException(status_code=404, detail="Chat session not found or access denied")
     openai_messages = []
     system_message = {
         "role": "system",
@@ -217,32 +153,26 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         )
     }
     openai_messages.append(system_message)
-    context = get_relevant_context(message_content)
+    context = get_relevant_context(message)
     if context:
         openai_messages.append({"role": "system", "content": context})
     history_limit = 10
     for msg in recent_messages_db[-history_limit:]:
         openai_messages.append({"role": msg['role'], "content": msg['content']})
-    if not openai_messages or openai_messages[-1]['content'] != message_content:
-        openai_messages.append({"role": "user", "content": message_content})
+    if not openai_messages or openai_messages[-1]['content'] != message:
+        openai_messages.append({"role": "user", "content": message})
 
-    # --- Streaming Logic --- 
     full_response = ""
-    try:
-        async for chunk in get_chat_completion_stream(openai_messages):
-            full_response += chunk
-            yield chunk # Yield chunk back to the caller (router)
-    except Exception as e:
-        print(f"Stream Error during OpenAI call: {e}")
-        yield "Sorry, an error occurred while generating the response." # Yield an error message chunk
-        # Optionally raise an exception here if you want the request to fail entirely
+    async for chunk in get_chat_completion_stream(openai_messages):
+        full_response += chunk
+        yield chunk
 
-    # 4. Add complete assistant response to Supabase *after* streaming finishes
-    # We need to be careful about potential partial responses if errors occurred mid-stream
-    if full_response and not full_response.startswith("Sorry, an error occurred"): # Basic check
-        db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
-    else:
-        print(f"Stream: Assistant response was empty or an error occurred. Not saving to DB.")
+    # 3️⃣ Log the full assistant response
+    db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
+
+    # 4️⃣ If it matches an IT-support trigger, stream the ticket link last
+    if should_show_ticket_link(message):
+        yield "\n\n" + TICKET_LINK_MARKDOWN
 
 # --- Keep non-streaming function for now if needed elsewhere --- 
 # def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
