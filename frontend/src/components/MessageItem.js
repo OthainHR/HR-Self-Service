@@ -6,12 +6,16 @@ import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import supabase from '../supabaseClient';
 
-// Custom link renderer to open links in a new tab
-const LinkRenderer = ({ href, children }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer">
-    {children}
-  </a>
-);
+// Custom link renderer to open links in a new tab and override ticket URL display
+const LinkRenderer = ({ href, children }) => {
+  const ticketUrl = 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1';
+  const displayText = href === ticketUrl ? 'Create A Ticket' : children;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {displayText}
+    </a>
+  );
+};
 
 // Message component for displaying chat messages
 function MessageItem({ message, isLast, isMobile }) {
