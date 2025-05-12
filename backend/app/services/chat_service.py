@@ -26,11 +26,15 @@ from app.utils.supabase_chat_utils import (
 
 # ── Ticket shortcut logic constants and function ──
 TICKET_TRIGGER_KEYWORDS = [
-    "access request", "access", 
-    "desktop", "laptop", "support", 
-    "get it help", 
-    "hardware", "software", 
-    "login", "account", "accounts", 
+    "access request", "access",
+    "desktop", "computer", "laptop", "support",
+    "get it help",
+    "hardware", "software",
+    "login", "account", "accounts",
+    "reset", "vpn", "network",
+    "error", "issue", "problem", "crash", "freeze", "timeout",
+    "install", "setup", "configure",
+    "cannot", "unable", "trouble", "fail", 
 ]
 
 TICKET_LINK_MARKDOWN = "[Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1)"
@@ -45,7 +49,7 @@ def should_show_ticket_link(message: str) -> bool:
         if phrase in msg:
             return True
     # then individual keywords
-    for kw in ("access", "desktop", "laptop", "support", "hardware", "software", "login", "account", "reset", "vpn", "network", "cannot", "unable", "trouble", "issue", "problem", "error", "fix"):
+    for kw in ("access", "desktop", "computer", "laptop", "support", "hardware", "software", "login", "account", "reset", "vpn", "network", "cannot", "unable", "trouble", "issue", "problem", "error", "fix"):
         if kw in msg:
             return True
     return False
@@ -130,7 +134,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
 
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 You can [Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1) so they can dive in right away.\""
+            "\"👉 Create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -144,11 +148,8 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # Replace any plain 'create a ticket' (case-insensitive) in the AI response with the Markdown link
-    assistant_response = re.sub(r"(?i)\bcreate a ticket\b", TICKET_LINK_MARKDOWN, assistant_response)
-
-    # 4️⃣ If it's an IT-support question, append the link BEFORE saving (if not already added)
-    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in assistant_response:
+    # 4️⃣ IT-support category: always append the ticket link
+    if should_show_ticket_link(message):
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
 
     # 3️⃣ Log the potentially modified assistant's reply to DB
@@ -204,7 +205,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
 
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 You can [Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1) so they can dive in right away.\""
+            "\"👉 Create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -222,15 +223,15 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # Replace any plain 'create a ticket' (case-insensitive) in the streamed response with the Markdown link
-    full_response = re.sub(r"(?i)\bcreate a ticket\b", TICKET_LINK_MARKDOWN, full_response)
-
-    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving (if not already added)
-    if should_show_ticket_link(message) and TICKET_LINK_MARKDOWN not in full_response:
+    # 4️⃣ IT-support category: always append the ticket link
+    if should_show_ticket_link(message):
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
 
-    # 3️⃣ Log the potentially modified full assistant response to DB
-    db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
+    # 5️⃣ Log the full assistant response after streaming finishes
+    if full_response: # Avoid logging empty responses
+        db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
+    else:
+        print(f"Stream for session {session_id} resulted in an empty response. Not logging.")
 
 # --- Keep non-streaming function for now if needed elsewhere --- 
 # def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
