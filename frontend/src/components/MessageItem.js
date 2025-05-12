@@ -63,8 +63,15 @@ function MessageItem({ message, isLast, isMobile }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to submit feedback. Status: ${response.status}`);
+        let errorMsg;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || `Failed to submit feedback. Status: ${response.status}`;
+        } catch (parseErr) {
+          const text = await response.text();
+          errorMsg = text || `Failed to submit feedback. Status: ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
 
       setFeedbackSubmitted(feedbackType);
@@ -299,11 +306,12 @@ function MessageItem({ message, isLast, isMobile }) {
               message.content
             }</ReactMarkdown>
             {/* Ticket Link Button for better UX */}
-            {!message.isLoading && message.content.includes('[Create A Ticket]') && (
+            {!message.isLoading && message.content.includes('Ticket type:') && (
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
                   color="primary"
+                  sx={{ marginBottom: 2 }}
                   onClick={() => window.open('https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1', '_blank')}
                 >
                   Create A Ticket
