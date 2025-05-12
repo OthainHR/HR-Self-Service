@@ -121,12 +121,12 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 3️⃣ Log the assistant's reply
-    db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
-
-    # 4️⃣ If it's an IT-support question, append your link
+    # 4️⃣ If it’s an IT-support question, append your link BEFORE saving
     if should_show_ticket_link(message):
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
+
+    # 3️⃣ Log the potentially modified assistant’s reply to DB
+    db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
 
     return ChatResponse(
         message=assistant_response,
@@ -177,12 +177,12 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 3️⃣ Log the full assistant response
-    db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
-
-    # 4️⃣ If it matches an IT-support trigger, stream the ticket link last
+    # 4️⃣ If it matches an IT-support trigger, append the ticket link to the full response BEFORE saving
     if should_show_ticket_link(message):
-        yield "\n\n" + TICKET_LINK_MARKDOWN
+        full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
+
+    # 3️⃣ Log the potentially modified full assistant response to DB
+    db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
 
 # --- Keep non-streaming function for now if needed elsewhere --- 
 # def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
