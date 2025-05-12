@@ -206,6 +206,8 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
             "\"👉 Create a ticket so they can dive in right away.\"\n\n"
+
+            "If a ticket it IT related or a user asks for the point of contact for IT, respond with it@othainsoft.com"
         )
     }
     openai_messages.append(system_message)
