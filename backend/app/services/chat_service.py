@@ -119,19 +119,19 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "🚩 Ticket type: <YourCategoryHere>\n\n"
 
             "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
-            "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
-            "  – “😣 Oh no, that blue-screen is a pain.”\n"
-            "  – “😣 Oh no—blue screens are the worst.”\n"
-            "  – “😭 Bummer, that blue-screen sounds rough.”\n"
-            "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
-            "  – “😟 Yikes, a blue-screen must be so frustrating.”\n"
-            "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
+            "For example, if the user said \"my laptop is giving me a blue screen,\" you'd restate \"blue-screen\":\n"
+            "  – \"😣 Oh no, that blue-screen is a pain.\"\n"
+            "  – \"😣 Oh no—blue screens are the worst.\"\n"
+            "  – \"😭 Bummer, that blue-screen sounds rough.\"\n"
+            "  – \"🤔 Uh-oh, that blue-screen must be annoying.\"\n"
+            "  – \"😟 Yikes, a blue-screen must be so frustrating.\"\n"
+            "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "“Don’t worry, our IT heroes are standing by!”\n\n"
+            "\"Don't worry, our IT heroes are standing by!\"\n\n"
 
             "Then end with:\n\n"
-            "“👉 Create a ticket so they can dive in right away.”"
+            "\"👉 Create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -145,10 +145,10 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 4️⃣ If it's an IT-support question AND the AI didn't already include the link text OR the full markdown link, append your link BEFORE saving
+    # 4️⃣ If it's an IT-support question AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append your link BEFORE saving
     if (
         should_show_ticket_link(message) 
-        and TICKET_LINK_TEXT not in assistant_response 
+        and "create a ticket" not in assistant_response.lower() 
         and TICKET_LINK_MARKDOWN not in assistant_response
     ):
         assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
@@ -196,19 +196,19 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "🚩 Ticket type: <YourCategoryHere>\n\n"
 
             "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
-            "For example, if the user said “my laptop is giving me a blue screen,” you’d restate “blue-screen”:\n"
-            "  – “😣 Oh no, that blue-screen is a pain.”\n"
-            "  – “😣 Oh no—blue screens are the worst.”\n"
-            "  – “😭 Bummer, that blue-screen sounds rough.”\n"
-            "  – “🤔 Uh-oh, that blue-screen must be annoying.”\n"
-            "  – “😟 Yikes, a blue-screen must be so frustrating.”\n"
-            "  – “😟 That blue-screen is tough—sorry you’re experiencing it.”\n\n"
+            "For example, if the user said \"my laptop is giving me a blue screen,\" you'd restate \"blue-screen\":\n"
+            "  – \"😣 Oh no, that blue-screen is a pain.\"\n"
+            "  – \"😣 Oh no—blue screens are the worst.\"\n"
+            "  – \"😭 Bummer, that blue-screen sounds rough.\"\n"
+            "  – \"🤔 Uh-oh, that blue-screen must be annoying.\"\n"
+            "  – \"😟 Yikes, a blue-screen must be so frustrating.\"\n"
+            "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
 
             "Follow with exactly:\n\n"
-            "“Don’t worry, our IT heroes are standing by!”\n\n"
+            "\"Don't worry, our IT heroes are standing by!\"\n\n"
 
             "Then end with:\n\n"
-            "“👉 Create a ticket so they can dive in right away.”"
+            "\"👉 Create a ticket so they can dive in right away.\""
         )
     }
     openai_messages.append(system_message)
@@ -226,10 +226,10 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 4️⃣ If it matches an IT-support trigger AND the AI didn't already include the link text OR the full markdown link, append the ticket link to the full response BEFORE saving
+    # 4️⃣ If it matches an IT-support trigger AND the AI didn't already include the link text (case-insensitive) OR the full markdown link, append the ticket link to the full response BEFORE saving
     if (
         should_show_ticket_link(message) 
-        and TICKET_LINK_TEXT not in full_response 
+        and "create a ticket" not in full_response.lower() 
         and TICKET_LINK_MARKDOWN not in full_response
     ):
         full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
