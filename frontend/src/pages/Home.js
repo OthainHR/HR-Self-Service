@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Typography, Paper, Box, Button, Grid } from '@mui/material';
-import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIcon, OndemandVideo as OndemandVideoIcon } from '@mui/icons-material';
+import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIcon, OndemandVideo as OndemandVideoIcon, Launch as LaunchIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -34,6 +34,18 @@ const Home = () => {
   };
 
   const displayName = getDisplayName();
+
+  // Define quick links for one-click access
+  const quickLinks = [
+    { label: 'IT Ticketing Tool', url: 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1' },
+    { label: 'Othain Website', url: 'https://www.othain.com/' },
+    { label: 'POSH Policy', url: 'https://othainsoft.keka.com/#/org/documents/org/folder/5823/document/35440' },
+    { label: 'Training Session', url: 'https://othainsoftindia.sharepoint.com/sites/Trainings/SitePages/LearningTeamHome.aspx' },
+    { label: 'Goals, Objectives & PMS', url: 'https://othainsoft.keka.com/#/org/documents/org/folder/5823/document/40977' },
+    { label: 'Othain Handbook', url: 'https://othainsoft.keka.com/#/org/documents/org/folder/5823/document/30082' },
+    { label: 'Request Leave', url: 'https://othainsoft.keka.com/#/me/leave/summary' },
+    { label: 'View Pay Slips', url: 'https://othainsoft.keka.com/#/myfinances/pay/payslips' }
+  ];
 
   return (
     <Box
@@ -131,6 +143,51 @@ const Home = () => {
             >
               Start Chatting
             </Button>
+          </Paper>
+
+          {/* Quick Links Section */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              mb: 4,
+              borderRadius: 3,
+              bgcolor: isDarkMode ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.65)',
+              backdropFilter: 'blur(15px)',
+              border: isDarkMode ? '1px solid rgba(60,60,60,0.6)' : '1px solid rgba(255,255,255,0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <Typography
+              variant="h5"
+              component="h2"
+              gutterBottom
+              sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.dark', textAlign: 'center' }}
+            >
+              Quick Links
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+              {quickLinks.map(link => (
+                <Button
+                  key={link.url}
+                  variant="outlined"
+                  startIcon={<LaunchIcon />}
+                  onClick={() => window.open(link.url, '_blank')}
+                  sx={{
+                    color: isDarkMode ? 'white' : 'inherit',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)',
+                    px: { xs: 1.5, sm: 2.5 },
+                    py: { xs: 0.5, sm: 1 },
+                    fontSize: { xs: '0.75rem', sm: '1rem' },
+                    '& .MuiButton-startIcon svg': {
+                      fontSize: { xs: '1rem', sm: '1.25rem' }
+                    }
+                  }}
+                >
+                  {link.label}
+                </Button>
+              ))}
+            </Box>
           </Paper>
 
           {/* New Dedicated Onboarding Section */}
