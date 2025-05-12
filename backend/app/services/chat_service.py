@@ -134,7 +134,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
 
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 Create a ticket so they can dive in right away.\""
+            "\"👉 Create a ticket so they can dive in right away.\"\n\n"
         )
     }
     openai_messages.append(system_message)
@@ -205,7 +205,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
 
             "Follow with exactly:\n\n"
             "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 Create a ticket so they can dive in right away.\""
+            "\"👉 Create a ticket so they can dive in right away.\"\n\n"
         )
     }
     openai_messages.append(system_message)
