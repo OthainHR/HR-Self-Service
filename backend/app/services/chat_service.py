@@ -23,6 +23,29 @@ from app.utils.supabase_chat_utils import (
 # REMOVE In-memory storage 
 # chat_sessions = {}
 
+# ── Ticket shortcut logic constants and function ──
+TICKET_TRIGGER_KEYWORDS = [
+    "access request", "access", 
+    "desktop", "laptop", "support", 
+    "get it help", 
+    "hardware", "software", 
+    "login", "account", "accounts"
+]
+
+TICKET_LINK_MARKDOWN = "[Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1)"
+
+def should_show_ticket_link(message: str) -> bool:
+    msg = message.lower()
+    # check any multi-word phrases first
+    for phrase in ("access request", "get it help", "hardware and software"):
+        if phrase in msg:
+            return True
+    # then individual keywords
+    for kw in ("access", "desktop", "laptop", "support", "hardware", "software", "login", "account"):
+        if kw in msg:
+            return True
+    return False
+
 def create_session(db, user_id: str, user_email: Optional[str] = None) -> Optional[ChatSession]: # db param might be unused now
     """Create a new chat session in Supabase."""
     db_session = db_create_chat_session(user_id, user_email=user_email)
@@ -59,6 +82,13 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
 
 def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
     """Process a chat request using Supabase for persistence."""
+    # ── 0️⃣ Shortcut: ticket link for any IT‐support request ──
+    if should_show_ticket_link(request.message):
+        session_id = request.session_id or str(uuid.uuid4())
+        return ChatResponse(
+            message=TICKET_LINK_MARKDOWN,
+            session_id=session_id
+        )
     # Force re-deploy test comment - v2
     session_id = request.session_id
     user_id = request.user_id
@@ -132,6 +162,11 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
 
 async def process_chat_request_stream(request: ChatRequest, user_email: Optional[str] = None):
     """Process a chat request and stream the response back."""
+    # ── 0️⃣ Shortcut: ticket link for any IT‐support request ──
+    if should_show_ticket_link(request.message):
+        session_id = request.session_id or str(uuid.uuid4())
+        yield TICKET_LINK_MARKDOWN
+        return
     session_id = request.session_id
     user_id = request.user_id
     message_content = request.message
