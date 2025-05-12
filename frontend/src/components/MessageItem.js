@@ -6,6 +6,13 @@ import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import supabase from '../supabaseClient';
 
+// Custom link renderer to open links in a new tab
+const LinkRenderer = ({ href, children }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer">
+    {children}
+  </a>
+);
+
 // Message component for displaying chat messages
 function MessageItem({ message, isLast, isMobile }) {
   const theme = useTheme();
@@ -219,7 +226,12 @@ function MessageItem({ message, isLast, isMobile }) {
               letterSpacing: '0.01em',
             }}
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]} 
+              components={{ a: LinkRenderer }}
+            >
+              {message.content}
+            </ReactMarkdown>
           </Typography>
         ) : (
           <Box sx={{ 
@@ -282,6 +294,7 @@ function MessageItem({ message, isLast, isMobile }) {
           }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              components={{ a: LinkRenderer }}
             >{message.content === 'Thinking...' && message.isLoading ? ' ' :
               message.content
             }</ReactMarkdown>
