@@ -49,11 +49,27 @@ const Home = () => {
 
   // glassmorphism shared styles
   const glassStyles = {
-    bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.22)' : 'rgba(255, 255, 255, 0.16)',
+    bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.22)' : 'rgba(255, 255, 255, 0.01)',
     border: '0px solid rgba(255,255,255,0.3)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
+  const glassStyles2 = {
+    bgcolor: isDarkMode ? 'rgba(28, 189, 127, 0.73)' : 'rgba(28, 189, 127, 0.73)',
+    border: '0px solid rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(28, 189, 127, 0.33)'
+  };
+
+  const glassStyles3 = {
+    bgcolor: isDarkMode ? 'rgba(28, 184, 189, 0.73)' : 'rgba(17, 179, 207, 0.8)',
+    border: '0px solid rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(17, 179, 207, 0.4)'
   };
 
   return (
@@ -134,7 +150,7 @@ const Home = () => {
               gutterBottom 
               sx={{ 
                 fontWeight: 600, 
-                color: isDarkMode ? 'white' : 'primary.main',
+                color: isDarkMode ? 'white' : 'rgb(29, 170, 189)',
                 fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' },
                 overflowWrap: 'break-word', // Allow long words/emails to break
                 wordBreak: 'break-word' // Adding word-break as well for broader compatibility
@@ -166,8 +182,8 @@ const Home = () => {
                 px: 3,
                 py: 1.2,
                 borderRadius: 2,
-                ...glassStyles,
-                color: isDarkMode ? 'white' : 'primary.main',
+                ...glassStyles3,
+                color: isDarkMode ? 'white' : 'white',
                 '&:hover': {
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
@@ -190,8 +206,8 @@ const Home = () => {
               textAlign: 'center', // Center align content
             }}
           >
-            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? '#3fc380' : '#3fc380', mb: 2 }} />
-            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.dark' }}>
+            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'rgba(28, 189, 127, 1)' : 'rgba(28, 189, 127, 1)', mb: 2 }} />
+            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)' }}>
             New to Othain or just need a refresher?
             </Typography>
             <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
@@ -208,8 +224,8 @@ const Home = () => {
                 px: 4,
                 py: 1.3,
                 borderRadius: 2,
-                ...glassStyles,
-                color: isDarkMode ? 'white' : '#3fc380',
+                ...glassStyles2,
+                color: isDarkMode ? 'white' : 'white',
                 '&:hover': {
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
@@ -234,8 +250,10 @@ const Home = () => {
             <Typography
               variant="h5"
               component="h2"
+              marginBottom={2}
+              marginTop={-1}
               gutterBottom
-              sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'primary.dark', textAlign: 'center' }}
+              sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)', textAlign: 'center' }}
             >
               Quick Links
             </Typography>

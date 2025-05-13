@@ -258,7 +258,6 @@ function Chat() {
     }}>
       <Box sx={{ 
         p: 2, 
-        borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)', 
         textAlign: 'center'
       }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
@@ -376,7 +375,7 @@ function Chat() {
             backgroundSize: 'cover',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
-            opacity: 0.4,
+            opacity: 0.3,
             zIndex: 1,
             WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
             maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',

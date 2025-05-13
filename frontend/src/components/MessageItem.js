@@ -10,6 +10,16 @@ import supabase from '../supabaseClient';
 function MessageItem({ message, isLast, isMobile }) {
   const theme = useTheme();
   const { isDarkMode } = useDarkMode();
+
+  // Define base glass properties for messages
+  const generalMessageGlassProps = {
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    borderRadius: '18px', // Keep existing message bubble shape
+    // General shadow, can be overridden per message type if needed
+    boxShadow: isDarkMode ? '0 3px 12px rgba(0,0,0,0.2)' : '0 3px 12px rgba(0,0,0,0.08)',
+  };
+
   // Custom link renderer inside MessageItem to hide raw ticket URL when button is shown
   const ticketUrl = 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1';
   const showTicketButton = !message.isLoading && (
@@ -45,12 +55,13 @@ function MessageItem({ message, isLast, isMobile }) {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   
-  const bubbleColor = isUser 
-    ? (isDarkMode ? theme.palette.primary.dark : theme.palette.primary.main) 
-    : (isDarkMode ? theme.palette.grey[700] : theme.palette.grey[200]);
-  const textColor = isUser 
-    ? theme.palette.primary.contrastText 
-    : (isDarkMode ? theme.palette.text.primary : theme.palette.grey[800]);
+  // Determine background colors for tails based on main bubble backgrounds
+  const userBubbleBg = isDarkMode ? 'rgba(80, 80, 80, 0.65)' : 'rgba(100, 100, 100, 0.65)';
+  const botLoadingBg = isDarkMode ? 'rgba(100, 100, 60, 0.6)' : 'rgba(255, 255, 224, 0.6)';
+  const botErrorBg = isDarkMode ? 'rgba(100, 60, 60, 0.6)' : 'rgba(255, 224, 224, 0.6)';
+  const botDefaultBg = isDarkMode ? 'rgba(55, 55, 55, 0.55)' : 'rgba(248, 248, 248, 0.55)';
+
+  const botBubbleBg = isLoading ? botLoadingBg : isError ? botErrorBg : botDefaultBg;
 
   const handleFeedback = async (feedbackType) => {
     if (!message.id || feedbackSubmitted || isSubmittingFeedback) {
@@ -117,7 +128,7 @@ function MessageItem({ message, isLast, isMobile }) {
           right: 45,
           width: 16,
           height: 16,
-          background: theme.palette.primary.main,
+          background: userBubbleBg,
           borderBottomRightRadius: 16,
           boxShadow: `2px 2px 2px rgba(0, 0, 0, 0.05)`,
           zIndex: 0,
@@ -128,7 +139,7 @@ function MessageItem({ message, isLast, isMobile }) {
           left: 45,
           width: 16,
           height: 16,
-          background: isDarkMode ? 'rgba(40, 40, 40, 0.8)' : theme.palette.background.paper,
+          background: botBubbleBg,
           borderBottomLeftRadius: 16,
           boxShadow: `-2px 2px 2px rgba(0, 0, 0, 0.03)`,
           zIndex: 0,
@@ -187,17 +198,14 @@ function MessageItem({ message, isLast, isMobile }) {
       <Paper
         elevation={isUser ? 3 : 2}
         sx={{
+          ...generalMessageGlassProps,
           p: 2,
           px: 2.5,
           maxWidth: { xs: '85%', md: '70%' },
           borderRadius: '18px 18px 18px 18px',
-          background: isUser 
-            ? theme.palette.grey[800]
-            : isLoading
-              ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
-              : isError
-                ? isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)'
-                : isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.6)',
+          background: isUser
+            ? userBubbleBg
+            : botBubbleBg,
           color: isUser 
             ? 'white'
             : theme.palette.text.primary,
@@ -210,17 +218,16 @@ function MessageItem({ message, isLast, isMobile }) {
             transform: 'translateY(-1px)',
           },
           border: '1px solid',
-          borderColor: isUser 
-            ? 'rgba(255, 255, 255, 0.1)'
-            : isLoading 
-              ? isDarkMode ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.3)'
-              : isError 
-                ? isDarkMode ? 'rgba(211, 47, 47, 0.2)' : 'rgba(211, 47, 47, 0.3)'
-                : isDarkMode ? 'rgba(60, 60, 60, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-          backdropFilter: 'blur(10px)',
-          boxShadow: isUser 
-            ? theme.shadows[3]
-            : '0 4px 15px rgba(0, 0, 0, 0.05)',
+          borderColor: isUser
+            ? (isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.3)')
+            : isLoading
+              ? (isDarkMode ? 'rgba(255, 193, 7, 0.4)' : 'rgba(255, 193, 7, 0.5)')
+              : isError
+                ? (isDarkMode ? 'rgba(211, 47, 47, 0.4)' : 'rgba(211, 47, 47, 0.5)')
+                : (isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(200, 200, 200, 0.4)'),
+          boxShadow: isUser
+            ? (isDarkMode ? '0 4px 15px rgba(0,0,0,0.25)' : '0 4px 15px rgba(0,0,0,0.1)')
+            : generalMessageGlassProps.boxShadow,
           overflow: 'hidden',
           '&::before': {
             content: '""',
@@ -228,13 +235,17 @@ function MessageItem({ message, isLast, isMobile }) {
             top: 0,
             left: 0,
             right: 0,
-            height: '100%',
+            bottom:0,
+            borderRadius: 'inherit',
             backgroundImage: isUser
-              ? 'radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 65%)'
-              : isDarkMode
-                ? 'linear-gradient(to bottom, rgba(60,60,60,0.3), rgba(50,50,50,0.1))'
-                : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
+              ? 'radial-gradient(circle at top right, rgba(255,255,255,0.07) 0%, transparent 65%)'
+              : isLoading || isError
+                ? 'none'
+                : isDarkMode
+                  ? 'radial-gradient(circle at top left, rgba(255,255,255,0.04) 0%, transparent 55%)'
+                  : 'radial-gradient(circle at top left, rgba(255,255,255,0.15) 0%, transparent 55%)',
             zIndex: -1,
+            pointerEvents: 'none',
           },
         }}
       >
@@ -245,7 +256,7 @@ function MessageItem({ message, isLast, isMobile }) {
             sx={{ 
               whiteSpace: 'pre-wrap', 
               wordBreak: 'break-word', 
-              color: textColor,
+              color: isUser ? 'white' : theme.palette.text.primary,
               fontSize: isMobile ? '0.875rem' : '1rem', 
               lineHeight: isMobile ? '1.4' : '1.5', 
               fontWeight: 400,
