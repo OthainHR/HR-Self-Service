@@ -246,7 +246,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
           alt="Othain Logo"
           height={isDarkMode ? "60" : "50"}
-          style={{ marginBottom: theme.spacing(2), opacity: 1 }}
+          style={{ marginBottom: theme.spacing(2), marginTop: theme.spacing(10), opacity: 1 }}
         />
         <Typography variant="h5" color="text.primary" align="center" sx={{ mb: 1, fontWeight: 500,fontSize: isMobile ? '16px' : '25px' }}>
           Welcome to Othain Employee Self Service
