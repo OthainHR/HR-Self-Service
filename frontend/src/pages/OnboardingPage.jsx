@@ -38,6 +38,16 @@ const OnboardingPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check for mobile screen size
   const [quizAttempts, setQuizAttempts] = useState(0); // ADDED: For quiz attempts
 
+  // Glassmorphism shared styles
+  const glassStyles = {
+    backgroundColor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
+    border: '0px solid rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    
+    borderRadius: '16px', // Added borderRadius for glass effect
+  };
+
   // Add timestamps (in seconds) to your chapters
   // PLEASE UPDATE THESE TIMESTAMPS TO MATCH YOUR VIDEO
   const chapters = [
@@ -416,11 +426,17 @@ const OnboardingPage = () => {
   const progressValue = chapters.length > 0 ? (completedChapters.size / chapters.length) * 100 : 0;
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: isMobile ? 'column' : 'row', // Stack on mobile
-      fontFamily: 'Arial, sans-serif', 
-      margin: isMobile ? '10px' : '20px' // Reduced margin on mobile
+    <div style={{
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row', // Stack on mobile, row on desktop
+      gap: '20px',
+      padding: isMobile ? '10px' : '20px',
+      minHeight: 'calc(100vh - 64px)', // Adjust for NavBar height
+      boxSizing: 'border-box',
+      ...glassStyles, // Apply to main page container
+      backgroundColor: 'transparent', // Override bgcolor from glassStyles for the main page container if needed, or use a more transparent one
+      border: 'none', // Override border for the main page container
+      boxShadow: 'none', // Override boxShadow for the main page container
     }}>
       {/* Left Side (or Top on Mobile): Video Player and Title */}
       <div style={{ 
@@ -591,7 +607,7 @@ const OnboardingPage = () => {
               <li 
                 key={chapter.id} 
                 style={{
-                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode, isMobile), // Pass isMobile here
+                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode, isMobile, glassStyles),
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center'
@@ -675,30 +691,32 @@ const buttonStyle = (disabled, isMobile) => ({
 });
 
 // Updated chapterItemStyle to handle general dark mode for non-fullscreen
-const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode, isMobile) => ({ // Added isMobile
-  padding: isMobile ? '10px 5px' : '12px 8px', // Adjust padding for mobile
+const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode, isMobile, glassStyles) => ({
+  padding: isMobile ? '10px 5px' : '12px 8px',
   borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
   cursor: 'pointer',
-  borderRadius: '20px',
   marginBottom: '10px',
   marginRight: '10px',
+  ...glassStyles, // Apply glassStyles to chapter items
   backgroundColor: (() => {
-    if (isFullscreenMode) return isActive ? '#555' : (isCompleted ? '#2a3a2a' : 'transparent');
-    if (isAppDarkMode) return isActive ? '#383838' : (isCompleted ? '#203020' : 'transparent');
-    // Mobile light mode can also have distinct styles if needed, otherwise falls to default light
-    return isActive ? '#e0e0e0' : (isCompleted ? '#e6ffe6' : 'transparent');
+    let baseBg = glassStyles.backgroundColor;
+    if (isFullscreenMode) return isActive ? 'rgba(85,85,85,0.5)' : (isCompleted ? 'rgba(42,58,42,0.5)' : baseBg);
+    if (isAppDarkMode) return isActive ? 'rgba(56,56,56,0.5)' : (isCompleted ? 'rgba(32,48,32,0.5)' : baseBg);
+    return isActive ? 'rgba(224,224,224,0.5)' : (isCompleted ? 'rgba(230,255,230,0.5)' : baseBg);
   })(),
-  color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000', // Title text white in fullscreen OR app dark mode
-  transition: 'background-color 0.2s ease, color 0.2s ease, transform 0.15s ease', // Ensure transition includes transform
-  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1, 
-  '&:hover': { 
-    transform: 'translateX(3px)', // Example hover effect: slight move right
+  color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000',
+  transition: 'background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, backdrop-filter 0.2s ease',
+  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1,
+  '&:hover': {
+    transform: 'translateX(3px)',
+    backdropFilter: 'blur(12px)', // Enhance blur on hover
+    WebkitBackdropFilter: 'blur(12px)',
     backgroundColor: (() => {
-      if (isFullscreenMode) return isActive ? '#666' : (isCompleted ? '#3a4a3a' : '#404040');
-      if (isAppDarkMode) return isActive ? '#484848' : (isCompleted ? '#304030' : '#2a2a2a');
-      // Mobile light mode hover
-      if (isMobile) return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0'); 
-      return isActive ? '#d5d5d5' : (isCompleted ? '#d9f2d9' : '#f0f0f0');
+      let hoverBg = isAppDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)';
+      if (isFullscreenMode) return isActive ? 'rgba(102,102,102,0.6)' : (isCompleted ? 'rgba(58,74,58,0.6)' : hoverBg);
+      if (isAppDarkMode) return isActive ? 'rgba(72,72,72,0.6)' : (isCompleted ? 'rgba(48,64,48,0.6)' : hoverBg);
+      if (isMobile) return isActive ? 'rgba(213,213,213,0.6)' : (isCompleted ? 'rgba(217,242,217,0.6)' : hoverBg);
+      return isActive ? 'rgba(213,213,213,0.6)' : (isCompleted ? 'rgba(217,242,217,0.6)' : hoverBg);
     })()
   }
 });
