@@ -287,7 +287,7 @@ function MessageItem({ message, isLast, isMobile }) {
               }
             },
             '& a': { 
-              color: 'primary.main',
+              color: 'rgba(17, 179, 207, 0.8)',
               textDecoration: 'none',
               fontWeight: 500,
               fontSize: isMobile ? '0.875rem' : '1rem',
@@ -306,7 +306,7 @@ function MessageItem({ message, isLast, isMobile }) {
                 left: 0,
                 width: 0,
                 height: '1px',
-                backgroundColor: theme.palette.primary.main,
+                backgroundColor: 'rgba(17, 179, 207, 0.8)',
                 transition: 'width 0.3s ease',
               }
             },
@@ -341,7 +341,13 @@ function MessageItem({ message, isLast, isMobile }) {
                 <Button
                   variant="contained"
                   color="primary"
-                  sx={{ marginBottom: 2 }}
+                  sx={{ 
+                    marginBottom: 2,
+                    backgroundColor: 'rgba(17, 179, 207, 0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(17, 179, 207, 1)', 
+                    }
+                  }}
                   onClick={() => window.open('https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1', '_blank')}
                 >
                   Create A Ticket
