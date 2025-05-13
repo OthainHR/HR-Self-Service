@@ -47,6 +47,15 @@ const Home = () => {
     { label: 'POSH Policy', url: 'https://othainsoft.keka.com/#/org/documents/org/folder/5823/document/35440' }
   ];
 
+  // glassmorphism shared styles
+  const glassStyles = {
+    bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.22)' : 'rgba(255, 255, 255, 0.16)',
+    border: '0px solid rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
   return (
     <Box
       sx={{
@@ -58,8 +67,8 @@ const Home = () => {
         right: 0,
         bottom: 0,
         background: isDarkMode 
-          ? 'linear-gradient(135deg, #121212 0%, #1e1e1e 50%, #262626 100%)'
-          : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
+          ? 'linear-gradient(135deg, #121212 0%, #1e1e1e 40%, #262626 100%)'
+          : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 40%, #f3e5f5 100%)',
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed',
         overflowY: 'auto',
@@ -73,26 +82,50 @@ const Home = () => {
           bottom: 0,
           width: '100%',
           height: '100%',
+          backgroundRepeat: 'repeat-y',
           backgroundImage: isDarkMode
             ? 'radial-gradient(circle at 30% 20%, rgba(80,80,80,0.2) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(30,50,80,0.15) 0%, transparent 30%)'
             : 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
           zIndex: 0,
-        }
+          WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%), linear-gradient(to right, black 85%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%), linear-gradient(to right, black 85%, transparent 100%)',
+          WebkitMaskSize: '100% 100%',
+          maskSize: '100% 100%',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: "url('/5624633.jpg')",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'repeat-y',
+          backgroundPosition: 'center',
+          opacity: 0.3,
+          zIndex: 1,
+          WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+          WebkitMaskSize: '100% 100%',
+          maskSize: '100% 100%',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+        },
       }}
     >
-      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, position: 'relative', zIndex: 5 }}>
-        <Box sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 2, sm: 3, md: 4 }, pb: 0, position: 'relative', zIndex: 5 }}>
+        <Box sx={{ pt: 4 }}>
           {/* Welcome section */}
           <Paper 
             elevation={0} 
-            sx={{ 
+            sx={{
               p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
               mb: 4, 
               borderRadius: 3,
-              bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.65)',
-              backdropFilter: 'blur(15px)',
-              border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+              ...glassStyles
             }}
           >
             <Typography 
@@ -119,7 +152,7 @@ const Home = () => {
                 }}
             >
               Your interactive Employee Self-Service designed to help with policies, benefits, workplace questions, and IT related issues.
-              Start a conversation to get instant answers to your HR and IT related inquiries.
+              Start a conversation to get instant answers to your HR and IT related questions.
             </Typography>
             <Button 
               variant="contained" 
@@ -127,17 +160,18 @@ const Home = () => {
               size="large"
               startIcon={<ChatIcon />}
               onClick={() => navigate('/chat')}
-              sx={{ 
+              sx={{
                 mt: 2,
                 mr: 2,
                 px: 3,
                 py: 1.2,
                 borderRadius: 2,
-                boxShadow: '0 4px 20px rgba(67, 97, 238, 0.3)',
-                background: 'linear-gradient(to right, #4361ee, #3a56d4)',
+                ...glassStyles,
+                color: isDarkMode ? 'white' : 'primary.main',
                 '&:hover': {
-                  boxShadow: '0 6px 25px rgba(67, 97, 238, 0.4)',
-                  background: 'linear-gradient(to right, #3a56d4, #324bc1)'
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
                 }
               }}
             >
@@ -148,14 +182,11 @@ const Home = () => {
           {/* New Dedicated Onboarding Section */}
           <Paper 
             elevation={0} 
-            sx={{ 
+            sx={{
               p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
               mb: 4, 
               borderRadius: 3,
-              bgcolor: isDarkMode ? 'rgba(40, 40, 50, 0.85)' : 'rgba(230, 240, 255, 0.7)', // A slightly different shade for distinction
-              backdropFilter: 'blur(15px)',
-              border: isDarkMode ? '1px solid rgba(60, 60, 70, 0.6)' : '1px solid rgba(220, 230, 255, 0.6)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.10)',
+              ...glassStyles,
               textAlign: 'center', // Center align content
             }}
           >
@@ -172,16 +203,17 @@ const Home = () => {
               size="large"
               startIcon={<OndemandVideoIcon />}
               onClick={() => navigate('/onboarding')}
-              sx={{ 
+              sx={{
                 mt: 1,
-                px: 4, // More horizontal padding for emphasis
+                px: 4,
                 py: 1.3,
                 borderRadius: 2,
-                boxShadow: '0 4px 20px rgba(37, 247, 118, 0.3)', // Using secondary color for shadow
-                background: isDarkMode ? 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))' : 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))', // Adjusted gradient for dark/light
+                ...glassStyles,
+                color: isDarkMode ? 'white' : '#3fc380',
                 '&:hover': {
-                  boxShadow: '0 6px 25px rgba(37, 247, 55, 0.4)',
-                  background: isDarkMode ? 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))' : 'linear-gradient(to right, #3fc380,rgb(57, 177, 117))'
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
                 }
               }}
             >
@@ -196,10 +228,7 @@ const Home = () => {
               p: { xs: 2, sm: 3, md: 4 },
               mb: 4,
               borderRadius: 3,
-              bgcolor: isDarkMode ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.65)',
-              backdropFilter: 'blur(15px)',
-              border: isDarkMode ? '1px solid rgba(60,60,60,0.6)' : '1px solid rgba(255,255,255,0.6)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+              ...glassStyles
             }}
           >
             <Typography
@@ -218,14 +247,16 @@ const Home = () => {
                   startIcon={<LaunchIcon />}
                   onClick={() => window.open(link.url, '_blank')}
                   sx={{
+                    ...glassStyles,
                     color: isDarkMode ? 'white' : 'inherit',
-                    borderColor: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)',
                     borderRadius: 20,
                     px: { xs: 1.5, sm: 2.5 },
                     py: { xs: 0.5, sm: 1 },
                     fontSize: { xs: '0.75rem', sm: '1rem' },
-                    '& .MuiButton-startIcon svg': {
-                      fontSize: { xs: '1rem', sm: '1.25rem' }
+                    '&:hover': {
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
                     }
                   }}
                 >
@@ -234,121 +265,6 @@ const Home = () => {
               ))}
             </Box>
           </Paper>
-
-          {/* Features grid */}
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={6}>
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 3, 
-                  height: '100%', 
-                  borderRadius: 3,
-                  bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.75)' : 'rgba(255, 255, 255, 0.55)',
-                  backdropFilter: 'blur(15px)',
-                  border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <QuestionAnswerIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.main' }}>
-                      Ask Questions
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
-                    Ask about company policies, benefits, time-off, workplace guidelines, IT related issues and more.
-                    
-                  </Typography>
-                  <Box sx={{ mt: 'auto' }}>
-                    <Button 
-                      variant="outlined" 
-                      color="primary"
-                      onClick={() => navigate('/chat')}
-                      sx={{
-                        px: 2.5,
-                        py: 1,
-                        borderRadius: 2,
-                        borderWidth: 1.5,
-                        color: isDarkMode ? 'primary.light' : 'primary.main',
-                        borderColor: isDarkMode ? 'primary.light' : 'primary.main',
-                        '&:hover': {
-                          borderWidth: 1.5,
-                          background: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)',
-                          boxShadow: '0 4px 12px rgba(67, 97, 238, 0.15)'
-                        }
-                      }}
-                    >
-                      Start Chatting
-                    </Button>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Paper 
-                elevation={0} 
-                sx={{ 
-                  p: 3, 
-                  height: '100%', 
-                  borderRadius: 3,
-                  bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.75)' : 'rgba(255, 255, 255, 0.55)',
-                  backdropFilter: 'blur(15px)',
-                  border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <InfoIcon color="primary" sx={{ mr: 1.5, fontSize: 32 }} />
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'primary.main' }}>
-                      Knowledge Base
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" paragraph sx={{ flexGrow: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
-                    The HR chatbot is connected to a comprehensive knowledge base of company information.
-                    {isAdmin && ' As an administrator, you can manage this knowledge base to keep information accurate and up-to-date.'}
-                  </Typography>
-                  {isAdmin && (
-                    <Box sx={{ mt: 'auto' }}>
-                      <Button 
-                        variant="outlined" 
-                        color="primary"
-                        onClick={() => navigate('/knowledge')}
-                        sx={{
-                          px: 2.5,
-                          py: 1,
-                          borderRadius: 2,
-                          borderWidth: 1.5,
-                          color: isDarkMode ? 'primary.light' : 'primary.main',
-                          borderColor: isDarkMode ? 'primary.light' : 'primary.main',
-                          '&:hover': {
-                            borderWidth: 1.5,
-                            background: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)',
-                            boxShadow: '0 4px 12px rgba(67, 97, 238, 0.15)'
-                          }
-                        }}
-                      >
-                        Manage Knowledge Base
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
         </Box>
       </Container>
     </Box>

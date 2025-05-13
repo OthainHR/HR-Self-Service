@@ -71,6 +71,16 @@ function Chat() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
+  // Shared glassmorphism styles
+  const glassStyles = {
+    bgcolor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
+    border: '0px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '10px',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
   const handleDrawerToggle = () => {
     setMobileDrawerOpen(!mobileDrawerOpen);
   };
@@ -228,15 +238,13 @@ function Chat() {
   );
   
   const renderChatHistoryPanel = () => (
-    <Paper elevation={isMobile ? 0 : 2} sx={{
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        borderRadius: isMobile ? 0 : 2, 
+    <Paper elevation={0} sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: isMobile ? 0 : 2,
         overflow: 'hidden',
-        bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.75)',
-        backdropFilter: isMobile ? 'none' : 'blur(10px)',
-        border: isMobile ? 'none' : (isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)'),
+        ...glassStyles,
         color: theme => theme.palette.text.primary
     }}>
       <Box sx={{ 
@@ -247,14 +255,25 @@ function Chat() {
         <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
       </Box>
       
-      <ListItemButton 
+      <ListItemButton
         onClick={handleNewChat}
-        sx={{ 
-          py: 1.5, flexShrink: 0, height: 54, minHeight: 54, maxHeight: 84,
-          borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
-          bgcolor: isDarkMode ? 'rgba(40, 40, 40, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-          '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)' },
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1
+        sx={{
+          py: 1.5,
+          flexShrink: 0,
+          height: 54,
+          minHeight: 54,
+          maxHeight: 84,
+          borderRadius: 2,
+          ...glassStyles,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          '&:hover': {
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
+          }
         }}
       >
         <AddIcon fontSize="small" /> 
@@ -312,7 +331,7 @@ function Chat() {
           margin: 0,
           padding: 0,
           position: 'fixed',
-          top: 64,
+          top: isMobile ? 56 : 64,
           left: 0,
           right: 0,
           bottom: 0,
@@ -336,7 +355,27 @@ function Chat() {
               ? 'radial-gradient(circle at 30% 20%, rgba(80,80,80,0.2) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(30,50,80,0.15) 0%, transparent 30%)'
               : 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
             zIndex: 0,
-          }
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: "url('/5624633.jpg')",
+            backgroundSize: 'cover',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            opacity: 0.4,
+            zIndex: 1,
+            WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
+            WebkitMaskSize: '100% 100%',
+            maskSize: '100% 100%',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+          },
         }}
       />
       <Container maxWidth="xl" sx={{ 

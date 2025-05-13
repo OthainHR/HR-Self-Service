@@ -224,21 +224,28 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     return null;
   };
 
+  // Shared glassmorphism styles
+  const glassStyles = {
+    bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.26)' : 'rgba(255,255,255,0.1)',
+    border: '0px solid rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
   if (!sessionId) {
     return (
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          height: '100%', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
           alignItems: 'center',
           borderRadius: 3,
-          background: isDarkMode 
-            ? 'linear-gradient(to bottom, rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.15))'
-            : 'linear-gradient(to bottom, rgba(67, 97, 238, 0.05), rgba(67, 97, 238, 0.1))',
+          ...glassStyles,
           color: theme => theme.palette.text.primary,
         }}
       >
@@ -273,7 +280,8 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             icon={<OnlineIcon />}
             sx={{ 
               borderRadius: 2,
-              display: 'flex', 
+              ...glassStyles,
+              display: 'fixed', 
               alignItems: 'center',
               marginBottom: isMobile ? '280px' : '20px',
               fontSize: isMobile ? '10px' : '16px'
@@ -287,18 +295,15 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   }
 
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
+    <Paper
+      elevation={0}
+      sx={{
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         borderRadius: 3,
         overflow: 'hidden',
-        bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.65)',
-        backdropFilter: 'blur(15px)',
-        border: isDarkMode ? '1px solid rgba(50, 50, 50, 0.6)' : '1px solid rgba(255, 255, 255, 0.6)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+        ...glassStyles,
         position: 'relative',
         zIndex: 5,
         '&::before': {
@@ -309,8 +314,8 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           right: 0,
           height: '100%',
           backgroundImage: isDarkMode 
-            ? 'linear-gradient(to bottom, rgba(40,40,40,0.5), rgba(30,30,30,0.2))'
-            : 'linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2))',
+            ? 'linear-gradient(to bottom, rgba(40,40,40,0.1), rgba(30,30,30,0.1))'
+            : 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.1))',
           zIndex: 0,
         }
       }}
@@ -318,9 +323,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       <Box 
         sx={{ 
           p: 2, 
-          borderBottom: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-          backdropFilter: 'blur(10px)',
-          bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          ...glassStyles,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -334,7 +337,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               width: 40,
               height: 40,
               mr: 1.5,
-              border: isDarkMode ? '2px solid rgba(40, 40, 40, 0.8)' : '2px solid white',
+              border: isDarkMode ? '2px solid rgba(40, 40, 40, 0.2)' : '2px solid white',
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
             }}
           >
@@ -373,7 +376,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           p: { xs: 1, sm: 2, md: 3 },
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: isDarkMode ? 'rgba(25, 25, 25, 0.7)' : 'rgba(245, 247, 250, 0.5)',
+          bgcolor: isDarkMode ? 'rgba(25, 25, 25, 0.3)' : 'rgba(245, 247, 250, 0.2)',
           position: 'relative',
           zIndex: 1,
         }}
@@ -524,11 +527,11 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       <Box 
         component="form" 
         onSubmit={handleSubmit}
-        sx={{ 
-          p: 2, 
-          borderTop: isDarkMode ? '1px solid rgba(50, 50, 50, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-          bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(10px)',
+        sx={{
+          p: 2,
+          ...glassStyles,
+          display: 'flex',
+          alignItems: 'center',
           position: 'relative',
           zIndex: 1,
         }}
@@ -543,7 +546,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 3,
-              backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.9)' : 'rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(5px)',
               fontSize: isMobile ? '0.875rem' : '1rem',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',

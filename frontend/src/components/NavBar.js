@@ -366,7 +366,7 @@ const NavBar = () => {
             fontWeight: 500,
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
             marginLeft: '-10px',
-            marginTop: { xs: '5px', sm: '0' },
+            marginTop: { xs: '10px', sm: '0' },
             fontSize: { xs: '0.6rem', sm: '1.25rem' }
           }}
         >
