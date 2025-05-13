@@ -99,7 +99,7 @@ const NavBar = () => {
       sx={{ 
         width: 250,
         height: '100%',
-        background: 'rgba(255, 255, 255, 0.9)',
+        background: isDarkMode ? 'rgba(34, 34, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
         backdropFilter: 'blur(10px)',
       }}
       role="presentation"
@@ -110,7 +110,7 @@ const NavBar = () => {
         display: 'flex', 
         justifyContent: 'center', 
         p: 2,
-        background: 'rgba(67, 97, 238, 0.85)',
+        background: isDarkMode ? 'rgba(73, 73, 73, 0.85)' : 'rgba(17, 179, 207, 0.85)',
         backdropFilter: 'blur(10px)',
         boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
       }}>
@@ -127,18 +127,18 @@ const NavBar = () => {
             my: 0.5, 
             borderRadius: 1,
             mx: 1,
-            backgroundColor: isActive('/') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
+            backgroundColor: isActive('/') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
             '&:hover': {
-              background: 'rgba(67, 97, 238, 0.1)',
+              background: 'rgba(67, 2188, 238, 0.1)',
             }
           }}
         >
-          <ListItemIcon><Home sx={{ color: 'primary.main' }} /></ListItemIcon>
+          <ListItemIcon><Home sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
           <ListItemText 
             primary="Home" 
             primaryTypographyProps={{ 
               fontWeight: isActive('/') ? 700 : 500,
-              color: 'primary.main'
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
             }}
           />
         </ListItem>
@@ -153,18 +153,18 @@ const NavBar = () => {
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
-              backgroundColor: isActive('/chat') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
+              backgroundColor: isActive('/chat') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
               '&:hover': {
-                background: 'rgba(67, 97, 238, 0.1)',
+                background: 'rgba(67, 218, 238, 0.1)',
               }
             }}
           >
-            <ListItemIcon><Chat sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemIcon><Chat sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
             <ListItemText 
               primary="Chat" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/chat') ? 700 : 500,
-                color: 'primary.main'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
           </ListItem>
@@ -180,18 +180,18 @@ const NavBar = () => {
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
-              backgroundColor: isActive('/knowledge') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
+              backgroundColor: isActive('/knowledge') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
               '&:hover': {
-                background: 'rgba(67, 97, 238, 0.1)',
+                background: 'rgba(67, 218, 238, 0.1)',
               }
             }}
           >
-            <ListItemIcon><Book sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
             <ListItemText 
               primary="Knowledge Base" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/knowledge') ? 700 : 500,
-                color: 'primary.main'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
           </ListItem>
@@ -207,18 +207,18 @@ const NavBar = () => {
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
-              backgroundColor: isActive('/admin/report') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
+              backgroundColor: isActive('/admin/report') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
               '&:hover': {
-                background: 'rgba(67, 97, 238, 0.1)',
+                background: 'rgba(67, 218, 238, 0.1)',
               }
             }}
           >
-            <ListItemIcon><Book sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
             <ListItemText 
               primary="Weekly Report" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/admin/report') ? 700 : 500,
-                color: 'primary.main'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
           </ListItem>
@@ -237,16 +237,16 @@ const NavBar = () => {
               borderRadius: 1,
               mx: 1,
               '&:hover': {
-                background: 'rgba(67, 97, 238, 0.1)',
+                background: 'rgba(67, 218, 238, 0.1)',
               }
             }}
           >
-            <ListItemIcon><Logout sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemIcon><Logout sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
             <ListItemText 
               primary="Logout" 
               primaryTypographyProps={{ 
                 fontWeight: 500,
-                color: 'primary.main'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
           </ListItem>
@@ -260,18 +260,18 @@ const NavBar = () => {
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
-              backgroundColor: isActive('/login') ? 'rgba(67, 97, 238, 0.2)' : 'transparent',
+              backgroundColor: isActive('/login') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
               '&:hover': {
-                background: 'rgba(67, 97, 238, 0.1)',
+                background: 'rgba(67, 218, 238, 0.1)',
               }
             }}
           >
-            <ListItemIcon><AccountCircle sx={{ color: 'primary.main' }} /></ListItemIcon>
+            <ListItemIcon><AccountCircle sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
             <ListItemText 
               primary="Login" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/login') ? 700 : 500,
-                color: 'primary.main'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
           </ListItem>
@@ -291,7 +291,7 @@ const NavBar = () => {
             primary="Dark Mode" 
             primaryTypographyProps={{ 
               fontWeight: 500,
-              color: 'primary.main'
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
             }}
           />
           <DarkModeSwitch checked={isDarkMode} onChange={toggleDarkMode} />
@@ -423,7 +423,7 @@ const NavBar = () => {
                   borderRadius: 2,
                   fontSize: '0.875rem',
                   fontWeight: isActive('/chat') ? 700 : 500,
-                  backgroundColor: isActive('/chat') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  backgroundColor: isActive('/chat') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -461,7 +461,7 @@ const NavBar = () => {
                   borderRadius: 2,
                   fontSize: '0.875rem',
                   fontWeight: isActive('/knowledge') ? 700 : 500,
-                  backgroundColor: isActive('/knowledge') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  backgroundColor: isActive('/knowledge') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -499,7 +499,7 @@ const NavBar = () => {
                   borderRadius: 2,
                   fontSize: '0.875rem',
                   fontWeight: isActive('/admin/report') ? 700 : 500,
-                  backgroundColor: isActive('/admin/report') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  backgroundColor: isActive('/admin/report') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -587,7 +587,7 @@ const NavBar = () => {
                 sx={{
                   opacity: 0.7,
                   fontWeight: 500,
-                  color: 'primary.main'
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
                 }}
               >
                 {user?.email || 'User'}
@@ -619,7 +619,7 @@ const NavBar = () => {
                 borderRadius: 2,
                 fontSize: '0.875rem',
                 fontWeight: isActive('/login') ? 700 : 500,
-                backgroundColor: isActive('/login') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                backgroundColor: isActive('/login') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
                 backdropFilter: 'blur(5px)',
                 '&:hover': {
                   background: 'rgba(255, 255, 255, 0.2)',

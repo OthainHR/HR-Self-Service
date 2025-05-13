@@ -71,6 +71,7 @@ const Login = () => {
             label="Email Address"
             name="email"
             autoComplete="email"
+            color={isDarkMode ? 'secondary' : 'primary'}
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -85,21 +86,33 @@ const Login = () => {
             type="password"
             id="password"
             autoComplete="current-password"
+            color={isDarkMode ? 'secondary' : 'primary'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
           />
           <Button
             type="submit"
-            fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            color="primary"
+            fullWidth
             disabled={isLoading}
+            sx={{
+              mt: 3,
+              mb: 2,
+              py: 1.2,
+              fontSize: '1.1rem',
+              borderRadius: 30,
+              backgroundColor: 'rgba(17, 179, 207, 0.8)',
+              '&:hover': {
+                backgroundColor: 'rgba(17, 179, 207, 1)',
+              }
+            }}
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
           <Box textAlign="center">
-            <Link component={RouterLink} to="/register" variant="body2">
+            <Link component={RouterLink} to="/register" variant="body2" sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 120, 141, 0.8)' }}>
               {"Don't have an account? Sign Up"}
             </Link>
           </Box>

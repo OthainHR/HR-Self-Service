@@ -110,6 +110,7 @@ const Register = () => {
             name="email"
             autoComplete="email"
             autoFocus
+            color={isDarkMode ? 'secondary' : 'primary'}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading || !!successMessage} // Disable if loading or successful
@@ -124,6 +125,7 @@ const Register = () => {
             id="password"
             autoComplete="new-password"
             value={password}
+            color={isDarkMode ? 'secondary' : 'primary'}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading || !!successMessage} // Disable if loading or successful
           />
@@ -134,6 +136,7 @@ const Register = () => {
             name="confirmPassword"
             label="Confirm Password"
             type="password"
+            color={isDarkMode ? 'secondary' : 'primary'}
             id="confirmPassword"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -141,15 +144,26 @@ const Register = () => {
           />
           <Button
             type="submit"
-            fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={isLoading || !!successMessage} // Disable if loading or successful
+            color="primary"
+            fullWidth
+            disabled={isLoading || !!successMessage}
+            sx={{
+              mt: 3,
+              mb: 2,
+              py: 1.2,
+              fontSize: '1.1rem',
+              borderRadius: 30,
+              backgroundColor: 'rgba(17, 179, 207, 0.8)',
+              '&:hover': {
+                backgroundColor: 'rgba(17, 179, 207, 1)',
+              }
+            }}
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign Up'}
           </Button>
           <Box textAlign="center">
-            <Link component={RouterLink} to="/login" variant="body2">
+            <Link component={RouterLink} to="/login" variant="body2" sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 120, 141, 0.8)' }}>
               {"Already have an account? Sign In"}
             </Link>
           </Box>

@@ -33,13 +33,13 @@ const createAppTheme = (mode) => createTheme({
   palette: {
     mode,
     primary: {
-      main: '#4361ee', // Modern blue
+      main: 'rgba(17, 179, 207, 0.8)', // Modern blue
       light: '#738eef',
       dark: '#2f44b0',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#f72585', // Vibrant pink
+      main: '#ffffff', // Vibrant pink
       light: '#fa5ba0',
       dark: '#c31970',
       contrastText: '#ffffff',
