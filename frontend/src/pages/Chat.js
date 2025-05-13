@@ -75,6 +75,15 @@ function Chat() {
   const glassStyles = {
     bgcolor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
     border: '0px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '30px',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
+  const glassStyles2 = {
+    bgcolor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
+    border: '0px solid rgba(255, 255, 255, 0.12)',
     borderRadius: '10px',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
@@ -264,7 +273,7 @@ function Chat() {
           minHeight: 54,
           maxHeight: 84,
           borderRadius: 2,
-          ...glassStyles,
+          ...glassStyles2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
