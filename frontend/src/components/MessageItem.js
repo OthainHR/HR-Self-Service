@@ -343,6 +343,7 @@ function MessageItem({ message, isLast, isMobile }) {
                   color="primary"
                   sx={{ 
                     marginBottom: 2,
+                    borderRadius: '30px',
                     backgroundColor: 'rgba(17, 179, 207, 0.8)',
                     '&:hover': {
                       backgroundColor: 'rgba(17, 179, 207, 1)', 
