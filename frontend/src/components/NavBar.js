@@ -423,7 +423,7 @@ const NavBar = () => {
                   borderRadius: 2,
                   fontSize: '0.875rem',
                   fontWeight: isActive('/chat') ? 700 : 500,
-                  backgroundColor: isActive('/chat') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+                  backgroundColor: isActive('/chat') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
@@ -587,7 +587,7 @@ const NavBar = () => {
                 sx={{
                   opacity: 0.7,
                   fontWeight: 500,
-                  color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                  color: isDarkMode ? 'rgba(7, 7, 7, 0.8)' : 'rgba(0, 0, 0, 0.8)'
                 }}
               >
                 {user?.email || 'User'}
@@ -595,6 +595,7 @@ const NavBar = () => {
               <MenuItem 
                 onClick={handleLogout}
                 sx={{
+                  color: isDarkMode ? theme.palette.grey[500] : theme.palette.grey[500],
                   '&:hover': {
                     background: 'rgba(63, 81, 181, 0.1)'
                   }

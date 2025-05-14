@@ -4,6 +4,7 @@ import { Chat as ChatIcon, QuestionAnswer as QuestionAnswerIcon, Info as InfoIco
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { motion } from 'framer-motion';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -72,6 +73,19 @@ const Home = () => {
     boxShadow: '0 8px 32px rgba(17, 179, 207, 0.4)'
   };
 
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.3, // Stagger delay
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
+  };
+
   return (
     <Box
       sx={{
@@ -87,7 +101,8 @@ const Home = () => {
           : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 40%, #f3e5f5 100%)',
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed',
-        overflowY: 'auto',
+        overflowY: 'scroll',
+        overflowX: 'hidden',
         zIndex: 0,
         '&::before': {
           content: '""',
@@ -135,154 +150,178 @@ const Home = () => {
       <Container maxWidth="lg" sx={{ pt: { xs: 2, sm: 3, md: 4 }, pb: 0, position: 'relative', zIndex: 5 }}>
         <Box sx={{ pt: 4 }}>
           {/* Welcome section */}
-          <Paper 
-            elevation={0} 
-            sx={{
-              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
-              mb: 4, 
-              borderRadius: 3,
-              ...glassStyles
-            }}
+          <motion.div
+            custom={0} // Index for stagger
+            initial="hidden"
+            animate="visible"
+            variants={sectionVariants}
+            style={{ overflow: 'hidden' }}
           >
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              gutterBottom 
-              sx={{ 
-                fontWeight: 600, 
-                color: isDarkMode ? 'white' : 'rgb(29, 170, 189)',
-                fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' },
-                overflowWrap: 'break-word', // Allow long words/emails to break
-                wordBreak: 'break-word' // Adding word-break as well for broader compatibility
-              }}
-            >
-              Welcome to Othain Employee Self-Service
-              {displayName && `, ${displayName}`}
-            </Typography>
-            <Typography 
-                variant="body1" 
-                paragraph 
-                sx={{ 
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit',
-                    fontSize: { xs: '0.8rem', sm: '1rem'} // Slightly smaller body text on xs
-                }}
-            >
-              Your interactive Employee Self-Service designed to help with policies, benefits, workplace questions, and IT related issues.
-              Start a conversation to get instant answers to your HR and IT related questions.
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              size="large"
-              startIcon={<ChatIcon />}
-              onClick={() => navigate('/chat')}
+            <Paper 
+              elevation={0} 
               sx={{
-                mt: 2,
-                mr: 2,
-                px: 3,
-                py: 1.2,
-                borderRadius: 2,
-                ...glassStyles3,
-                color: isDarkMode ? 'white' : 'white',
-                '&:hover': {
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
-                }
+                p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+                mb: 4, 
+                borderRadius: 3,
+                ...glassStyles
               }}
             >
-              Start Chatting
-            </Button>
-          </Paper>
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                gutterBottom 
+                sx={{ 
+                  fontWeight: 600, 
+                  color: isDarkMode ? 'white' : 'rgb(29, 170, 189)',
+                  fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' },
+                  overflowWrap: 'break-word', // Allow long words/emails to break
+                  wordBreak: 'break-word' // Adding word-break as well for broader compatibility
+                }}
+              >
+                Welcome to Othain Employee Self-Service
+                {displayName && `, ${displayName}`}
+              </Typography>
+              <Typography 
+                  variant="body1" 
+                  paragraph 
+                  sx={{ 
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'inherit',
+                      fontSize: { xs: '0.8rem', sm: '1rem'} // Slightly smaller body text on xs
+                  }}
+              >
+                Your interactive Employee Self-Service designed to help with policies, benefits, workplace questions, and IT related issues.
+                Start a conversation to get instant answers to your HR and IT related questions.
+              </Typography>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                size="large"
+                startIcon={<ChatIcon />}
+                onClick={() => navigate('/chat')}
+                sx={{
+                  mt: 2,
+                  mr: 2,
+                  px: 3,
+                  py: 1.2,
+                  borderRadius: 2,
+                  ...glassStyles3,
+                  color: isDarkMode ? 'white' : 'white',
+                  '&:hover': {
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
+                  }
+                }}
+              >
+                Start Chatting
+              </Button>
+            </Paper>
+          </motion.div>
 
           {/* New Dedicated Onboarding Section */}
-          <Paper 
-            elevation={0} 
-            sx={{
-              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
-              mb: 4, 
-              borderRadius: 3,
-              ...glassStyles,
-              textAlign: 'center', // Center align content
-            }}
+          <motion.div
+            custom={1} // Index for stagger
+            initial="hidden"
+            animate="visible"
+            variants={sectionVariants}
+            style={{ overflow: 'hidden' }}
           >
-            <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'rgba(28, 189, 127, 1)' : 'rgba(28, 189, 127, 1)', mb: 2 }} />
-            <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)' }}>
-            New to Othain or just need a refresher?
-            </Typography>
-            <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
-            Welcome aboard! Our onboarding video is your express guide to navigating Othain with confidence. Discover essential HR policies, learn about your valuable employee benefits, and get acquainted with our performance management system. 
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="secondary" 
-              size="large"
-              startIcon={<OndemandVideoIcon />}
-              onClick={() => navigate('/onboarding')}
+            <Paper 
+              elevation={0} 
               sx={{
-                mt: 1,
-                px: 4,
-                py: 1.3,
-                borderRadius: 2,
-                ...glassStyles2,
-                color: isDarkMode ? 'white' : 'white',
-                '&:hover': {
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
-                }
+                p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+                mb: 4, 
+                borderRadius: 3,
+                ...glassStyles,
+                textAlign: 'center', // Center align content
               }}
             >
-              Watch Onboarding Video
-            </Button>
-          </Paper>
+              <OndemandVideoIcon sx={{ fontSize: 48, color: isDarkMode ? 'rgba(28, 189, 127, 1)' : 'rgba(28, 189, 127, 1)', mb: 2 }} />
+              <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2.0rem', md: '2.2rem' }, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)' }}>
+              New to Othain or just need a refresher?
+              </Typography>
+              <Typography variant="body1" paragraph sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary', maxWidth: '700px', margin: '0 auto 16px auto', fontSize: { xs: '0.8rem', sm: '1rem'} }}>
+              Welcome aboard! Our onboarding video is your express guide to navigating Othain with confidence. Discover essential HR policies, learn about your valuable employee benefits, and get acquainted with our performance management system. 
+              </Typography>
+              <Button 
+                variant="contained" 
+                color="secondary" 
+                size="large"
+                startIcon={<OndemandVideoIcon />}
+                onClick={() => navigate('/onboarding')}
+                sx={{
+                  mt: 1,
+                  px: 4,
+                  py: 1.3,
+                  borderRadius: 2,
+                  ...glassStyles2,
+                  color: isDarkMode ? 'white' : 'white',
+                  '&:hover': {
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
+                  }
+                }}
+              >
+                Watch Onboarding Video
+              </Button>
+            </Paper>
+          </motion.div>
 
           {/* Quick Links Section */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 3, md: 4 },
-              mb: 4,
-              borderRadius: 3,
-              ...glassStyles
-            }}
+          <motion.div
+            custom={2} // Index for stagger
+            initial="hidden"
+            animate="visible"
+            variants={sectionVariants}
+            style={{ overflow: 'hidden' }}
           >
-            <Typography
-              variant="h5"
-              component="h2"
-              marginBottom={2}
-              marginTop={-1}
-              gutterBottom
-              sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)', textAlign: 'center' }}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2, sm: 3, md: 4 },
+                mb: 4,
+                borderRadius: 3,
+                ...glassStyles
+              }}
             >
-              Quick Links
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-              {quickLinks.map(link => (
-                <Button
-                  key={link.url}
-                  variant="outlined"
-                  startIcon={<LaunchIcon />}
-                  onClick={() => window.open(link.url, '_blank')}
-                  sx={{
-                    ...glassStyles,
-                    color: isDarkMode ? 'white' : 'inherit',
-                    borderRadius: 20,
-                    px: { xs: 1.5, sm: 2.5 },
-                    py: { xs: 0.5, sm: 1 },
-                    fontSize: { xs: '0.75rem', sm: '1rem' },
-                    '&:hover': {
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
-                      bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
-                    }
-                  }}
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </Box>
-          </Paper>
+              <Typography
+                variant="h5"
+                component="h2"
+                marginBottom={2}
+                marginTop={-1}
+                gutterBottom
+                sx={{ fontWeight: 600, color: isDarkMode ? 'white' : 'rgb(18, 148, 126)', textAlign: 'center' }}
+              >
+                Quick Links
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+                {quickLinks.map(link => (
+                  <Button
+                    key={link.url}
+                    variant="outlined"
+                    startIcon={<LaunchIcon />}
+                    onClick={() => window.open(link.url, '_blank')}
+                    sx={{
+                      ...glassStyles,
+                      color: isDarkMode ? 'white' : 'inherit',
+                      borderRadius: 20,
+                      px: { xs: 1.5, sm: 2.5 },
+                      py: { xs: 0.5, sm: 1 },
+                      fontSize: { xs: '0.75rem', sm: '1rem' },
+                      '&:hover': {
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
+                      }
+                    }}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+              </Box>
+            </Paper>
+          </motion.div>
         </Box>
       </Container>
     </Box>

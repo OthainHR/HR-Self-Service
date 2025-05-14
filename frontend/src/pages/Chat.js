@@ -42,6 +42,7 @@ import { chatApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // Use Alert inside Snackbar
 const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
@@ -88,6 +89,19 @@ function Chat() {
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+  };
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.2,
+        duration: 0.4,
+        ease: "easeOut"
+      }
+    })
   };
 
   const handleDrawerToggle = () => {
@@ -469,7 +483,7 @@ function Chat() {
               >
                 {renderChatHistoryPanel()}
               </Drawer>
-              <Box sx={{ 
+              <Box sx={{
                 height: '100%',
                 width: '100%',
                 pt: isMobile ? '80px' : 0,
@@ -480,8 +494,16 @@ function Chat() {
             </>
           ) : (
             <Grid container spacing={2} sx={{ height: '100%'}}>
-              <Grid item md={3} sx={{height: '100%'}}> 
-                {renderChatHistoryPanel()}
+              <Grid item md={3} sx={{height: '100%'}}>
+                <motion.div
+                  custom={0}
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  style={{ height: '100%' }}
+                >
+                  {renderChatHistoryPanel()}
+                </motion.div>
               </Grid>
               <Grid item md={9} sx={{height: '100%'}}>
                 <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
