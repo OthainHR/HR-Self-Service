@@ -551,44 +551,31 @@ const OnboardingPage = () => {
             
             <button
               onClick={togglePlayPause}
-              style={{...buttonStyle(false, isMobile), minWidth: isMobile ? '40px' : '50px', marginLeft: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0'}}
+              style={{...buttonStyle(false, isMobile), minWidth: isMobile ? '40px' : '50px', marginLeft: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
             >
               {isPlaying ? <PauseIcon fontSize={isMobile ? "small" : "medium"} /> : <PlayArrowIcon fontSize={isMobile ? "small" : "medium"} />}
             </button>
             <button 
               onClick={handlePrevious} 
               disabled={currentChapterIndex === 0}
-              style={{...buttonStyle(currentChapterIndex === 0, isMobile), marginBottom: isMobile ? '5px' : '0'}}
+              style={{...buttonStyle(currentChapterIndex === 0, isMobile), marginBottom: isMobile ? '5px' : '0', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
             >
               Previous Section
             </button>
             <button 
               onClick={handleNext} 
               disabled={isNextButtonDisabled}
-              style={{...buttonStyle(isNextButtonDisabled, isMobile), marginBottom: isMobile ? '5px' : '0', marginRight: isMobile ? '10px' : '5px'}}
+              style={{...buttonStyle(isNextButtonDisabled, isMobile), marginBottom: isMobile ? '5px' : '0', marginRight: isMobile ? '10px' : '5px', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
             >
               Next Section
             </button>
             <button
               onClick={handleToggleFullscreen}
-              style={{...buttonStyle(false, isMobile), marginRight: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', marginTop: isMobile ? '5px' : '0', marginLeft: isMobile ? '5px' : '10px'}}
+              style={{...buttonStyle(false, isMobile), marginRight: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', marginTop: isMobile ? '5px' : '0', marginLeft: isMobile ? '5px' : '10px', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
             >
               {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             </button>
           </div>
-          {/* Portal Target for Overlays */}
-          <div 
-            id="fullscreen-overlay-portal-target" 
-            style={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              width: '100%', 
-              height: '100%', 
-              zIndex: 100, // Higher than video controls if they are also absolute positioned within
-              pointerEvents: (quizOverlayVisible || showCompletionOverlay) ? 'auto' : 'none' // Allow interaction only when overlay is visible
-            }}
-          ></div>
         </div>
 
         <div style={{
@@ -670,29 +657,29 @@ const OnboardingPage = () => {
       </motion.div> {/* End of right side motion.div */}
 
       {/* Portaled Overlays - MODIFIED prop name */}
-      {quizOverlayVisible && activeQuizData && document.getElementById('fullscreen-overlay-portal-target') && (
+      {quizOverlayVisible && activeQuizData && (
         ReactDOM.createPortal(
-          <QuizOverlay 
+          <QuizOverlay
             key={quizAttemptKey}
-            quizData={activeQuizData} 
+            quizData={activeQuizData}
             feedback={quizFeedback}
-            onSubmit={handleQuizSubmit} 
-            onClose={handleCloseQuiz} 
-            onProceed={handleProceedAfterQuizAttempt} // MODIFIED: Renamed from onSuccessContinue
-            isFullscreen={isFullscreen} 
+            onSubmit={handleQuizSubmit}
+            onClose={handleCloseQuiz}
+            onProceed={handleProceedAfterQuizAttempt}
+            isFullscreen={true}
           />,
-          document.getElementById('fullscreen-overlay-portal-target')
+          document.body
         )
       )}
 
-      {showCompletionOverlay && document.getElementById('fullscreen-overlay-portal-target') && (
+      {showCompletionOverlay && (
         ReactDOM.createPortal(
-          <CompletionOverlay 
+          <CompletionOverlay
             message="You have successfully completed the onboarding video."
             onGoHome={handleGoHome}
-            isFullscreen={isFullscreen}
+            isFullscreen={true}
           />,
-          document.getElementById('fullscreen-overlay-portal-target')
+          document.body
         )
       )}
     </div>
