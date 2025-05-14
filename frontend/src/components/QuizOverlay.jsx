@@ -156,7 +156,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                   onClick={handleSubmit} 
                   style={{
                     padding: '10px 25px', 
-                    backgroundColor: '#4361ee', 
+                    backgroundColor: 'rgba(17, 179, 207, 0.8)', 
                     color: 'white', 
                     border: 'none', 
                     borderRadius: '20px', 

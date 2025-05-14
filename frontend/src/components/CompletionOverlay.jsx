@@ -39,10 +39,10 @@ const CompletionOverlay = ({ message, onGoHome }) => {
           onClick={onGoHome} 
           style={{
             padding: '12px 30px', 
-            backgroundColor: '#4361ee', 
+            backgroundColor: 'rgba(17, 179, 207, 0.8)', 
             color: 'white', 
             border: 'none', 
-            borderRadius: '20px', 
+            borderRadius: '30px', 
             cursor: 'pointer',
             fontSize: '1.1em',
             fontWeight: 'bold'

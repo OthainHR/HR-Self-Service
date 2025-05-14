@@ -102,7 +102,6 @@ const Home = () => {
         backgroundSize: 'cover',
         backgroundAttachment: 'fixed',
         overflowY: 'scroll',
-        overflowX: 'hidden',
         zIndex: 0,
         '&::before': {
           content: '""',
@@ -155,7 +154,6 @@ const Home = () => {
             initial="hidden"
             animate="visible"
             variants={sectionVariants}
-            style={{ overflow: 'hidden' }}
           >
             <Paper 
               elevation={0} 
@@ -224,7 +222,6 @@ const Home = () => {
             initial="hidden"
             animate="visible"
             variants={sectionVariants}
-            style={{ overflow: 'hidden' }}
           >
             <Paper 
               elevation={0} 
@@ -274,7 +271,6 @@ const Home = () => {
             initial="hidden"
             animate="visible"
             variants={sectionVariants}
-            style={{ overflow: 'hidden' }}
           >
             <Paper
               elevation={0}
