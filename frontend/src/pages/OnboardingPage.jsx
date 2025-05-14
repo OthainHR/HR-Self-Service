@@ -11,6 +11,7 @@ import CompletionOverlay from '../components/CompletionOverlay';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useTheme, useMediaQuery } from '@mui/material';
 import ReactDOM from 'react-dom'; // Ensure this import is present
+import { motion } from 'framer-motion'; // Added import
 
 // Placeholder QuizOverlay component (we will create this file next)
 /*
@@ -46,6 +47,19 @@ const OnboardingPage = () => {
     WebkitBackdropFilter: 'blur(10px)',
     
     borderRadius: '16px', // Added borderRadius for glass effect
+  };
+
+  const pageSectionVariants = { // Added animation variants
+    hidden: { opacity: 0, y: 50 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.3, // Stagger delay
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
   };
 
   // Add timestamps (in seconds) to your chapters
@@ -437,13 +451,20 @@ const OnboardingPage = () => {
       backgroundColor: 'transparent', // Override bgcolor from glassStyles for the main page container if needed, or use a more transparent one
       border: 'none', // Override border for the main page container
       boxShadow: 'none', // Override boxShadow for the main page container
+      overflow: 'hidden' // Added to prevent scrollbars during animation if children cause temporary overflow
     }}>
       {/* Left Side (or Top on Mobile): Video Player and Title */}
-      <div style={{ 
-        flex: isMobile ? '1 1 100%' : 3, // Full width on mobile
-        marginRight: isMobile ? '0px' : '20px', // No right margin on mobile
-        marginBottom: isMobile ? '20px' : '0px' // Margin below video section on mobile
-      }}>
+      <motion.div // Wrap left side with motion.div
+        custom={0}
+        initial="hidden"
+        animate="visible"
+        variants={pageSectionVariants}
+        style={{ 
+          flex: isMobile ? '1 1 100%' : 3, // Full width on mobile
+          marginRight: isMobile ? '0px' : '20px', // No right margin on mobile
+          marginBottom: isMobile ? '20px' : '0px' // Margin below video section on mobile
+        }}
+      >
         {/* Progress Bar Section */}
         <Box sx={{ mb: 2, width: '100%' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
@@ -578,10 +599,15 @@ const OnboardingPage = () => {
           Welcome to your Othain onboarding! This course is structured to give you a clear understanding of our company, from our team and processes to essential HR policies and employee benefits. Each section is designed to help you get started confidently and quickly. We recommend progressing through all sections to ensure you're fully acquainted with our platform and procedures.
           </p>
         </div>
-      </div>
+      </motion.div> {/* End of left side motion.div */}
 
       {/* Right Side (or Bottom on Mobile): Section List */}
-      <div style={{
+      <motion.div // Wrap right side with motion.div
+        custom={1}
+        initial="hidden"
+        animate="visible"
+        variants={pageSectionVariants}
+        style={{
           flex: isMobile ? '1 1 100%' : (isFullscreen ? '0 0 30%' : 1),  // Full width on mobile
           borderLeft: isMobile || isFullscreen ? 'none' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
           paddingLeft: isMobile || isFullscreen ? '0px' : '20px', 
@@ -591,7 +617,8 @@ const OnboardingPage = () => {
           color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
           height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
           overflowY: 'auto'
-      }}>
+        }}
+      >
         <h2 style={{ 
           marginBottom: '15px', 
           marginTop: isMobile ? '0px' : '15px', // No top margin if already spaced by parent
@@ -640,7 +667,7 @@ const OnboardingPage = () => {
             );
           })}
         </ul>
-      </div>
+      </motion.div> {/* End of right side motion.div */}
 
       {/* Portaled Overlays - MODIFIED prop name */}
       {quizOverlayVisible && activeQuizData && document.getElementById('fullscreen-overlay-portal-target') && (
