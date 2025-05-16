@@ -452,7 +452,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   >
                     <Button
                       variant="outlined"
-                      onClick={() => setInput('Is there a work-from-home policy at Othain, and what guidelines do employees need to follow?')}
+                      onClick={() => setInput('What is the attendance policy at Othain?')}
                       sx={{
                         py: 1.5,
                         px: 3,
@@ -470,7 +470,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                         }
                       }}
                     >
-                      Is there a work-from-home policy at Othain, and what guidelines do employees need to follow?
+                      What is the attendance policy at Othain?
                     </Button>
                     
                     <Button
