@@ -17,6 +17,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import Avatar from '@mui/material/Avatar';
 import DisclaimerOverlay from '../components/DisclaimerOverlay';
+import { recordDisclaimerAcknowledgement } from '../supabaseClient';
 
 const Login = () => {
   const { login, isLoading, error: authError, user } = useAuth();
@@ -58,7 +59,21 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleAcknowledgeDisclaimer = () => {
+  const handleAcknowledgeDisclaimer = async () => {
+    if (user && user.email) {
+      try {
+        const { error: recordError } = await recordDisclaimerAcknowledgement(user.email);
+        if (recordError) {
+          console.error('[Login.js] Failed to record disclaimer acknowledgement via RPC:', recordError.message);
+          console.error('[Login.js] Full Supabase RPC error object:', recordError);
+        }
+      } catch (e) {
+        console.error('[Login.js] Exception caught while calling recordDisclaimerAcknowledgement (RPC):', e);
+      }
+    } else {
+      console.warn('[Login.js] User object or email missing; cannot record disclaimer acknowledgement.');
+    }
+
     setIsDisclaimerVisible(false);
     localStorage.setItem('disclaimerAcknowledgedThisLogin', 'true');
     localStorage.removeItem('pendingDisclaimer');

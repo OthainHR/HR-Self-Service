@@ -9,4 +9,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const recordDisclaimerAcknowledgement = async (userEmail) => {
+  if (!userEmail) {
+    console.error('User email is required to call handle_disclaimer_acknowledgement.');
+    return { error: { message: 'User email is required.' } };
+  }
+  try {
+    const { data, error } = await supabase
+      .rpc('handle_disclaimer_acknowledgement', { 
+        user_email_to_log: userEmail 
+      });
+
+    if (error) {
+      console.error('Error calling handle_disclaimer_acknowledgement RPC:', error);
+      throw error;
+    }
+    return { data, error: null };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Catch error in recordDisclaimerAcknowledgement (RPC):', errorMessage);
+    return { data: null, error: { message: errorMessage } };
+  }
+};
+
 export default supabase; 
