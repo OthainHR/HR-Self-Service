@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
@@ -16,9 +16,10 @@ import {
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import Avatar from '@mui/material/Avatar';
+import DisclaimerOverlay from '../components/DisclaimerOverlay';
 
 const Login = () => {
-  const { login, isLoading, error: authError } = useAuth();
+  const { login, isLoading, error: authError, user } = useAuth();
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
@@ -26,6 +27,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
+  const [isDisclaimerVisible, setIsDisclaimerVisible] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,11 +40,34 @@ const Login = () => {
 
     try {
       await login({ email: username, password });
-      navigate('/chat');
     } catch (err) {
       
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      const needsToShowDisclaimer = localStorage.getItem('pendingDisclaimer') === 'true';
+      const alreadyAcknowledgedThisLogin = localStorage.getItem('disclaimerAcknowledgedThisLogin') === 'true';
+
+      if (needsToShowDisclaimer && !alreadyAcknowledgedThisLogin) {
+        setIsDisclaimerVisible(true);
+      } else {
+        navigate('/chat');
+      }
+    }
+  }, [user, navigate]);
+
+  const handleAcknowledgeDisclaimer = () => {
+    setIsDisclaimerVisible(false);
+    localStorage.setItem('disclaimerAcknowledgedThisLogin', 'true');
+    localStorage.removeItem('pendingDisclaimer');
+    navigate('/chat');
+  };
+
+  if (isDisclaimerVisible) {
+    return <DisclaimerOverlay open={isDisclaimerVisible} onClose={handleAcknowledgeDisclaimer} />;
+  }
 
   return (
     <Container component="main" maxWidth="xs" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)' }}>

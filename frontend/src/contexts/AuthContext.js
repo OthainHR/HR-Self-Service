@@ -33,9 +33,13 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false); // Ensure loading is false after updates
         setError(null); // Clear errors on auth change
         
-        // Example: Handle specific events if needed
-        // if (event === 'SIGNED_IN') { ... }
-        // if (event === 'SIGNED_OUT') { ... }
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          localStorage.setItem('pendingDisclaimer', 'true');
+          localStorage.removeItem('disclaimerAcknowledgedThisLogin');
+        } else if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('pendingDisclaimer');
+          localStorage.removeItem('disclaimerAcknowledgedThisLogin');
+        }
     });
 
     // Cleanup listener on component unmount
@@ -113,6 +117,9 @@ export const AuthProvider = ({ children }) => {
     try {
       // Use the new Supabase logout from api.js
       await auth.logout();
+      // Clear disclaimer flags immediately on logout action
+      localStorage.removeItem('pendingDisclaimer');
+      localStorage.removeItem('disclaimerAcknowledgedThisLogin');
       // No need to manually set state here, listener will handle it
     } catch (err) {
       setError(err.message || "Logout failed.");

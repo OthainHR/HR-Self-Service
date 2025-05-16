@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, Component, useMemo } from 'react';
+import React, { lazy, Suspense, Component, useMemo, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import {
   Box,
@@ -184,23 +184,19 @@ class ErrorBoundary extends Component {
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  // Get state from useAuth
   const { user, isLoading } = useAuth();
-  const isAuthenticated = !!user; // Derive boolean from user object
+  const isAuthenticated = !!user;
 
   if (isLoading) {
-    // Show a loading indicator while checking auth state
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
-  // Check the boolean state
   if (!isAuthenticated) {
-    console.log('ProtectedRoute: Not authenticated, redirecting to login.');
-    return <Navigate to="/login" replace />; // Use replace to avoid login page in history
+    // Flags are cleared by AuthContext on SIGNED_OUT or by main App useEffect on token check
+    return <Navigate to="/login" replace />;
   }
 
-  // Render children if authenticated
-  return children;
+  return children; // Render children directly, no disclaimer overlay here
 };
 
 // Admin route component
@@ -260,64 +256,62 @@ const LoadingIndicator = () => (
 // Main app content with theme provider
 const AppContent = () => {
   const { isDarkMode } = useDarkMode();
-  
-  // Create the theme based on dark mode state
-  const theme = useMemo(() => 
-    createAppTheme(isDarkMode ? 'dark' : 'light'),
-    [isDarkMode]
-  );
+  const { user } = useAuth(); // Get user to pass to NavBar if needed
+  const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <CssBaseline />
-        <NavBar />
-        <Container component="main" sx={{ flexGrow: 1, p: 3, pt: 4 }}>
-           {/* Routes are rendered here, Suspense handles loading */}
-           <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} /> {/* Add Register route */}
-            
-            {/* Protected routes */}
-            <Route 
-              path="/"
-              element={<ProtectedRoute><Home /></ProtectedRoute>}
-            />
-            <Route 
-              path="/chat"
-              element={<ProtectedRoute><Chat /></ProtectedRoute>}
-            />
+      <CssBaseline />
+      <Router>
+        <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+            {user && <NavBar />} 
+            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' /*overflow: 'auto'*/ }}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                
+                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/chat/:chatId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/knowledge" element={<ProtectedRoute><Knowledge /></ProtectedRoute>} />
+                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                <Route path="/admin-report" element={<AdminRoute><AdminReport /></AdminRoute>} />
 
-            {/* Admin routes */}
-            <Route 
-              path="/knowledge"
-              element={<ProtectedRoute><Knowledge /></ProtectedRoute>}
-            />
-            <Route path="/admin/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
-            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-
-            {/* Redirect to homepage for any other route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Container>
-      </Box>
+                {/* Fallback route - redirect to home or login based on auth */}
+                <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />
+              </Routes>
+            </Box>
+          </Box>
+        </Suspense>
+      </Router>
     </ThemeProvider>
   );
 };
 
 // Wrap app with providers and Suspense
 const App = () => {
+  useEffect(() => {
+    // Check for Supabase token. The key might be different, e.g., 'sb-auth-token' or specific to your Supabase setup.
+    // Inspect localStorage in your browser's developer tools to find the correct key used by Supabase.
+    const supabaseTokenKey = Object.keys(localStorage).find(key => key.startsWith('sb-') && key.includes('-auth-token'));
+    const token = supabaseTokenKey ? localStorage.getItem(supabaseTokenKey) : null;
+    
+    if (!token) {
+      localStorage.removeItem('pendingDisclaimer');
+      localStorage.removeItem('disclaimerAcknowledgedThisLogin');
+    }
+  }, []);
+
   return (
-    <Router>
+    <ErrorBoundary>
       <DarkModeProvider>
         <AuthProvider>
-          <Suspense fallback={<LoadingIndicator />}>
-            <AppContent /> 
-          </Suspense>
+          <AppContent />
         </AuthProvider>
       </DarkModeProvider>
-    </Router>
+    </ErrorBoundary>
   );
 };
 
