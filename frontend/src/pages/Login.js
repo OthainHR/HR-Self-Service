@@ -14,13 +14,14 @@ import {
   useTheme
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import Avatar from '@mui/material/Avatar';
 import DisclaimerOverlay from '../components/DisclaimerOverlay';
 import { recordDisclaimerAcknowledgement } from '../supabaseClient';
 
 const Login = () => {
-  const { login, isLoading, error: authError, user } = useAuth();
+  const { login, isLoading, error: authError, user, signInWithMicrosoft } = useAuth();
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
@@ -43,6 +44,17 @@ const Login = () => {
       await login({ email: username, password });
     } catch (err) {
       
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    setLocalError('');
+    try {
+      await signInWithMicrosoft();
+      // Navigation will be handled by useEffect watching the user/session state
+      // or by the redirect in the Supabase OAuth options
+    } catch (err) {
+      setLocalError(err.message || 'Microsoft login failed. Please try again.');
     }
   };
 
@@ -150,6 +162,29 @@ const Login = () => {
             }}
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+          </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            color="primary"
+            onClick={handleMicrosoftLogin}
+            disabled={isLoading}
+            startIcon={<MicrosoftIcon />}
+            sx={{
+              mt: 1,
+              mb: 2,
+              py: 1.2,
+              fontSize: '1rem',
+              borderRadius: 30,
+              borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(17, 179, 207, 0.5)',
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(17, 179, 207, 0.9)',
+              '&:hover': {
+                borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(17, 179, 207, 1)',
+                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(17, 179, 207, 0.08)',
+              },
+            }}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In with Microsoft'}
           </Button>
           <Box textAlign="center">
             <Link component={RouterLink} to="/register" variant="body2" sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 120, 141, 0.8)' }}>

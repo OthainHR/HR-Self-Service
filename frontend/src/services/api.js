@@ -153,6 +153,21 @@ export const auth = {
   getCurrentUser: async () => {
       const session = await auth.getSession();
       return session?.user ?? null;
+  },
+
+  // Sign in with Microsoft (Azure AD)
+  signInWithMicrosoft: async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        redirectTo: window.location.origin + '/chat', // Or your desired redirect path
+      },
+    });
+    if (error) {
+      console.error('Error signing in with Microsoft:', error.message);
+      throw error;
+    }
+    return { user: data?.user, session: data?.session, url: data?.url }; // data might be null if redirect happens
   }
 
   // Remove getToken, getUserInfo etc. as Supabase manages the session

@@ -141,6 +141,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     signup,
+    signInWithMicrosoft: auth.signInWithMicrosoft,
   };
 
   return (

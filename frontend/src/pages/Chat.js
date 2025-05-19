@@ -483,7 +483,7 @@ function Chat() {
               >
                 {renderChatHistoryPanel()}
               </Drawer>
-              <Box sx={{
+              <Box sx={{ 
                 height: '100%',
                 width: '100%',
                 pt: isMobile ? '80px' : 0,
@@ -494,7 +494,7 @@ function Chat() {
             </>
           ) : (
             <Grid container spacing={2} sx={{ height: '100%'}}>
-              <Grid item md={3} sx={{height: '100%'}}>
+              <Grid item md={3} sx={{height: '100%'}}> 
                 <motion.div
                   custom={0}
                   initial="hidden"
@@ -502,7 +502,7 @@ function Chat() {
                   variants={sectionVariants}
                   style={{ height: '100%' }}
                 >
-                  {renderChatHistoryPanel()}
+                {renderChatHistoryPanel()}
                 </motion.div>
               </Grid>
               <Grid item md={9} sx={{height: '100%'}}>
