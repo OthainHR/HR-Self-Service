@@ -9,16 +9,16 @@ import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
 
 /* --- Log after all imports --- */
-console.log('--- TicketDetailPage.jsx: MODULE LOADED, ALL IMPORTS PROCESSED ---');
+
 
 const TicketDetailPage = () => {
   /* --- Log at the start of the component function --- */
-  console.log('--- TicketDetailPage: COMPONENT FUNCTION EXECUTION STARTED ---');
+    
   const { ticketId } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  console.log('--- TicketDetailPage ticketId from useParams:', ticketId);
+  
 
   const [ticket, setTicket] = useState(null);
   const [communications, setCommunications] = useState([]);
@@ -109,11 +109,11 @@ const TicketDetailPage = () => {
   };
 
   useEffect(() => {
-    console.log('--- TicketDetailPage: currentUser state changed or initial load ---', currentUser);
+    
     if (currentUser) {
       let role = currentUser.user_metadata?.role;
       const email = currentUser.email?.toLowerCase();
-      console.log('--- TicketDetailPage: Current user role:', role, 'email:', email);
+      
       // Treat specific tickets account as admin
       if (email === 'tickets@othainsoft.com') {
         role = 'admin';
@@ -127,7 +127,7 @@ const TicketDetailPage = () => {
   }, [currentUser]);
 
   const fetchTicketData = useCallback(async () => {
-    console.log('--- TicketDetailPage: fetchTicketData CALLED for ticketId:', ticketId);
+    
     setIsLoading(true);
     setError(null);
     try {
@@ -137,7 +137,7 @@ const TicketDetailPage = () => {
         .eq('id', ticketId)
         .single();
       
-      console.log('--- TicketDetailPage: Fetched ticket data:', ticketData, 'Error:', ticketError);
+      
       if (ticketError) throw ticketError;
       setTicket(ticketData);
 
@@ -161,7 +161,7 @@ const TicketDetailPage = () => {
             if (!userError && userData) {
               userDetails = userData; // { email }
             } else {
-              console.error(`Error fetching user email for comm ${comm.id}:`, userError);
+              
             }
           }
           return { ...comm, user_details: userDetails };
@@ -170,29 +170,26 @@ const TicketDetailPage = () => {
       setCommunications(commsWithUserDetails);
 
     } catch (fetchError) {
-      console.error('Error fetching ticket details or communications:', fetchError);
+      
       setError(`Failed to load ticket data: ${fetchError.message}`);
       setTicket(null);
       setCommunications([]);
     } finally {
-      console.log('--- TicketDetailPage: fetchTicketData FINISHED, setting isLoading to false ---');
+      
       setIsLoading(false);
     }
   }, [ticketId]);
 
   useEffect(() => {
-    console.log('--- TicketDetailPage: Main data fetching useEffect (ticketId, fetchTicketData) ---');
+    
     const getCurrentUser = async () => {
-      console.log('--- TicketDetailPage: getCurrentUser CALLED ---');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) {
-        console.error('--- TicketDetailPage: Error fetching current user:', userError);
         setError('Could not fetch user details.');
         setCurrentUser(null);
         setIsLoading(false);
         return;
       }
-      console.log('--- TicketDetailPage: Current user fetched:', user);
       setCurrentUser(user);
     };
 
@@ -201,28 +198,27 @@ const TicketDetailPage = () => {
     if (ticketId) {
       fetchTicketData(); 
     } else {
-      console.log('--- TicketDetailPage: No ticketId, not fetching ticket data. Setting isLoading false.');
+      
       setIsLoading(false);
     }
   }, [ticketId, fetchTicketData]);
 
   useEffect(() => {
     if (!ticketId) return;
-    console.log('--- TicketDetailPage: Setting up realtime subscription for ticketId:', ticketId);
     const channel = supabase
       .channel(`ticket-comms-${ticketId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'ticket_communications', filter: `ticket_id=eq.${ticketId}` },
         (payload) => {
-          console.log('--- TicketDetailPage: New communication received via subscription:', payload);
+          
           fetchTicketData(); 
         }
       )
       .subscribe();
 
     return () => {
-      console.log('--- TicketDetailPage: Removing realtime subscription for ticketId:', ticketId);
+      
       supabase.removeChannel(channel);
     };
   }, [ticketId, fetchTicketData]);
@@ -253,7 +249,7 @@ const TicketDetailPage = () => {
       if (type === 'internal_note') setInternalNote('');
       if (type === 'customer_reply' || type === 'admin_reply') setReplyMessage('');
     } catch (submissionError) {
-      console.error(`Error submitting ${type}:`, submissionError);
+      
       setError(`Failed to submit ${type}: ${submissionError.message}`);
       setSnackbarMessage('Failed to send');
       setSnackbarSeverity('error');
@@ -263,10 +259,9 @@ const TicketDetailPage = () => {
     }
   };
   
-  console.log('--- TicketDetailPage RENDERING (Before return), isLoading:', isLoading, 'error:', error, 'ticket:', !!ticket, 'currentUser:', !!currentUser, 'isAdmin:', isAdmin);
 
   if (isLoading) { 
-    console.log('--- TicketDetailPage: Rendering LOADING state (isLoading is true) ---');
+    
     return (
       <Box sx={{ 
         display: 'flex', 
@@ -332,7 +327,7 @@ const TicketDetailPage = () => {
   }
 
   if (error && !ticket) {
-    console.log('--- TicketDetailPage: Rendering ERROR state (error and no ticket) ---', error);
+    
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert 
@@ -350,7 +345,7 @@ const TicketDetailPage = () => {
   }
 
   if (!ticket) {
-    console.log('--- TicketDetailPage: Rendering TICKET NOT FOUND state (no ticket after loading/error checks) ---');
+    
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert 
@@ -370,7 +365,6 @@ const TicketDetailPage = () => {
   const priorityColors = getPriorityColor(ticket.priority);
   const statusColors = getStatusColor(ticket.status);
 
-  console.log('--- TicketDetailPage: Rendering MAIN CONTENT --- ');
   return (
     <Container maxWidth="xl" sx={{ 
       py: 2.5, 
