@@ -48,24 +48,19 @@ export default function TicketingPage() {
     const fetchUserRoleAndTickets = async () => {
       setIsLoading(true);
       setError(null);
-      console.log('[TicketingPage] Fetching user session...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       let role = null;
       if (sessionError) {
-        console.error('[TicketingPage] Error fetching session:', sessionError);
+        // console.log('[TicketingPage] Session error:', sessionError); // Keep this one if desired or remove
       }
       if (session) {
-        console.log('[TicketingPage] Session found:', session);
-        console.log('[TicketingPage] User metadata:', session.user?.user_metadata);
         // Determine role from session
         role = session.user?.user_metadata?.role || null;
         const email = session.user?.email?.toLowerCase();
         // Treat the tickets account as admin
         if (email === 'tickets@othainsoft.com') {
-          console.log('[TicketingPage] Overriding role to admin for tickets account');
           role = 'admin';
         }
-        console.log('[TicketingPage] Role from session:', role, 'email:', email);
         setCurrentUserRole(role);
 
         // Set default tab based on admin status
@@ -83,7 +78,6 @@ export default function TicketingPage() {
         const { data: ticketData, error: fetchError } = await query.order('created_at', { ascending: false });
 
         if (fetchError) {
-          console.error('Error fetching tickets for list view:', fetchError);
           setError(`Failed to load tickets: ${fetchError.message}`);
           setAllTickets([]);
         } else {
@@ -91,7 +85,6 @@ export default function TicketingPage() {
         }
         setIsLoading(false);
       } else {
-        console.log('[TicketingPage] No active session.');
         setCurrentUserRole(null);
         setTabValue(0); // Default to dashboard if no session
       }
@@ -101,18 +94,13 @@ export default function TicketingPage() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[TicketingPage] Auth state changed:', event);
         let role = null;
         if (session) {
-          console.log('[TicketingPage] New session from auth change:', session);
-          console.log('[TicketingPage] User metadata from auth change:', session.user?.user_metadata);
           let role = session.user?.user_metadata?.role || null;
           const email = session.user?.email?.toLowerCase();
           if (email === 'tickets@othainsoft.com') {
-            console.log('[TicketingPage] Overriding role to admin for tickets account (auth change)');
             role = 'admin';
           }
-          console.log('[TicketingPage] Role from auth change:', role, 'email:', email);
           setCurrentUserRole(role);
 
           // Set default tab based on admin status from auth change
@@ -126,7 +114,6 @@ export default function TicketingPage() {
             setViewMode('kanban');
           }
         } else {
-          console.log('[TicketingPage] Session ended from auth change.');
           setCurrentUserRole(null);
           setTabValue(0); // Default to dashboard if session ends
         }
@@ -136,13 +123,11 @@ export default function TicketingPage() {
     const ticketsSubscription = supabase
       .channel('public:tickets:list-view')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
-        console.log('Ticket change received for list view!', payload);
         const fetchUpdatedTickets = async () => {
           setIsLoading(true);
           let query = supabase.from('v_ticket_board').select('*');
           const { data: ticketData, error: fetchError } = await query.order('created_at', { ascending: false });
           if (fetchError) {
-            console.error('Error re-fetching tickets for list view:', fetchError);
             setError(`Failed to reload tickets: ${fetchError.message}`);
           } else {
             setAllTickets(ticketData || []);
@@ -155,10 +140,8 @@ export default function TicketingPage() {
 
     return () => {
       if (authListener && typeof authListener.subscription?.unsubscribe === 'function') {
-        console.log('[TicketingPage] Unsubscribing auth listener.');
         authListener.subscription.unsubscribe();
       }
-      console.log('[TicketingPage] Unsubscribing tickets list-view listener.');
       supabase.removeChannel(ticketsSubscription);
     };
   }, []);
@@ -169,7 +152,6 @@ export default function TicketingPage() {
 
   const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
   const isAdminUser = adminRoles.includes(currentUserRole);
-  console.log('[TicketingPage] currentUserRole:', currentUserRole, 'isAdminUser:', isAdminUser);
 
   const handleToggleViewMode = () => {
     setViewMode((prevMode) => (prevMode === 'kanban' ? 'list' : 'kanban'));
@@ -189,23 +171,21 @@ export default function TicketingPage() {
         .eq('id', ticketId);
 
       if (updateError) {
-        console.error('Error updating ticket status from list view:', updateError);
         setError(`Failed to update ticket: ${updateError.message}`);
         const { data: ticketData, error: fetchError } = await supabase.from('v_ticket_board').select('*').order('created_at', { ascending: false });
         if (fetchError) {
-          console.error('Error re-fetching tickets after update failure:', fetchError);
+          setError(`Failed to reload tickets: ${fetchError.message}`);
         } else {
           setAllTickets(ticketData || []);
         }
       } else {
-        console.log(`Ticket ${ticketId} status updated to ${newStatus} from list view`);
+        setError(null);
       }
     } catch (err) {
-      console.error('Unexpected error updating ticket status from list view:', err);
       setError('An unexpected error occurred while updating the ticket.');
       const { data: ticketData, error: fetchError } = await supabase.from('v_ticket_board').select('*').order('created_at', { ascending: false });
       if (fetchError) {
-        console.error('Error re-fetching tickets after unexpected error:', fetchError);
+        setError(`Failed to reload tickets: ${fetchError.message}`);
       } else {
         setAllTickets(ticketData || []);
       }

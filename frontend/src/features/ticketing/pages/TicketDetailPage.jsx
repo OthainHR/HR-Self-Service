@@ -12,8 +12,6 @@ import { useTheme } from '@mui/material/styles';
 
 
 const TicketDetailPage = () => {
-  /* --- Log at the start of the component function --- */
-    
   const { ticketId } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -160,8 +158,6 @@ const TicketDetailPage = () => {
               .single();
             if (!userError && userData) {
               userDetails = userData; // { email }
-            } else {
-              
             }
           }
           return { ...comm, user_details: userDetails };
@@ -250,6 +246,7 @@ const TicketDetailPage = () => {
       if (type === 'customer_reply' || type === 'admin_reply') setReplyMessage('');
     } catch (submissionError) {
       
+      console.error('Error submitting communication:', submissionError);
       setError(`Failed to submit ${type}: ${submissionError.message}`);
       setSnackbarMessage('Failed to send');
       setSnackbarSeverity('error');
