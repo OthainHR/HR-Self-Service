@@ -91,14 +91,12 @@ export default function TicketForm() {
             .order('email'); // Or order by name if available
 
           if (usersError) {
-            console.error('Error fetching all users:', usersError);
             setError('Failed to load users for selection.');
             setAllUsers([]);
           } else {
             setAllUsers(users || []);
           }
         } catch (err) {
-          console.error('Unexpected error fetching all users:', err);
           setError('An unexpected error occurred while loading users.');
           setAllUsers([]);
         } finally {
@@ -120,14 +118,12 @@ export default function TicketForm() {
       try {
         const { data, error: fetchError } = await supabase.from('categories').select('id, name').order('name');
         if (fetchError) {
-          console.error('Error fetching categories:', fetchError);
           setError('Failed to load categories.');
           setCats([]); // Ensure cats is an empty array on error
         } else {
           setCats(data || []);
         }
       } catch (catError) {
-        console.error('Unexpected error fetching categories:', catError);
         setError('An unexpected error occurred while loading categories.');
         setCats([]);
       } finally {
@@ -152,7 +148,6 @@ export default function TicketForm() {
         .eq('category_id', form.category_id)
         .order('name');
       if (fetchError) {
-        console.error('Error fetching sub-categories:', fetchError);
         setError('Failed to load sub-categories.');
       } else {
         setSubs(data || []);
@@ -195,7 +190,7 @@ export default function TicketForm() {
       let defaultAssigneeEmail = null;
       if (categoryObj) {
         const name = categoryObj.name.toLowerCase();
-        if (name.includes('it')) {
+        if (name.includes('it, ai, operations')) {
           defaultAssigneeEmail = 'it@othainsoft.com';
         } else if (name.includes('hr')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
@@ -214,7 +209,6 @@ export default function TicketForm() {
           .eq('email', defaultAssigneeEmail)
           .single();
         if (assigneeError || !assigneeUser) {
-          console.error('Error fetching default assignee:', assigneeError);
         } else {
           assigneeId = assigneeUser.id;
         }
@@ -232,7 +226,6 @@ export default function TicketForm() {
       ]);
 
       if (insertError) {
-        console.error('Error creating ticket:', insertError);
         setError(`Failed to create ticket: ${insertError.message}`);
       } else {
         setSuccessMessage('Ticket created successfully!');
@@ -250,7 +243,6 @@ export default function TicketForm() {
         setSelectedOnBehalfOfUserId(''); // Reset on behalf of user selection
       }
     } catch (err) {
-      console.error('Unexpected error creating ticket:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
