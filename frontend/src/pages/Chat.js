@@ -35,7 +35,9 @@ import {
   Login as LoginIcon,
   Logout as LogoutIcon,
   Delete as DeleteIcon,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  History as HistoryIcon,
+  AutoAwesome as AIIcon
 } from '@mui/icons-material';
 import ChatWindow from '../components/ChatWindow';
 import { chatApi } from '../services/api';
@@ -71,38 +73,6 @@ function Chat() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-
-  // Shared glassmorphism styles
-  const glassStyles = {
-    bgcolor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
-    border: '0px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '30px',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-  };
-
-  const glassStyles2 = {
-    bgcolor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
-    border: '0px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '10px',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-  };
-
-  const sectionVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.2,
-        duration: 0.4,
-        ease: "easeOut"
-      }
-    })
-  };
 
   const handleDrawerToggle = () => {
     setMobileDrawerOpen(!mobileDrawerOpen);
@@ -232,7 +202,6 @@ function Chat() {
     try {
       await logout();
     } catch (error) {
-      
       alert("Logout failed. Please try again.");
     }
   };
@@ -244,17 +213,21 @@ function Chat() {
           key={`skeleton-${index}`} 
           sx={{ 
               borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
-              py: 1.2,
+              py: 1.5,
+              px: 2,
               display: 'flex',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              borderRadius: '12px',
+              mx: 1,
+              mb: 1
           }}
           disabled
         >
           <Box sx={{ width: '80%' }}>
-            <Skeleton variant="text" width="60%" height={20} />
-            <Skeleton variant="text" width="80%" height={16} sx={{ mt: 0.5 }} />
+            <Skeleton variant="text" width="60%" height={24} sx={{ borderRadius: '4px' }} />
+            <Skeleton variant="text" width="80%" height={18} sx={{ mt: 0.5, borderRadius: '4px' }} />
           </Box>
-          <Skeleton variant="circular" width={24} height={24} />
+          <Skeleton variant="circular" width={28} height={28} />
         </ListItemButton>
       ))}
     </List>
@@ -265,79 +238,229 @@ function Chat() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: isMobile ? 0 : 2,
+        borderRadius: isMobile ? 0 : '24px',
         overflow: 'hidden',
-        ...glassStyles,
-        color: theme => theme.palette.text.primary
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        backdropFilter: 'blur(20px)',
+        border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+        position: 'relative'
     }}>
+      {/* Header */}
       <Box sx={{ 
-        p: 2, 
-        textAlign: 'center'
+        p: 2.5, 
+        textAlign: 'center',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+          : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>Chat History</Typography>
+        {/* Header decoration */}
+        <Box sx={{
+          position: 'absolute',
+          top: '-50%',
+          right: '-20%',
+          width: '150px',
+          height: '150px',
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          borderRadius: '50%',
+          opacity: 0.05,
+          filter: 'blur(30px)'
+        }} />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, position: 'relative', zIndex: 1, marginBottom: '2rem' }}>
+          <HistoryIcon sx={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '1.25rem' }} />
+          <Typography variant="h6" sx={{ 
+            fontWeight: 700,
+            color: isDarkMode ? '#f1f5f9' : '#1e293b',
+            fontSize: '1rem'
+            
+          }}>
+            Chat History
+          </Typography>
+        </Box>
       </Box>
       
-      <ListItemButton
-        onClick={handleNewChat}
-        sx={{
-          py: 1.5,
-          flexShrink: 0,
-          height: 54,
-          minHeight: 54,
-          maxHeight: 84,
-          borderRadius: 2,
-          ...glassStyles2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 1,
-          '&:hover': {
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            bgcolor: isDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)'
-          }
-        }}
-      >
-        <AddIcon fontSize="small" /> 
-        <Typography variant="button" sx={{ fontWeight: 600 }}>New Chat</Typography>
-      </ListItemButton>
+      {/* New Chat Button */}
+      <Box sx={{ p: 1.5 }}>
+        <Button
+          onClick={handleNewChat}
+          fullWidth
+          sx={{
+            py: 1.25,
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: '0.8rem',
+            boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)'
+            },
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '-50%',
+              left: '-50%',
+              width: '200%',
+              height: '200%',
+              background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+              transform: 'rotate(45deg)',
+              transition: 'all 0.6s ease',
+              opacity: 0
+            },
+            '&:hover::before': {
+              opacity: 1,
+              transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+            }
+          }}
+          startIcon={<AddIcon />}
+        >
+          New Chat
+        </Button>
+      </Box>
 
+      {/* Sessions List */}
       {loading ? (
           renderSkeletons()
       ) : serverError ? (
-          <Alert severity="error" sx={{m: 2, flexShrink: 0}}>Error connecting to server.</Alert>
+          <Alert 
+            severity="error" 
+            sx={{
+              m: 2, 
+              flexShrink: 0,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)',
+              border: '1px solid rgba(220, 38, 38, 0.3)'
+            }}
+          >
+            Error connecting to server.
+          </Alert>
       ) : sessions.length === 0 ? (
-          <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary', flexShrink: 0 }}>No chat sessions yet.</Typography>
+          <Box sx={{ 
+            p: 3, 
+            textAlign: 'center', 
+            flexShrink: 0,
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.5) 0%, rgba(75, 85, 99, 0.5) 100%)'
+              : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+            borderRadius: '16px',
+            mx: 2,
+            border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)'
+          }}>
+            <MessageIcon sx={{ 
+              fontSize: '3rem', 
+              color: isDarkMode ? '#64748b' : '#9ca3af',
+              mb: 1 
+            }} />
+            <Typography sx={{ 
+              color: isDarkMode ? '#94a3b8' : '#64748b',
+              fontWeight: 500
+            }}>
+              No chat sessions yet.
+            </Typography>
+            <Typography variant="caption" sx={{ 
+              color: isDarkMode ? '#64748b' : '#9ca3af',
+              display: 'block',
+              mt: 0.5
+            }}>
+              Start a new conversation above
+            </Typography>
+          </Box>
       ) : (
-        <List sx={{ flexGrow: 1, overflowY: 'auto', p: 0 }}>
+        <List sx={{ flexGrow: 1, overflowY: 'auto', p: 1 }}>
           {sessions.map((session, index) => (
-            <ListItemButton
+            <motion.div
               key={session.id}
-              selected={selectedSessionId === session.id}
-              onClick={() => handleSessionChange(session.id)}
-              sx={{ 
-                  borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
-                  '&.Mui-selected': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.2)' : 'rgba(67, 97, 238, 0.1)' },
-                  '&:hover': { bgcolor: isDarkMode ? 'rgba(67, 97, 238, 0.1)' : 'rgba(67, 97, 238, 0.05)' }
-              }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
             >
-              <ListItemText 
-                primary={`Chat ${sessions.length - index}`}
-                secondary={`Updated: ${formatDate(session.updated_at)}`}
-                primaryTypographyProps={{ fontWeight: 500 }}
-              />
-               <IconButton 
-                  edge="end" aria-label="delete" 
-                  onClick={(e) => handleDeleteSessionRequest(e, session.id)} 
-                  size="small"
-                  disabled={isDeleting && sessionToDelete === session.id}
-               >
-                 {(isDeleting && sessionToDelete === session.id) 
-                   ? <CircularProgress size={20} /> 
-                   : <DeleteIcon fontSize="small" />
-                 }
-               </IconButton>
-            </ListItemButton>
+              <ListItemButton
+                selected={selectedSessionId === session.id}
+                onClick={() => handleSessionChange(session.id)}
+                sx={{ 
+                    borderRadius: '12px',
+                    mx: 1,
+                    mb: 1,
+                    transition: 'all 0.2s ease',
+                    background: selectedSessionId === session.id 
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)'
+                      : 'transparent',
+                    border: selectedSessionId === session.id 
+                      ? '1px solid rgba(59, 130, 246, 0.3)'
+                      : '1px solid transparent',
+                    '&:hover': { 
+                      background: selectedSessionId === session.id
+                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)'
+                        : isDarkMode 
+                          ? 'rgba(55, 65, 81, 0.5)' 
+                          : 'rgba(248, 250, 252, 0.8)',
+                      transform: 'translateX(4px)'
+                    }
+                }}
+              >
+                <ListItemText 
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AIIcon sx={{ 
+                        fontSize: '1rem', 
+                        color: selectedSessionId === session.id 
+                          ? '#3b82f6' 
+                          : isDarkMode ? '#94a3b8' : '#64748b' 
+                      }} />
+                      <Typography sx={{ 
+                        fontWeight: selectedSessionId === session.id ? 600 : 500,
+                        color: selectedSessionId === session.id 
+                          ? isDarkMode ? '#60a5fa' : '#2563eb'
+                          : isDarkMode ? '#f1f5f9' : '#1e293b',
+                        fontSize: '0.875rem'
+                      }}>
+                        Chat {sessions.length - index}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <Typography variant="caption" sx={{ 
+                      color: isDarkMode ? '#94a3b8' : '#64748b',
+                      fontSize: '0.75rem'
+                    }}>
+                      {formatDate(session.updated_at)}
+                    </Typography>
+                  }
+                />
+                 <IconButton 
+                    edge="end" 
+                    aria-label="delete" 
+                    onClick={(e) => handleDeleteSessionRequest(e, session.id)} 
+                    size="small"
+                    disabled={isDeleting && sessionToDelete === session.id}
+                    sx={{
+                      color: isDarkMode ? '#94a3b8' : '#64748b',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        color: '#ef4444',
+                        background: 'rgba(239, 68, 68, 0.1)'
+                      }
+                    }}
+                 >
+                   {(isDeleting && sessionToDelete === session.id) 
+                     ? <CircularProgress size={16} color="inherit" /> 
+                     : <DeleteIcon fontSize="small" />
+                   }
+                 </IconButton>
+              </ListItemButton>
+            </motion.div>
           ))}
         </List>
       )}
@@ -348,198 +471,279 @@ function Chat() {
     <>
       <Box 
         sx={{
-          minHeight: 'calc(100vh - 80px)',
-          width: '100vw',
-          margin: 0,
-          padding: 0,
+          minHeight: '100vh',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+            : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Enhanced background decoration */}
+        <Box sx={{
           position: 'fixed',
-          top: isMobile ? 56 : 64,
+          top: 0,
           left: 0,
           right: 0,
           bottom: 0,
           background: isDarkMode 
-            ? 'linear-gradient(135deg, #121212 0%, #1e1e1e 50%, #262626 100%)'
-            : 'linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f3e5f5 100%)',
-          backgroundSize: 'cover',
-          backgroundAttachment: 'fixed',
-          overflowY: 'auto',
-          zIndex: 0,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: '100%',
-            backgroundImage: isDarkMode
-              ? 'radial-gradient(circle at 30% 20%, rgba(80,80,80,0.2) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(30,50,80,0.15) 0%, transparent 30%)'
-              : 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 25%), radial-gradient(circle at 80% 70%, rgba(153,204,255,0.3) 0%, transparent 30%)',
-            zIndex: 0,
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: "url('/5624633.jpg')",
-            backgroundSize: 'cover',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-            opacity: 0.3,
-            zIndex: 1,
-            WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
-            maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
-            WebkitMaskSize: '100% 100%',
-            maskSize: '100% 100%',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-          },
-        }}
-      />
-      <Container maxWidth="xl" sx={{ 
-          position: 'relative', zIndex: 5, 
-          pt: isMobile ? 1 : 4,
-          pb: 8, 
-          height: 'calc(100vh - 64px)',
-          display: 'flex',
-          flexDirection: 'column'
-      }}>
+            ? 'radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 50%)',
+          zIndex: -1
+        }} />
+
+        {/* Mobile Controls */}
         {isMobile && isAuthenticated && (
-          <Box sx={{ position: 'fixed', top: 76, left: 58, zIndex: 1301, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Box sx={{ 
+            position: 'absolute', 
+            top: 70, 
+            left: 12, 
+            zIndex: 1000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5,
+            marginTop: '-55px'
+          }}>
             <Button
-              variant="outlined"
+              variant="contained"
               onClick={handleDrawerToggle}
               sx={{
-                bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                color: isDarkMode ? 'white' : 'black',
-                borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                border: 'none',
-                backdropFilter: 'blur(5px)',
-                textTransform: 'none',
-                borderRadius: '20px',
-                padding: '8px 12px',
-                fontSize: '0.8rem',
-
-                lineHeight: '1.2',
-                minWidth: 'auto',
-                boxShadow: 'none',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                color: 'white',
+                borderRadius: '12px',
+                px: 2.5,
+                py: 0.75,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
                 '&:hover': {
-                  bgcolor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                  borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                  boxShadow: 'none',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)'
                 }
               }}
+              startIcon={<HistoryIcon />}
             >
-              Chat History
+              History
             </Button>
             <Button
-              variant="outlined"
-              startIcon={<AddIcon fontSize="small" />}
+              variant="contained"
+              startIcon={<AddIcon />}
               onClick={handleNewChat}
               sx={{
-                bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                color: isDarkMode ? 'white' : 'black',
-                borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                border: 'none',
-                backdropFilter: 'blur(5px)',
-                textTransform: 'none',
-                borderRadius: '20px',
-                padding: '6px 12px',
-                fontSize: '0.8rem',
-                lineHeight: '1.2',
-                minWidth: 'auto',
-                boxShadow: 'none',
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                color: 'white',
+                borderRadius: '12px',
+                px: 2.5,
+                py: 0.75,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                boxShadow: '0 8px 25px rgba(5, 150, 105, 0.3)',
                 '&:hover': {
-                  bgcolor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                  borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                  boxShadow: 'none',
+                  background: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 35px rgba(5, 150, 105, 0.4)'
                 }
               }}
             >
-              New Chat
+              New
             </Button>
           </Box>
         )}
 
-        {isAuthenticated ? (
-          isMobile ? (
-            <>
-              <Drawer
-                variant="temporary"
-                open={mobileDrawerOpen}
-                onClose={handleDrawerToggle}
-                ModalProps={{ keepMounted: true }}
-                sx={{
-                  display: { xs: 'block', md: 'none' },
-                  '& .MuiDrawer-paper': { 
-                    boxSizing: 'border-box', 
-                    width: 280,
-                  },
-                }}
-              >
-                {renderChatHistoryPanel()}
-              </Drawer>
-              <Box sx={{ 
-                height: '100%',
-                width: '100%',
-                pt: isMobile ? '80px' : 0,
-                boxSizing: 'border-box'
-              }}>
-                <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
-              </Box>
-            </>
-          ) : (
-            <Grid container spacing={2} sx={{ height: '100%'}}>
-              <Grid item md={3} sx={{height: '100%'}}> 
-                <motion.div
-                  custom={0}
-                  initial="hidden"
-                  animate="visible"
-                  variants={sectionVariants}
-                  style={{ height: '100%' }}
+        <Container maxWidth="xl" sx={{ 
+            pt: isMobile ? 1.5 : 3,
+            pb: 3, 
+            height: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            zIndex: 1
+        }}>
+          {isAuthenticated ? (
+            isMobile ? (
+              <>
+                <Drawer
+                  variant="temporary"
+                  open={mobileDrawerOpen}
+                  onClose={handleDrawerToggle}
+                  ModalProps={{ keepMounted: true }}
+                  sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': { 
+                      boxSizing: 'border-box', 
+                      width: 320,
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'
+                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+                      backdropFilter: 'blur(20px)'
+                    },
+                  }}
                 >
-                {renderChatHistoryPanel()}
-                </motion.div>
+                  {renderChatHistoryPanel()}
+                </Drawer>
+                <Box sx={{ 
+                  height: 'calc(95vh - 100px)',
+                  width: '100%',
+                  pt: isMobile ? '50px' : 0,
+                  boxSizing: 'border-box'
+                }}>
+                  <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
+                </Box>
+              </>
+            ) : (
+              <Grid container spacing={2} sx={{ height: '100%'}}>
+                <Grid item md={3} sx={{height: '100%'}}> 
+                  <motion.div
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    style={{ height: '100%' }}
+                  >
+                  {renderChatHistoryPanel()}
+                  </motion.div>
+                </Grid>
+                <Grid item md={9} sx={{height: '100%'}}>
+                  <motion.div
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                    style={{ height: '100%' }}
+                  >
+                    <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
+                  </motion.div>
+                </Grid>
               </Grid>
-              <Grid item md={9} sx={{height: '100%'}}>
-                <ChatWindow sessionId={selectedSessionId} onSessionChange={handleSessionChange} />
-              </Grid>
-            </Grid>
-          )
-        ) : (
-          <Box sx={{ flexGrow:1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-             {!authLoading && <Typography>Please log in to use the chat.</Typography>} 
-          </Box>
-        )}
-      </Container>
+            )
+          ) : (
+            <Box sx={{ 
+              flexGrow: 1, 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '24px',
+              border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+              padding: '2rem',
+              textAlign: 'center'
+            }}>
+               {!authLoading && (
+                 <Box>
+                   <MessageIcon sx={{ 
+                     fontSize: '4rem', 
+                     color: isDarkMode ? '#64748b' : '#9ca3af',
+                     mb: 2 
+                   }} />
+                   <Typography variant="h5" sx={{ 
+                     fontWeight: 600,
+                     color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                     mb: 1
+                   }}>
+                     Please log in to use the chat
+                   </Typography>
+                   <Typography sx={{ 
+                     color: isDarkMode ? '#94a3b8' : '#64748b'
+                   }}>
+                     Access your AI assistant to get help with HR and IT questions
+                   </Typography>
+                 </Box>
+               )} 
+            </Box>
+          )}
+        </Container>
+      </Box>
 
+      {/* Enhanced Delete Dialog */}
       <Dialog
         open={isDeleteDialogOpen}
         onClose={handleCloseDeleteDialog}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)'
+          }
+        }}
       >
-        <DialogTitle id="alert-dialog-title">
+        <DialogTitle id="alert-dialog-title" sx={{ 
+          fontWeight: 700,
+          color: isDarkMode ? '#f1f5f9' : '#1e293b',
+          borderBottom: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)'
+        }}>
           Confirm Deletion
         </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this chat session?
+        <DialogContent sx={{ pt: 3 }}>
+          <DialogContentText id="alert-dialog-description" sx={{
+            color: isDarkMode ? '#d1d5db' : '#4b5563',
+            fontSize: '1rem'
+          }}>
+            Are you sure you want to delete this chat session? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} disabled={isDeleting}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" autoFocus disabled={isDeleting}>
-            {isDeleting ? "Deleting..." : "Delete"}
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button 
+            onClick={handleCloseDeleteDialog} 
+            disabled={isDeleting}
+            sx={{
+              borderRadius: '10px',
+              px: 2.5,
+              py: 0.75,
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              color: isDarkMode ? '#94a3b8' : '#64748b',
+              '&:hover': {
+                background: isDarkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(248, 250, 252, 0.8)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDelete} 
+            disabled={isDeleting}
+            sx={{
+              background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+              color: 'white',
+              borderRadius: '10px',
+              px: 2.5,
+              py: 0.75,
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              boxShadow: '0 6px 20px rgba(220, 38, 38, 0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
+                boxShadow: '0 8px 25px rgba(220, 38, 38, 0.4)'
+              },
+              '&:disabled': {
+                background: isDarkMode ? '#4b5563' : '#e5e7eb',
+                color: isDarkMode ? '#9ca3af' : '#9ca3af'
+              }
+            }}
+          >
+            {isDeleting ? (
+              <>
+                <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar style={{ marginLeft: '140px', marginRight: 'auto' }}
+      {/* Enhanced Snackbar */}
+      <Snackbar 
         open={snackbarOpen} 
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
@@ -548,7 +752,12 @@ function Chat() {
         <SnackbarAlert 
             onClose={handleSnackbarClose} 
             severity={snackbarSeverity} 
-            sx={{ width: '100%', color: 'white' }}
+            sx={{ 
+              width: '100%', 
+              borderRadius: '16px',
+              fontWeight: 600,
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)'
+            }}
         >
           {snackbarMessage}
         </SnackbarAlert>

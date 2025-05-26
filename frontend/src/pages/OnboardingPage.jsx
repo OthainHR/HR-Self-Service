@@ -2,73 +2,123 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  LinearProgress
+  LinearProgress,
+  Container,
+  Card,
+  CardContent,
+  Chip,
+  Fade,
+  useMediaQuery
 } from '@mui/material';
-import { PlayArrow as PlayArrowIcon, Pause as PauseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { 
+  PlayArrow as PlayArrowIcon, 
+  Pause as PauseIcon, 
+  CheckCircle as CheckCircleIcon,
+  SkipPrevious as SkipPreviousIcon,
+  SkipNext as SkipNextIcon,
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon,
+  OndemandVideo as VideoIcon,
+  School as SchoolIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import QuizOverlay from '../components/QuizOverlay';
 import CompletionOverlay from '../components/CompletionOverlay';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import { useTheme, useMediaQuery } from '@mui/material';
-import ReactDOM from 'react-dom'; // Ensure this import is present
-import { motion } from 'framer-motion'; // Added import
+import { useTheme } from '@mui/material';
+import ReactDOM from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Placeholder QuizOverlay component (we will create this file next)
-/*
-const QuizOverlay = ({ quizData, onSubmit, onClose }) => {
-  // ... (placeholder code removed) ...
-};
-*/
+// Floating particles animation
+const FloatingParticle = ({ delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 100 }}
+    animate={{ 
+      opacity: [0, 1, 0],
+      y: [-100, -200],
+      x: [0, Math.random() * 100 - 50]
+    }}
+    transition={{
+      duration: 8,
+      delay,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+    style={{
+      position: 'absolute',
+      width: '3px',
+      height: '3px',
+      borderRadius: '50%',
+      background: 'linear-gradient(45deg, #6366f1, #8b5cf6)',
+      filter: 'blur(1px)',
+      zIndex: 0
+    }}
+  />
+);
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
-  const videoContainerRef = useRef(null); // Ref for the video's parent div for fullscreen
+  const videoContainerRef = useRef(null);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [completedChapters, setCompletedChapters] = useState(new Set());
   const [chapterQuizCompleted, setChapterQuizCompleted] = useState(new Set());
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false); // New state for fullscreen status
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [quizOverlayVisible, setQuizOverlayVisible] = useState(false);
   const [activeQuizData, setActiveQuizData] = useState(null);
-  const [quizAttemptKey, setQuizAttemptKey] = useState(0); // Key to force re-render/reset of QuizOverlay
-  const [quizFeedback, setQuizFeedback] = useState(null); // { message: string, incorrectIds?: string[], success?: boolean }
+  const [quizAttemptKey, setQuizAttemptKey] = useState(0);
+  const [quizFeedback, setQuizFeedback] = useState(null);
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
-  const { isDarkMode } = useDarkMode(); // Get dark mode state
-  const theme = useTheme(); // MUI theme
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check for mobile screen size
-  const [quizAttempts, setQuizAttempts] = useState(0); // ADDED: For quiz attempts
+  const { isDarkMode } = useDarkMode();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const [quizAttempts, setQuizAttempts] = useState(0);
 
-  // Glassmorphism shared styles
-  const glassStyles = {
-    backgroundColor: isDarkMode ? 'rgba(30,30,30,0.15)' : 'rgba(255,255,255,0.15)',
-    border: '0px solid rgba(255,255,255,0.3)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    
-    borderRadius: '16px', // Added borderRadius for glass effect
+  // Enhanced animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      }
+    }
   };
 
-  const pageSectionVariants = { // Added animation variants
-    hidden: { opacity: 0, y: 50 },
-    visible: (i) => ({
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    visible: {
       opacity: 1,
       y: 0,
+      scale: 1,
       transition: {
-        delay: i * 0.3, // Stagger delay
-        duration: 0.5,
+        duration: 0.6,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const chapterVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.4,
         ease: "easeOut"
       }
     })
   };
 
   // Add timestamps (in seconds) to your chapters
-  // PLEASE UPDATE THESE TIMESTAMPS TO MATCH YOUR VIDEO
   const chapters = [
     { id: 1, title: '1. Welcome to Othain', duration: '1 Min 48 Sec', timestamp: 0 },
-    { id: 2, title: '2. About Our Team', duration: '1 Min 54 Sec', timestamp: 108 }, // e.g., 1 minute
-    {
-      id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5},
+    { id: 2, title: '2. About Our Team', duration: '1 Min 54 Sec', timestamp: 108 },
+    { id: 3, title: '3. Onboarding Process', duration: '1 Min 10 Sec', timestamp: 222.5},
     { id: 4, title: '4. Policies & Procedures: Attendance', duration: '4 Min 23 Sec', timestamp: 292,
         quiz: {
             title: 'Attendance Policy Quiz',
@@ -77,11 +127,11 @@ const OnboardingPage = () => {
                 id: 'q1', 
                 text: "Q1. At Othain's Building B9, which clock-in/clock-out method must employees use?",
                 options: [ 'A. Biometric scanner', 'B. Web clock-in/clock-out inside the office', 'C. Remote clock-in/clock-out from any location', 'D. Manual sign-in sheet'],
-                correctAnswer: 'B. Web clock-in/clock-out inside the office' // Or index 3
+                correctAnswer: 'B. Web clock-in/clock-out inside the office'
               }
             ]
           }
-     }, // e.g., 4.5 minutes
+     },
     { id: 5, title: '5. Policies & Procedures: Probation & Leave', duration: '2 Min 6 Sec', timestamp: 555.5 },
     { id: 6, title: '6. Policies & Procedures: Overtime & Sandwich Leave', duration: '1 Min 25 Sec', timestamp: 682 },
     { id: 7, title: '7. Policies & Procedures: Continued', duration: '1 Min 49 Sec', timestamp: 766.5,
@@ -92,19 +142,19 @@ const OnboardingPage = () => {
                 id: 'q1', 
                 text: 'Q2. During the six-month probation period, which leave type listed below cannot be taken?',
                 options: [ 'A. Casual Leave', 'B. Sick Leave', 'C. Earned Leave (EL)', 'D. Compensatory Off'],
-                correctAnswer: 'C. Earned Leave (EL)' // Or index 3
+                correctAnswer: 'C. Earned Leave (EL)'
               },
               {
                 id: 'q2', 
                 text: 'Q3. If you take three consecutive sick-leave days, what must you provide?',
                 options: ["A. No documentation is required", "B. An email notification only", "C. A doctor's medical certificate and prescription", "D. Your manager's verbal approval"],
-                correctAnswer: "C. A doctor's medical certificate and prescription" // Or index 2
+                correctAnswer: "C. A doctor's medical certificate and prescription"
               },
               {
                 id: 'q3', 
                 text: 'Q4. Under the sandwich policy, if you are absent on both Friday and Monday without planning the leave two weeks in advance, how many leave days are deducted?',
                 options: ['A. 2 days', 'B. 4 days (Friday + weekend + Monday)', 'C. 3 days', 'D. 1 day'],
-                correctAnswer: 'B. 4 days (Friday + weekend + Monday)' // Or index 2
+                correctAnswer: 'B. 4 days (Friday + weekend + Monday)'
               }
             ]
           }
@@ -118,13 +168,13 @@ const OnboardingPage = () => {
                 id: 'q1', 
                 text: "Q5. Othain's official Performance Management System (PMS) evaluation cycle runs from:",
                 options: [ 'A. April – March', 'B. July – June', 'C. October – September', 'D. January – December'],
-                correctAnswer: 'D. January – December' // Or index 3
+                correctAnswer: 'D. January – December'
               },
               {
                 id: 'q2', 
                 text: 'Q6. In the goal-setting framework for new employees, what percentage of goals relate to customers?',
                 options: ['A. 20 %', 'B. 60 %', 'C. 40 %', 'D. 80 %'],
-                correctAnswer: 'B. 60 %' // Or index 2
+                correctAnswer: 'B. 60 %'
               }
             ]
           }
@@ -137,16 +187,16 @@ const OnboardingPage = () => {
                 id: 'q1', 
                 text: 'Q7. What is the default medical-insurance coverage amount provided through ICICI Lombard?',
                 options: [ 'A. ₹1 lakh', 'B. ₹5 lakhs', 'C. ₹10 lakhs', 'D. ₹2.5 lakhs'],
-                correctAnswer: 'D. ₹2.5 lakhs' // Or index 3
+                correctAnswer: 'D. ₹2.5 lakhs'
               }
             ]
           }
      },
     { id: 11, title: '11. Questions', duration: '17 Sec', timestamp: 1192 },
     { id: 12, title: '12. Thank you!', duration: '9 Sec', timestamp: 1209 },
-    
   ];
-  const videoSrc = "/Onboarding_Video.mp4"; // User updated video path
+
+  const videoSrc = "/Onboarding_Video.mp4";
 
   const checkOverallCompletion = (currentChapterIdx) => {
     const lastChapterIndex = chapters.length - 1;
@@ -155,8 +205,6 @@ const OnboardingPage = () => {
     const isLastChapterVideoViewed = completedChapters.has(lastChapterIndex);
     const isLastChapterQuizCompleted = !lastChapter.quiz || chapterQuizCompleted.has(lastChapterIndex);
 
-    // Consider overall complete if the last chapter's video is viewed 
-    // AND its quiz (if it has one) is also completed.
     return isLastChapterVideoViewed && isLastChapterQuizCompleted;
   };
 
@@ -165,14 +213,11 @@ const OnboardingPage = () => {
       videoRef.current.currentTime = chapters[chapterIndex].timestamp;
       setCurrentChapterIndex(chapterIndex);
       if (autoPlay) {
-        // If there's an incomplete quiz for this chapter, don't autoplay yet.
-        // Autoplay will be handled after quiz completion if needed.
         const chapter = chapters[chapterIndex];
         if (!(chapter.quiz && !chapterQuizCompleted.has(chapterIndex))) {
             videoRef.current.play().catch(error => console.error("Error attempting to play video:", error));
         }
       } else {
-        // If not autoplaying, but seeking to a chapter with an incomplete quiz, ensure video is paused.
         const chapter = chapters[chapterIndex];
         if (chapter.quiz && !chapterQuizCompleted.has(chapterIndex)) {
             if(videoRef.current && !videoRef.current.paused) videoRef.current.pause();
@@ -184,15 +229,13 @@ const OnboardingPage = () => {
   const handleNext = () => {
     if (currentChapterIndex < chapters.length - 1) {
       const nextChapterIndex = currentChapterIndex + 1;
-      // Check if current chapter had a quiz that was just completed, then proceed.
-      // Otherwise, standard navigation applies (which will be gated by quiz check later).
       navigateToTimestamp(nextChapterIndex, true);
     }
   };
 
   const handlePrevious = () => {
     if (currentChapterIndex > 0) {
-      navigateToTimestamp(currentChapterIndex - 1, false); // Typically don't autoplay on previous
+      navigateToTimestamp(currentChapterIndex - 1, false);
     }
   };
 
@@ -207,9 +250,9 @@ const OnboardingPage = () => {
         videoRef.current.pause();
       }
       setActiveQuizData(chapter.quiz);
-      setQuizFeedback(null); // Clear previous feedback
-      setQuizAttemptKey(prevKey => prevKey + 1); // Reset quiz form for a fresh attempt
-      setQuizAttempts(0); // <<<< MODIFIED: Reset attempts for the new quiz
+      setQuizFeedback(null);
+      setQuizAttemptKey(prevKey => prevKey + 1);
+      setQuizAttempts(0);
       setQuizOverlayVisible(true);
       return true;
     }
@@ -230,10 +273,7 @@ const OnboardingPage = () => {
       if (isChapterViewed && !newCompletedChapters.has(index)) {
         newCompletedChapters.add(index);
         changedViewCompletion = true;
-        // If this chapter's video part is now viewed, and it has a quiz not yet passed, trigger it.
         if (chapters[index].quiz && !chapterQuizCompleted.has(index)) {
-            // Quiz is triggered, but don't check for overall completion here yet,
-            // wait for quiz result or video end.
             showQuizForChapter(index);
         }
       }
@@ -241,8 +281,6 @@ const OnboardingPage = () => {
     if (changedViewCompletion) {
       setCompletedChapters(newCompletedChapters);
     }
-    // Check for completion ONLY if the video is near the end AND the last chapter has no quiz
-    // Completion after a quiz is handled in handleProceedAfterQuizAttempt or handleVideoEnded
     const lastChapterIndex = chapters.length - 1;
     if (!chapters[lastChapterIndex]?.quiz && videoRef.current.duration - currentTime < 1) {
          if (checkOverallCompletion(lastChapterIndex)) {
@@ -254,16 +292,12 @@ const OnboardingPage = () => {
   const handleVideoEnded = () => {
     const lastChapterIndex = chapters.length - 1;
     if (chapters.length > 0) {
-      // Ensure last chapter video view is marked complete
       if (!completedChapters.has(lastChapterIndex)){
         setCompletedChapters(prev => new Set(prev).add(lastChapterIndex));
       }
-      // If last chapter has a quiz, trigger it if not done.
-      // If no quiz OR quiz already done, check for overall completion.
       if (chapters[lastChapterIndex].quiz && !chapterQuizCompleted.has(lastChapterIndex)) {
         showQuizForChapter(lastChapterIndex);
       } else if (checkOverallCompletion(lastChapterIndex)) {
-        // Video ended, last chapter viewed, and quiz (if exists) is done.
         setShowCompletionOverlay(true);
       }
     }
@@ -280,31 +314,29 @@ const OnboardingPage = () => {
     });
 
     const newAttempts = quizAttempts + 1;
-    setQuizAttempts(newAttempts); // Update attempt count immediately
+    setQuizAttempts(newAttempts);
 
     if (incorrectQuestionIds.length === 0) {
-      // Quiz Passed
       setQuizFeedback({
         success: true,
         message: "Excellent! You got it right."
       });
     } else {
-      // Quiz Failed
       if (newAttempts < 3) {
         setQuizFeedback({
           success: false,
           message: `Oops! Not quite. (Attempt ${newAttempts} of 3). Give it another shot!`,
           incorrectIds: incorrectQuestionIds
         });
-      } else { // Max attempts (3) reached
+      } else {
         setQuizFeedback({
-          success: 'maxedOut', // Special state for max attempts but proceed
+          success: 'maxedOut',
           message: `That was the last try for this one. No worries, the main thing is to stay engaged! Let\'s move on.`,
-          incorrectIds: incorrectQuestionIds // Still useful to show what was incorrect
+          incorrectIds: incorrectQuestionIds
         });
       }
     }
-    setQuizAttemptKey(prevKey => prevKey + 1); // Force re-render/reset of QuizOverlay with new feedback
+    setQuizAttemptKey(prevKey => prevKey + 1);
   };
 
   const handleProceedAfterQuizAttempt = () => {
@@ -316,7 +348,6 @@ const OnboardingPage = () => {
     setQuizOverlayVisible(false);
     setActiveQuizData(null);
     setQuizFeedback(null);
-    // quizAttempts will be reset by showQuizForChapter if another quiz is shown
 
     if (justCompletedQuizIndex === lastChapterIndex && (videoRef.current?.ended || (videoRef.current?.duration - videoRef.current?.currentTime < 1))) {
         if (checkOverallCompletion(lastChapterIndex)) {
@@ -340,8 +371,6 @@ const OnboardingPage = () => {
   };
 
   const handleCloseQuiz = () => {
-    // This function is now primarily for if the user closes a failed quiz attempt, 
-    // or if a future design allows closing a quiz before attempting it.
     setQuizOverlayVisible(false);
     setActiveQuizData(null);
     setQuizFeedback(null); 
@@ -359,7 +388,7 @@ const OnboardingPage = () => {
   };
 
   const handleToggleFullscreen = () => {
-    const elem = videoContainerRef.current; // Target the container
+    const elem = videoContainerRef.current;
     if (!elem) return;
 
     if (!document.fullscreenElement && 
@@ -368,27 +397,26 @@ const OnboardingPage = () => {
         !document.msFullscreenElement ) {
       if (elem.requestFullscreen) {
         elem.requestFullscreen();
-      } else if (elem.mozRequestFullScreen) { /* Firefox */
+      } else if (elem.mozRequestFullScreen) {
         elem.mozRequestFullScreen();
-      } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+      } else if (elem.webkitRequestFullscreen) {
         elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) { /* IE/Edge */
+      } else if (elem.msRequestFullscreen) {
         elem.msRequestFullscreen();
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
-      } else if (document.mozCancelFullScreen) { /* Firefox */
+      } else if (document.mozCancelFullScreen) {
         document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) { /* Chrome, Safari & Opera */
+      } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) { /* IE/Edge */
+      } else if (document.msExitFullscreen) {
         document.msExitFullscreen();
       }
     }
   };
 
-  // Effect to set initial chapter or handle external changes if needed
   useEffect(() => {
     const videoElement = videoRef.current;
     const updateFullscreenStatus = () => {
@@ -401,24 +429,20 @@ const OnboardingPage = () => {
 
       videoElement.addEventListener('play', handlePlay);
       videoElement.addEventListener('pause', handlePause);
-      // Initial state sync
       setIsPlaying(!videoElement.paused && !videoElement.ended);
 
-      // Attempt Autoplay on Mount
       videoElement.play().then(() => {
-        // Autoplay started successfully
         setIsPlaying(true);
       }).catch(error => {
-        // Autoplay was prevented.
         console.warn("Autoplay prevented by browser policy:", error);
-        setIsPlaying(false); // Ensure state reflects that it's not playing
+        setIsPlaying(false);
       });
 
       document.addEventListener('fullscreenchange', updateFullscreenStatus);
       document.addEventListener('webkitfullscreenchange', updateFullscreenStatus);
       document.addEventListener('mozfullscreenchange', updateFullscreenStatus);
       document.addEventListener('MSFullscreenChange', updateFullscreenStatus);
-      updateFullscreenStatus(); // Initial check
+      updateFullscreenStatus();
 
       return () => {
         videoElement.removeEventListener('play', handlePlay);
@@ -429,234 +453,403 @@ const OnboardingPage = () => {
         document.removeEventListener('MSFullscreenChange', updateFullscreenStatus);
       };
     }
-  }, []); // Empty array ensures this runs only on mount
+  }, []);
 
   const handleGoHome = () => {
-    navigate('/'); // Navigate to home page
+    navigate('/');
   };
 
-  const isNextButtonDisabled = true; // Always disable the Next Section button
-
+  const isNextButtonDisabled = true;
   const progressValue = chapters.length > 0 ? (completedChapters.size / chapters.length) * 100 : 0;
 
+  // Modern button styles
+  const modernButtonStyles = {
+    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+    border: 'none',
+    borderRadius: '12px',
+    padding: isMobile ? '8px 12px' : '10px 16px',
+    color: 'white',
+    fontSize: isMobile ? '0.75rem' : '0.875rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #5856eb 0%, #7c3aed 100%)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 6px 16px rgba(99, 102, 241, 0.4)'
+    },
+    '&:disabled': {
+      background: 'rgba(148, 163, 184, 0.5)',
+      cursor: 'not-allowed',
+      transform: 'none',
+      boxShadow: 'none'
+    }
+  };
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: isMobile ? 'column' : 'row', // Stack on mobile, row on desktop
-      gap: '20px',
-      padding: isMobile ? '10px' : '20px',
-      minHeight: 'calc(100vh - 64px)', // Adjust for NavBar height
-      boxSizing: 'border-box',
-      ...glassStyles, // Apply to main page container
-      backgroundColor: 'transparent', // Override bgcolor from glassStyles for the main page container if needed, or use a more transparent one
-      border: 'none', // Override border for the main page container
-      boxShadow: 'none', // Override boxShadow for the main page container
-      overflow: 'hidden' // Added to prevent scrollbars during animation if children cause temporary overflow
+    <Box sx={{
+      minHeight: '100vh',
+      background: isDarkMode 
+        ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)'
+        : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      {/* Left Side (or Top on Mobile): Video Player and Title */}
-      <motion.div // Wrap left side with motion.div
-        custom={0}
-        initial="hidden"
-        animate="visible"
-        variants={pageSectionVariants}
-        style={{ 
-          flex: isMobile ? '1 1 100%' : 3, // Full width on mobile
-          marginRight: isMobile ? '0px' : '20px', // No right margin on mobile
-          marginBottom: isMobile ? '20px' : '0px' // Margin below video section on mobile
-        }}
-      >
-        {/* Progress Bar Section */}
-        <Box sx={{ mb: 2, width: '100%' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-            <Typography variant="body2" sx={{ color: (isFullscreen || isDarkMode) ? '#ccc' : 'text.secondary', fontWeight: 500 }}>
-              Onboarding Progress
-            </Typography>
-            <Typography variant="caption" sx={{ color: (isFullscreen || isDarkMode) ? '#bbb' : 'text.secondary' }}>
-              {completedChapters.size} / {chapters.length} Sections
-            </Typography>
+      {/* Animated Background Particles */}
+      {[...Array(12)].map((_, i) => (
+        <FloatingParticle key={i} delay={i * 0.5} />
+      ))}
+
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: 4 }}>
+        {/* Hero Header */}
+        <Fade in timeout={800}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <motion.div
+              initial={{ opacity: 0, y: -30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                <VideoIcon sx={{ 
+                  fontSize: { xs: '2rem', md: '3rem' }, 
+                  mr: 2,
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  borderRadius: '50%',
+                  p: 1,
+                  color: 'white'
+                }} />
+                <Typography variant={isMobile ? "h4" : "h2"} sx={{ 
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  ...(isDarkMode && {
+                    background: 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  })
+                }}>
+                  Onboarding Experience
+                </Typography>
+              </Box>
+              <Typography variant="h6" sx={{ 
+                color: isDarkMode ? '#94a3b8' : '#64748b',
+                fontWeight: 500,
+                maxWidth: '600px',
+                mx: 'auto',
+                fontSize: { xs: '0.9rem', md: '1.1rem' }
+              }}>
+                Welcome to Othain! Learn about our company culture, policies, and procedures
+              </Typography>
+            </motion.div>
           </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={progressValue} 
-            sx={{ 
-              height: 8, 
-              borderRadius: 20, 
-              backgroundColor: isDarkMode ? '#555' : '#e0e0e0', // Set background color for contrast
-              '& .MuiLinearProgress-bar': { 
-                backgroundColor: '#3fc380' // Set the bar color
-              }
-            }} 
-          />
-        </Box>
+        </Fade>
 
-        <h1 style={{ 
-          marginBottom: '10px', 
-          color: (isFullscreen || isDarkMode) ? '#fff' : '#000',
-          fontSize: isMobile ? '1.5rem' : (isFullscreen ? '2rem' : '2.2rem') // Responsive title font
-        }}>
-            {chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}
-        </h1>
-        
-        <div 
-          ref={videoContainerRef}
-          style={{ 
-            width: '100%', 
-            backgroundColor: '#000',
-            borderRadius: '20px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            overflow: isFullscreen ? 'hidden' : 'visible',
-            position: 'relative', // Keep relative for portal target positioning
-            marginBottom: '20px'
-          }}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
         >
-          <video 
-            ref={videoRef}
-            width="100%" 
-            style={{ display: 'block', borderRadius: '20px', cursor: 'pointer' }}
-            onLoadedMetadata={() => {
-              // Optional: if (currentChapterIndex === 0 && chapters[0]) videoRef.current.currentTime = chapters[0].timestamp;
-            }}
-            onTimeUpdate={handleTimeUpdate}
-            onEnded={handleVideoEnded}
-            onClick={togglePlayPause}
-          >
-            <source src={videoSrc} type="video/mp4" />
-            Your browser does not support the video tag. Please try a different browser.
-          </video>
-          <div 
-            style={isFullscreen ? {
-              position: 'absolute',
-              bottom: '10px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'calc(100% - 40px)',
-              maxWidth: '600px',
-              padding: '5px 10px',
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              borderRadius: '20px',
-              display: 'flex', 
-              justifyContent: 'space-around',
-              alignItems: 'center',
-              zIndex: 10, // zIndex for controls
-              transition: 'opacity 0.3s ease',
-              flexWrap: 'wrap' 
-            } : {
-              display: 'flex', 
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: isMobile ? '8px 0' : '10px 0', 
-              flexWrap: 'wrap' 
-            }}
-          >
-            
-            <button
-              onClick={togglePlayPause}
-              style={{...buttonStyle(false, isMobile), minWidth: isMobile ? '40px' : '50px', marginLeft: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
-            >
-              {isPlaying ? <PauseIcon fontSize={isMobile ? "small" : "medium"} /> : <PlayArrowIcon fontSize={isMobile ? "small" : "medium"} />}
-            </button>
-            <button 
-              onClick={handlePrevious} 
-              disabled={currentChapterIndex === 0}
-              style={{...buttonStyle(currentChapterIndex === 0, isMobile), marginBottom: isMobile ? '5px' : '0', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
-            >
-              Previous Section
-            </button>
-            <button 
-              onClick={handleNext} 
-              disabled={isNextButtonDisabled}
-              style={{...buttonStyle(isNextButtonDisabled, isMobile), marginBottom: isMobile ? '5px' : '0', marginRight: isMobile ? '10px' : '5px', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
-            >
-              Next Section
-            </button>
-            <button
-              onClick={handleToggleFullscreen}
-              style={{...buttonStyle(false, isMobile), marginRight: isMobile ? '5px' : '10px', marginBottom: isMobile ? '5px' : '0', marginTop: isMobile ? '5px' : '0', marginLeft: isMobile ? '5px' : '10px', backgroundColor: 'rgba(17, 179, 207, 0.8)'}}
-            >
-              {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            </button>
-          </div>
-        </div>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
+            gap: 4,
+            alignItems: 'start'
+          }}>
+            {/* Video Section */}
+            <motion.div variants={itemVariants}>
+              <Card sx={{
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: isDarkMode ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                borderRadius: '24px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 4 }}>
+                  {/* Progress Section */}
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <SchoolIcon sx={{ color: '#6366f1', fontSize: '1.25rem' }} />
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 700,
+                          color: isDarkMode ? '#f1f5f9' : '#1e293b'
+                        }}>
+                          {chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}
+                        </Typography>
+                      </Box>
+                      <Chip 
+                        label={`${completedChapters.size} / ${chapters.length} Complete`}
+                        sx={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+                    
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={progressValue} 
+                      sx={{ 
+                        height: 8, 
+                        borderRadius: 20,
+                        backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)',
+                        '& .MuiLinearProgress-bar': { 
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          borderRadius: 20
+                        }
+                      }} 
+                    />
+                  </Box>
 
-        <div style={{
-          color: (isFullscreen || isDarkMode) ? '#fff' : '#000'
-        }}>
-          <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>About Othain Onboarding</h2>
-          <p style={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
-          Welcome to your Othain onboarding! This course is structured to give you a clear understanding of our company, from our team and processes to essential HR policies and employee benefits. Each section is designed to help you get started confidently and quickly. We recommend progressing through all sections to ensure you're fully acquainted with our platform and procedures.
-          </p>
-        </div>
-      </motion.div> {/* End of left side motion.div */}
+                  {/* Video Player */}
+                  <Box 
+                    ref={videoContainerRef}
+                    sx={{ 
+                      position: 'relative',
+                      borderRadius: '20px',
+                      overflow: 'hidden',
+                      background: '#000',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                      mb: 3
+                    }}
+                  >
+                    <video 
+                      ref={videoRef}
+                      width="100%" 
+                      style={{ 
+                        display: 'block', 
+                        borderRadius: '20px', 
+                        cursor: 'pointer'
+                      }}
+                      onTimeUpdate={handleTimeUpdate}
+                      onEnded={handleVideoEnded}
+                      onClick={togglePlayPause}
+                    >
+                      <source src={videoSrc} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
 
-      {/* Right Side (or Bottom on Mobile): Section List */}
-      <motion.div // Wrap right side with motion.div
-        custom={1}
-        initial="hidden"
-        animate="visible"
-        variants={pageSectionVariants}
-        style={{
-          flex: isMobile ? '1 1 100%' : (isFullscreen ? '0 0 30%' : 1),  // Full width on mobile
-          borderLeft: isMobile || isFullscreen ? 'none' : (isDarkMode ? '1px solid #444' : '1px solid #ccc'), 
-          paddingLeft: isMobile || isFullscreen ? '0px' : '20px', 
-          marginTop: isMobile ? '20px' : '0px', // Add margin top on mobile
-          borderRadius: '20px',
-          backgroundColor: isFullscreen ? '#333' : (isDarkMode ? '#1e1e1e' : 'transparent'),
-          color: isFullscreen ? '#fff' : (isDarkMode ? '#fff' : '#000'),
-          height: isFullscreen ? 'calc(100vh - 20px)' : 'auto',
-          overflowY: 'auto'
-        }}
-      >
-        <h2 style={{ 
-          marginBottom: '15px', 
-          marginTop: isMobile ? '0px' : '15px', // No top margin if already spaced by parent
-          fontSize: isMobile ? '1.2rem' : '1.5rem' 
-        }}>Sections</h2>
-        <ul style={{ listStyleType: 'none', padding: 0 }}>
-          {chapters.map((chapter, index) => {
-            const isCompleted = completedChapters.has(index);
-            const isActive = index === currentChapterIndex;
-            const durationColor = isFullscreen ? '#ccc' : (isDarkMode ? '#bbb' : '#555');
+                    {/* Enhanced Controls */}
+                    <Box sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+                      p: 2
+                    }}>
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 1,
+                        flexWrap: 'wrap'
+                      }}>
+                        <Box
+                          component="button"
+                          onClick={handlePrevious}
+                          disabled={currentChapterIndex === 0}
+                          sx={{
+                            ...modernButtonStyles,
+                            minWidth: 'auto',
+                            padding: '8px'
+                          }}
+                        >
+                          <SkipPreviousIcon fontSize="small" />
+                        </Box>
 
-            return (
-              <li 
-                key={chapter.id} 
-                style={{
-                  ...chapterItemStyle(isActive, isCompleted, isFullscreen, isDarkMode, isMobile, glassStyles),
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-                onClick={() => handleChapterClick(index)}
-              >
-                {/* Text content div (Title + Duration) */}
-                <div> 
-                  <div style={{ fontWeight: isActive ? 'bold' : 'normal' }}>
-                    {chapter.title}
-                  </div>
-                  <div style={{ fontSize: '0.9em', color: durationColor }}> 
-                    {chapter.duration}
-                  </div>
-                </div>
-                
-                {/* Conditionally render SVG Icon on the right */}
-                {isCompleted && (
-                  <img 
-                    src={process.env.PUBLIC_URL + '/checkmark-svgrepo-com.svg'}
-                    alt="Completed" 
-                    style={{ 
-                      height: '18px', // Adjust size as needed
-                      width: '18px',  // Adjust size as needed
-                      marginLeft: '10px' 
-                    }} 
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </motion.div> {/* End of right side motion.div */}
+                        <Box
+                          component="button"
+                          onClick={togglePlayPause}
+                          sx={{
+                            ...modernButtonStyles,
+                            minWidth: 'auto',
+                            padding: '8px'
+                          }}
+                        >
+                          {isPlaying ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                        </Box>
 
-      {/* Portaled Overlays - MODIFIED prop name */}
+                        <Box
+                          component="button"
+                          onClick={handleNext}
+                          disabled={isNextButtonDisabled}
+                          sx={{
+                            ...modernButtonStyles,
+                            minWidth: 'auto',
+                            padding: '8px'
+                          }}
+                        >
+                          <SkipNextIcon fontSize="small" />
+                        </Box>
+
+                        <Box
+                          component="button"
+                          onClick={handleToggleFullscreen}
+                          sx={{
+                            ...modernButtonStyles,
+                            minWidth: 'auto',
+                            padding: '8px'
+                          }}
+                        >
+                          {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Video Description */}
+                  <Box>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 700,
+                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                      mb: 2
+                    }}>
+                      About Othain Onboarding
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      color: isDarkMode ? '#94a3b8' : '#64748b',
+                      lineHeight: 1.7
+                    }}>
+                      Welcome to your Othain onboarding! This course is structured to give you a clear understanding of our company, from our team and processes to essential HR policies and employee benefits. Each section is designed to help you get started confidently and quickly.
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Chapters Sidebar */}
+            <motion.div variants={itemVariants}>
+              <Card sx={{
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: isDarkMode ? '1px solid rgba(51, 65, 85, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                borderRadius: '24px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+                position: 'sticky',
+                top: '2rem',
+                maxHeight: 'calc(100vh - 4rem)',
+                overflow: 'hidden'
+              }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 700,
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    mb: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <SchoolIcon sx={{ color: '#8b5cf6' }} />
+                    Course Sections
+                  </Typography>
+                  
+                  <Box sx={{ 
+                    maxHeight: 'calc(100vh - 12rem)',
+                    overflowY: 'auto',
+                    pr: 1,
+                    '&::-webkit-scrollbar': {
+                      width: '6px'
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent'
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      borderRadius: '3px'
+                    }
+                  }}>
+                    <AnimatePresence>
+                      {chapters.map((chapter, index) => {
+                        const isCompleted = completedChapters.has(index);
+                        const isActive = index === currentChapterIndex;
+                        
+                        return (
+                          <motion.div
+                            key={chapter.id}
+                            custom={index}
+                            initial="hidden"
+                            animate="visible"
+                            variants={chapterVariants}
+                          >
+                            <Box
+                              onClick={() => handleChapterClick(index)}
+                              sx={{
+                                p: 2,
+                                mb: 1,
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                background: isActive 
+                                  ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)'
+                                  : isCompleted
+                                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)'
+                                    : 'transparent',
+                                border: isActive 
+                                  ? '2px solid rgba(99, 102, 241, 0.3)'
+                                  : isCompleted
+                                    ? '1px solid rgba(16, 185, 129, 0.2)'
+                                    : `1px solid ${isDarkMode ? 'rgba(51, 65, 85, 0.3)' : 'rgba(226, 232, 240, 0.3)'}`,
+                                '&:hover': {
+                                  transform: 'translateX(4px)',
+                                  background: isActive 
+                                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%)'
+                                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                                  boxShadow: '0 8px 25px rgba(99, 102, 241, 0.15)'
+                                }
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2" sx={{
+                                    fontWeight: isActive ? 700 : 600,
+                                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                                    mb: 0.5,
+                                    fontSize: '0.875rem'
+                                  }}>
+                                    {chapter.title}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{
+                                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                                    fontSize: '0.75rem'
+                                  }}>
+                                    {chapter.duration}
+                                  </Typography>
+                                </Box>
+                                {isCompleted && (
+                                  <CheckCircleIcon sx={{ 
+                                    color: '#10b981',
+                                    fontSize: '1.25rem',
+                                    ml: 1
+                                  }} />
+                                )}
+                              </Box>
+                            </Box>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Box>
+        </motion.div>
+      </Container>
+
+      {/* Overlays */}
       {quizOverlayVisible && activeQuizData && (
         ReactDOM.createPortal(
           <QuizOverlay
@@ -682,57 +875,8 @@ const OnboardingPage = () => {
           document.body
         )
       )}
-    </div>
+    </Box>
   );
 };
-
-// Helper for button styling - added isMobile for responsive font size
-const buttonStyle = (disabled, isMobile) => ({
-  padding: isMobile ? '4px 8px' : '8px 12px',      // Reduced mobile padding
-  fontSize: isMobile ? '0.7em' : '0.9em',     // Reduced mobile font size
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  backgroundColor: disabled ? '#555' : '#4361ee',
-  color: 'white',
-  border: 'none',
-  borderRadius: '20px',
-  opacity: disabled ? 0.6 : 1,
-  margin: '0 3px',
-  transition: 'background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease', // Added transition
-  '&:hover': {
-     backgroundColor: disabled ? '#555' : '#3a56d4', // Darken on hover (if not disabled)
-     transform: disabled ? 'none' : 'scale(1.03)' // Slight scale on hover
-  }
-});
-
-// Updated chapterItemStyle to handle general dark mode for non-fullscreen
-const chapterItemStyle = (isActive, isCompleted, isFullscreenMode, isAppDarkMode, isMobile, glassStyles) => ({
-  padding: isMobile ? '10px 5px' : '12px 8px',
-  borderBottom: isFullscreenMode ? '1px solid #444' : (isAppDarkMode ? '1px solid #383838' : '1px solid #eee'),
-  cursor: 'pointer',
-  marginBottom: '10px',
-  marginRight: '10px',
-  ...glassStyles, // Apply glassStyles to chapter items
-  backgroundColor: (() => {
-    let baseBg = glassStyles.backgroundColor;
-    if (isFullscreenMode) return isActive ? 'rgba(85,85,85,0.5)' : (isCompleted ? 'rgba(42,58,42,0.5)' : baseBg);
-    if (isAppDarkMode) return isActive ? 'rgba(56,56,56,0.5)' : (isCompleted ? 'rgba(32,48,32,0.5)' : baseBg);
-    return isActive ? 'rgba(224,224,224,0.5)' : (isCompleted ? 'rgba(230,255,230,0.5)' : baseBg);
-  })(),
-  color: (isFullscreenMode || isAppDarkMode) ? '#fff' : '#000',
-  transition: 'background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, backdrop-filter 0.2s ease',
-  opacity: isCompleted && !isActive && !isFullscreenMode && !isAppDarkMode ? 0.7 : 1,
-  '&:hover': {
-    transform: 'translateX(3px)',
-    backdropFilter: 'blur(12px)', // Enhance blur on hover
-    WebkitBackdropFilter: 'blur(12px)',
-    backgroundColor: (() => {
-      let hoverBg = isAppDarkMode ? 'rgba(30,30,30,0.25)' : 'rgba(255,255,255,0.25)';
-      if (isFullscreenMode) return isActive ? 'rgba(102,102,102,0.6)' : (isCompleted ? 'rgba(58,74,58,0.6)' : hoverBg);
-      if (isAppDarkMode) return isActive ? 'rgba(72,72,72,0.6)' : (isCompleted ? 'rgba(48,64,48,0.6)' : hoverBg);
-      if (isMobile) return isActive ? 'rgba(213,213,213,0.6)' : (isCompleted ? 'rgba(217,242,217,0.6)' : hoverBg);
-      return isActive ? 'rgba(213,213,213,0.6)' : (isCompleted ? 'rgba(217,242,217,0.6)' : hoverBg);
-    })()
-  }
-});
 
 export default OnboardingPage;

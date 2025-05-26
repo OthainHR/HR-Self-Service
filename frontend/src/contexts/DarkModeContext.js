@@ -20,9 +20,9 @@ export const DarkModeProvider = ({ children }) => {
     localStorage.setItem('darkMode', isDarkMode);
     // Optional: Add a class to the body for global styling
     if (isDarkMode) {
-      document.body.classList.add('dark-mode');
+      document.body.classList.add('dark');
     } else {
-      document.body.classList.remove('dark-mode');
+      document.body.classList.remove('dark');
     }
   }, [isDarkMode]);
 

@@ -1,0 +1,1268 @@
+/* Ticketing System Styles */
+
+/* General styles */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border-radius: var(--border-radius-lg);
+}
+
+/* KanbanBoard styles */
+.kanban-board-container {
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: visible !important;
+  position: relative;
+  margin-bottom: 50px; /* Add margin at the bottom to prevent cut-off */
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  min-width: 200px;
+  flex-grow: 1;
+  border-radius: 30px;
+}
+
+.search-input, .category-select, .subcategory-select {
+  padding: 0.5rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  flex-grow: 1;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 30px;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+  font-size: 0.95rem;
+}
+
+.refresh-button:hover {
+  background-color: #2563eb;
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.refresh-button:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+  align-items: start;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin-bottom: 50px;
+}
+
+.kanban-column {
+  background-color: rgba(248, 250, 252, 0.7);
+  border-radius: 16px;
+  padding: 20px;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  overflow: visible !important;
+  border: 1px solid rgba(235, 238, 242, 0.8);
+}
+
+.kanban-column:hover {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.kanban-column h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.kanban-column-content {
+  flex-grow: 1;
+  overflow: visible !important;
+  padding-right: var(--spacing-xs);
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+.kanban-ticket {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.kanban-ticket h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+}
+
+.kanban-ticket h4 span {
+  opacity: 0.7;
+}
+
+.ticket-info {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  word-break: break-word;
+  width: 100%;
+}
+
+.ticket-description {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.ticket-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-light-color);
+  margin-top: 0.5rem;
+}
+
+.empty-column-message {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--text-light-color);
+  font-style: italic;
+  font-size: 0.9rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-md) 0;
+  height: auto;
+}
+
+.error-message {
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Dragging states */
+.dragging-over {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.dragging {
+  opacity: 0.7;
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Priority colors */
+.kanban-ticket[data-priority="Urgent"] {
+  border-left: 4px solid var(--error-color);
+}
+
+.kanban-ticket[data-priority="High"] {
+  border-left: 4px solid var(--warning-color);
+}
+
+.kanban-ticket[data-priority="Medium"] {
+  border-left: 4px solid var(--info-color);
+}
+
+.kanban-ticket[data-priority="Low"] {
+  border-left: 4px solid var(--success-color);
+}
+
+/* TicketForm styles */
+.ticket-form {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ticket-form h2 {
+  margin-top: 0;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--input-bg);
+  font-size: 1rem;
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.ticket-form button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.ticket-form button:hover {
+  background-color: #3676dd;
+  color: rgb(255, 255, 255);
+}
+
+.ticket-form button:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.auth-message {
+  margin-top: 1rem;
+  color: var(--info-color);
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* CSS Variables */
+:root {
+  --primary-color: #3b82f6; /* Modern blue */
+  --primary-hover-color: #2563eb;
+  --secondary-color: #10b981; /* Modern teal */
+  --background-color: #f8fafc; /* Light background */
+  --card-background-color: #ffffff;
+  --text-color: #1e293b;
+  --text-light-color: #64748b;
+  --border-color: #e2e8f0;
+  --error-color: #ef4444;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --info-color: #0ea5e9;
+
+  /* Dark mode variables will be defined under .dark selector */
+
+  --font-family-sans: 'Lexend', -apple-system;
+  --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --border-radius-sm: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+
+.dark {
+  --primary-color: #4f8fef; /* Slightly lighter blue for dark mode */
+  --primary-hover-color: #6b9ff1;
+  --secondary-color: #20c997; /* Slightly lighter teal */
+  --background-color: #111827; /* Dark gray background */
+  --card-background-color: #1f2937; /* Lighter dark gray for cards */
+  --text-color: #f3f4f6; /* Light gray text */
+  --text-light-color: #9ca3af; /* Medium gray text */
+  --border-color: #374151; /* Darker border */
+}
+
+/* Global Resets & Basic Typography */
+body {
+  color: var(--text-color);
+  line-height: 1.6;
+  font-size: 16px;
+  background-color: var(--background-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Kanban Board Styles */
+.kanban-board-container {
+  width: 100%;
+}
+
+.filters {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(235, 238, 242, 0.8);
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 30px;
+  padding: 0 var(--spacing-sm);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  min-width: 250px;
+  flex-grow: 1;
+  font-family: var(--font-family-sans);
+  border: 1px solid rgba(235, 238, 242, 0.8);
+  transition: all 0.2s ease;
+}
+
+.filter-field:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  border-color: rgba(220, 228, 235, 0.9);
+}
+
+.filter-field input,
+.filter-field select {
+  font-family: var(--font-family-sans);
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+  flex-grow: 1;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  font-family: var(--font-family-sans);
+  box-shadow: none;
+  border: none;
+  outline: none;
+}
+
+.filters input[type="text"],
+.filters select {
+  font-family: var(--font-family-sans);
+  max-width: 250px;
+  padding: 0.6rem var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.filters button {
+  font-family: var(--font-family-sans);
+  padding: 0.6rem var(--spacing-md);
+  background-color: var(--secondary-color);
+}
+
+.filters button:hover {
+  background-color: #0d9488;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+  align-items: start;
+}
+
+.kanban-column {
+  background-color: #f1f5f9;
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.dark .kanban-column {
+  background-color: #1e293b;
+}
+
+.kanban-column h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(235, 238, 242, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #1e293b;
+}
+
+.kanban-column h2::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.kanban-column:nth-child(1) h2::before {
+  background-color: #3b82f6; /* Blue for first column */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.kanban-column:nth-child(2) h2::before {
+  background-color: #f59e0b; /* Orange for second column */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.kanban-column:nth-child(3) h2::before {
+  background-color: #10b981; /* Green for third column */
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.kanban-column:nth-child(4) h2::before {
+  background-color: #6b7280; /* Gray for fourth column */
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15);
+}
+
+.kanban-column-content {
+  flex-grow: 1;
+  overflow: visible !important;
+  padding-right: var(--spacing-xs);
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+.kanban-ticket {
+  background-color: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  border-left: 4px solid transparent;
+  overflow: visible;
+}
+
+.kanban-ticket:hover {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.ticket-clickable {
+  cursor: pointer;
+}
+
+.kanban-ticket.ticket-clickable:hover {
+  /* Add a subtle hover effect, ensuring it doesn't clash with existing glass effect */
+  box-shadow: var(--shadow-lg), 0 0 15px rgba(255, 255, 255, 0.3); 
+  transform: translateY(-1px);
+}
+
+.kanban-ticket.dragging {
+  box-shadow: var(--shadow-lg);
+  opacity: 0.9;
+}
+
+.kanban-column.dragging-over {
+  background-color: #e2e8f0;
+}
+
+.kanban-ticket h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  line-height: 1.4;
+  color: #1e293b;
+  font-family: var(--font-family-sans);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.kanban-ticket h4 span {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-weight: 500;
+  background-color: #f8fafc;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 8px;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-ticket .ticket-info {
+  font-size: 0.875rem;
+  color: var(--text-light-color);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: start;
+  font-family: var(--font-family-sans);
+  width: 80%;
+}
+
+.kanban-ticket .ticket-info > span:first-child {
+  margin-top: 0.4rem;
+}
+
+.kanban-ticket .ticket-info > span:last-child {
+  word-break: break-word;
+}
+
+.kanban-ticket .ticket-description {
+  font-size: 0.875rem;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.5;
+  opacity: 0.9;
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  font-family: var(--font-family-sans);
+}
+
+.kanban-ticket .ticket-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-light-color);
+  margin-top: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.kanban-ticket .ticket-meta span {
+  background-color: #f8fafc; /* Light mode default */
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-light-color); /* Default to light text color for consistency */
+}
+
+.dark .kanban-ticket .ticket-meta span {
+  background-color: var(--border-color); /* Use a darker background, e.g., border color or similar */
+  color: var(--text-color); /* Ensure text is light in dark mode */
+}
+
+/* Priority colors */
+.kanban-ticket[data-priority="Urgent"] {
+  border-left-color: #ef4444;
+}
+
+.kanban-ticket[data-priority="Urgent"]::after {
+  content: 'Urgent';
+  position: absolute;
+  right: 12px;
+  top: 42px; /* Moved down below the ticket ID */
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.kanban-ticket[data-priority="High"] {
+  border-left-color: #f59e0b;
+}
+
+.kanban-ticket[data-priority="High"]::after {
+  content: 'High';
+  position: absolute;
+  right: 12px;
+  top: 42px; /* Moved down below the ticket ID */
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.kanban-ticket[data-priority="Medium"] {
+  border-left-color: #0ea5e9;
+}
+
+.kanban-ticket[data-priority="Low"] {
+  border-left-color: #10b981;
+}
+
+.empty-column-message {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--text-light-color);
+  font-style: italic;
+  font-size: 0.9rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-md) 0;
+  height: auto;
+}
+
+.dark .empty-column-message {
+  background-color: rgba(30, 41, 59, 0.5);
+  color: var(--text-light-color);
+}
+
+/* Message styling */
+.message-base {
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-message {
+  composes: message-base;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error-color);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.success-message {
+  composes: message-base;
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.auth-message {
+  composes: message-base;
+  background-color: rgba(14, 165, 233, 0.1);
+  color: var(--info-color);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+/* Ticket Form Specific */
+.ticket-form {
+  max-width: 800px;
+  margin: var(--spacing-md) auto;
+  padding: var(--spacing-xl);
+  background: var(--card-background-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  font-family: var(--font-family-sans);
+}
+
+.ticket-form h2 {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-color);
+  font-weight: 700;
+  font-family: var(--font-family-sans);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+  font-family: var(--font-family-sans);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  color: var(--text-light-color);
+  font-size: 0.925rem;
+  font-family: var(--font-family-sans);
+}
+
+.ticketing-page input[type="text"],
+.ticketing-page input[type="email"],
+.ticketing-page input[type="password"],
+.ticketing-page textarea,
+.ticketing-page select {
+  width: 100%;
+  padding: 0.75rem var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: 30px;
+  font-size: 1rem;
+  color: var(--text-color);
+  background-color: var(--card-background-color);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-family-sans);
+}
+
+/* Glassmorphism Effect */
+.glass-effect {
+  background-color: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-lg);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .glass-effect {
+  background-color: rgba(31, 41, 55, 0.55);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Utility Classes */
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.mr-3 {
+  margin-right: 0.75rem;
+}
+
+.mr-4 {
+  margin-right: 1rem;
+}
+
+.ml-1 {
+  margin-left: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-slate-300 {
+  color: #cbd5e1;
+}
+
+.text-slate-400 {
+  color: #94a3b8;
+}
+
+.text-slate-500 {
+  color: #64748b;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.w-2 {
+  width: 0.5rem;
+}
+
+.h-2 {
+  height: 0.5rem;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+.bg-slate-300 {
+  background-color: #cbd5e1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filters input[type="text"],
+  .filters select,
+  .filters button {
+    max-width: 100%;
+  }
+  
+  .kanban-board {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    height: auto;
+    min-height: auto;
+  }
+  
+  .kanban-column {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: var(--spacing-md);
+    height: auto;
+    min-height: auto;
+    max-height: none;
+  }
+  
+  .ticket-form {
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) auto;
+  }
+}
+
+/* All filter dropdown styles consistent */
+.filters .status-select,
+.filters .category-select,
+.filters .subcategory-select {
+  font-family: var(--font-family-sans);
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+  flex-grow: 1;
+  max-width: 250px;
+  padding: 0.6rem var(--spacing-md);
+}
+
+/* Override styles for Kanban layout to fix scrolling */
+.ticketing-page html, 
+.ticketing-page body, 
+.ticketing-page #root, 
+.ticketing-page #app, 
+.ticketing-page main, 
+.ticketing-page .container {
+  min-height: 100vh;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+.kanban-board-container {
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: visible !important;
+  position: relative;
+  margin-bottom: 50px; /* Add margin at the bottom to prevent cut-off */
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+  align-items: start;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin-bottom: 50px;
+}
+
+/* Remove ALL height constraints from column */
+.kanban-column {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Fix for overall page container - scoped to ticketing */
+.ticketing-page .page-container, 
+.ticketing-page .MuiContainer-root,
+.ticket-page,
+.ticketing-page,
+.ticketing-page .content-wrapper,
+.ticketing-page main > div {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .filters {
+  background-color: rgba(31, 41, 55, 0.8); /* Darker glass effect for filters */
+  border-color: rgba(55, 65, 81, 0.5);
+}
+
+.dark .filter-field {
+  background-color: var(--card-background-color); /* Use card background for inputs */
+  border-color: var(--border-color);
+}
+
+.dark .filter-field input,
+.dark .filter-field select {
+  color: var(--text-color);
+}
+
+.dark .refresh-button {
+  background-color: var(--primary-color); /* Use primary color from dark vars */
+  color: var(--text-color);
+  box-shadow: 0 4px 10px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.dark .refresh-button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.dark .kanban-column {
+  background-color: var(--card-background-color); /* Use card bg for columns */
+  border-color: var(--border-color);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Slightly adjusted shadow for dark */
+}
+
+.dark .kanban-column h2 {
+  color: var(--text-color);
+  border-bottom-color: var(--border-color);
+}
+
+/* Column header dot colors might need adjustment if not using CSS variables that adapt */
+.dark .kanban-column:nth-child(1) h2::before {
+  background-color: #4f8fef; /* Example: Ensure dark mode compatible blue */
+  box-shadow: 0 0 0 3px rgba(79, 143, 239, 0.2);
+}
+
+.dark .kanban-column:nth-child(2) h2::before {
+  background-color: #f9b42a; /* Example: Dark mode orange */
+  box-shadow: 0 0 0 3px rgba(249, 180, 42, 0.2);
+}
+
+.dark .kanban-column:nth-child(3) h2::before {
+  background-color: #20c997; /* Example: Dark mode green */
+  box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
+}
+
+.dark .kanban-column:nth-child(4) h2::before {
+  background-color: #7b8694; /* Example: Dark mode gray */
+  box-shadow: 0 0 0 3px rgba(123, 134, 148, 0.2);
+}
+
+.dark .kanban-ticket {
+  background-color: #2d3748; /* Slightly lighter than column bg for contrast */
+  border-color: var(--border-color);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.dark .kanban-ticket:hover {
+  background-color: #354154;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+}
+
+.dark .kanban-ticket h4 {
+  color: var(--text-color);
+}
+
+.dark .kanban-ticket h4 span {
+  background-color: var(--background-color); /* Use main dark bg for contrast */
+  color: var(--text-light-color);
+}
+
+.dark .kanban-ticket .ticket-info {
+  color: var(--text-light-color);
+}
+
+.dark .kanban-ticket .ticket-description {
+  color: var(--text-color);
+  opacity: 0.85;
+}
+
+.dark .kanban-ticket .ticket-meta span {
+  background-color: var(--border-color); /* Consistent with existing dark meta span */
+  color: var(--text-color);
+}
+
+/* Priority indicator backgrounds were using rgba, ensure they look good on dark */
+.dark .kanban-ticket[data-priority="Urgent"]::after {
+  background-color: rgba(239, 68, 68, 0.2); /* Slightly more opaque or different shade if needed */
+  color: #f56565; /* Lighter red for dark text */
+}
+
+.dark .kanban-ticket[data-priority="High"]::after {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #f6ad55; /* Lighter orange */
+}
+
+.dark .empty-column-message {
+  background-color: rgba(30, 41, 59, 0.7); /* Darker translucent */
+  color: var(--text-light-color);
+}
+
+.dark .ticket-form {
+  background-color: var(--card-background-color);
+  box-shadow: var(--shadow-xl), 0 0 30px rgba(0,0,0,0.3); /* Enhance shadow for dark form */
+}
+
+.dark .ticket-form h2 {
+  color: var(--text-color);
+}
+
+.dark .form-group label {
+  color: var(--text-light-color);
+}
+
+/* The general input styling is already handled by .ticketing-page .dark input etc. */
+/* but if .ticket-form is outside .ticketing-page or needs overrides: */
+.dark .ticket-form input,
+.dark .ticket-form select,
+.dark .ticket-form textarea {
+  background-color: #2a303c !important; /* Use !important if still no change */
+  color: var(--text-color) !important;
+  border-color: #374151 !important;
+}
+
+.dark .ticket-form input::placeholder,
+.dark .ticket-form textarea::placeholder {
+  color: #8a93a2 !important;
+  opacity: 0.8 !important;
+}
+
+/* Assuming the 'Selected Category' bar has a specific class, let's say .selected-category-bar */
+/* If it doesn't, we might need to identify its structure in the JSX to target it effectively */
+/* For now, let's assume a generic approach or you can provide the class */
+.dark .ticket-form .selected-category-bar { /* Please replace .selected-category-bar with the actual class if different */
+  background-color: #252b35 !important; /* A distinct background for this bar */
+  padding: 0.75rem 1rem !important;
+  border-radius: var(--border-radius-md) !important;
+  margin-bottom: 1.5rem !important;
+  border: 1px solid #303845 !important;
+}
+
+.dark .ticket-form .selected-category-bar p strong { /* For the "Accounts" text */
+  color: var(--text-color) !important;
+}
+
+.dark .ticket-form .selected-category-bar a { /* For the "Change" link */
+  color: #60a5fa !important; /* A lighter, slightly desaturated blue for dark mode links */
+  text-decoration: none !important;
+}
+
+.dark .ticket-form .selected-category-bar a:hover {
+  color: #7dd3fc !important;
+  text-decoration: underline !important;
+}
+
+.dark .ticket-form button {
+  background-color: var(--primary-color) !important;
+  color: var(--text-color) !important;
+}
+
+.dark .ticket-form button:hover {
+  background-color: var(--primary-hover-color) !important;
+}
+
+/* Targeting the inline-styled 'Selected Category' bar in dark mode */
+.dark .ticket-form div[style*="background-color: rgba(0, 0, 0, 0.05)"] {
+  background-color: #252b35 !important; /* Dark mode background */
+  border: 1px solid #303845 !important; /* Add a border for dark mode */
+}
+
+.dark .ticket-form div[style*="background-color: rgba(0, 0, 0, 0.05)"] span[style*="color: var(--text-light-color)"] {
+  color: var(--text-light-color) !important; /* Ensure this stays if it's okay, or change if needed */
+}
+
+.dark .ticket-form div[style*="background-color: rgba(0, 0, 0, 0.05)"] strong[style*="margin-left: 0.5rem"] {
+  color: var(--text-color) !important; /* Ensure category name is dark mode friendly */
+}
+
+/* Targeting the inline-styled 'Change' button in dark mode */
+.dark .ticket-form button[style*="background: none"] {
+  color: #60a5fa !important; /* Lighter blue for dark mode links */
+}
+
+.dark .ticket-form button[style*="background: none"]:hover {
+  color: #7dd3fc !important; /* Hover color */
+  text-decoration: underline !important;
+}
+
+/* Modern status dropdown styling */
+.status-dropdown-wrapper {
+  position: relative;
+  width: fit-content;
+}
+
+.status-select-modern {
+  appearance: none;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 160px;
+}
+
+.status-select-modern:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.status-select-modern:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.status-dropdown-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.status-dropdown-wrapper:hover .status-dropdown-icon {
+  transform: translateY(-50%) translateX(2px);
+  color: var(--primary-color);
+}
+
+/* Dark mode styles for status dropdown */
+.dark .status-select-modern {
+  background-color: #1e293b;
+  border-color: #374151;
+  color: #f1f5f9;
+}
+
+.dark .status-select-modern:hover {
+  background-color: #2d3748;
+  border-color: #4b5563;
+}
+
+.dark .status-select-modern:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(79, 143, 239, 0.3);
+}
+
+.dark .status-dropdown-icon {
+  color: #9ca3af;
+}
+
+.dark .status-dropdown-wrapper:hover .status-dropdown-icon {
+  color: var(--primary-color);
+}
+
+/* Style for the options dropdown itself in dark mode - this works in some browsers */
+.dark .status-select-modern option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}

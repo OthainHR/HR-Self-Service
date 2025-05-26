@@ -24,6 +24,8 @@ import {
   SentimentSatisfiedAlt as EmojiIcon,
   SignalWifiOff as SignalWifiOffIcon,
   SupportAgent as SupportAgentIcon,
+  AutoAwesome as AIIcon,
+  CheckCircle as OnlineCheckIcon
 } from '@mui/icons-material';
 import MessageItem from './MessageItem';
 import { chatApi } from '../services/api';
@@ -39,6 +41,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [error, setError] = useState(null);
   const [serverError, setServerError] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -64,8 +67,12 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   
   // Scroll to bottom of messages
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      // Scroll within the messages container only, not the entire page
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -222,28 +229,34 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           icon={<SignalWifiOffIcon fontSize="small" />}
           label="Connection Error"
           size="small"
-          color="default"
           sx={{ 
-            borderRadius: 1, 
-            mt: 1, 
-            mb: 2,
-            bgcolor: isDarkMode ? 'grey.800' : 'grey.200',
-            '& .MuiChip-icon': { color: 'text.secondary' },
-            '& .MuiChip-label': { color: 'text.primary', fontWeight: 'medium' }
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(239, 68, 68, 0.15) 100%)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+            color: '#dc2626',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            '& .MuiChip-icon': { color: '#dc2626' }
           }}
         />
       );
     }
-    return null;
-  };
-
-  // Shared glassmorphism styles
-  const glassStyles = {
-    bgcolor: isDarkMode ? 'rgba(30, 30, 30, 0.26)' : 'rgba(255,255,255,0.1)',
-    border: '0px solid rgba(255,255,255,0.3)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+    return (
+      <Chip
+        icon={<OnlineCheckIcon fontSize="small" />}
+        label="Connected"
+        size="small"
+        sx={{ 
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
+          border: '1px solid rgba(5, 150, 105, 0.3)',
+          color: '#059669',
+          fontWeight: 600,
+          fontSize: '0.75rem',
+          '& .MuiChip-icon': { color: '#059669' }
+        }}
+      />
+    );
   };
 
   if (!sessionId) {
@@ -263,52 +276,79 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            borderRadius: 3,
-            ...glassStyles,
-            color: theme => theme.palette.text.primary,
+            borderRadius: '24px',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
-          <img 
-            src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
-            alt="Othain Logo"
-            height={isDarkMode ? "60" : "50"}
-            style={{ marginBottom: theme.spacing(2), marginTop: theme.spacing(10), opacity: 1 }}
-          />
-          <Typography variant="h5" color="text.primary" align="center" sx={{ mb: 1, fontWeight: 500,fontSize: isMobile ? '16px' : '25px' }}>
-            Welcome to Othain Employee Self Service
-          </Typography>
-          <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3, maxWidth: 500, fontSize: isMobile ? '13px' : '16px' }}>
-            Select an existing chat from the sidebar or start a new conversation to get assistance with HR-related questions.
-          </Typography>
-          
-          {offlineMode ? (
-            <Alert 
-              severity="info" 
-              icon={<OfflineIcon />}
-              sx={{ 
-                borderRadius: 2,
-                display: 'flex', 
-                alignItems: 'center' 
-              }}
-            >
-              Currently using offline responses
-            </Alert>
-          ) : (
-            <Alert 
-              severity="success" 
-              icon={<OnlineIcon />}
-              sx={{ 
-                borderRadius: 2,
-                ...glassStyles,
-                display: 'fixed', 
-                alignItems: 'center',
-                marginBottom: isMobile ? '280px' : '20px',
-                fontSize: isMobile ? '10px' : '16px'
-              }}
-            >
-              Connected to Othain ESS
-            </Alert>
-          )}
+          {/* Background decoration */}
+          <Box sx={{
+            position: 'absolute',
+            top: '-50%',
+            right: '-20%',
+            width: '300px',
+            height: '300px',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            borderRadius: '50%',
+            opacity: 0.05,
+            filter: 'blur(40px)'
+          }} />
+
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            style={{ zIndex: 1, textAlign: 'center' }}
+          >
+            <Avatar sx={{
+              width: 80,
+              height: 80,
+              mb: 3,
+              mx: 'auto',
+              background: 'none',
+              boxShadow: '0 15px 35px rgba(59, 130, 246, 0.3)'
+            }}>
+              <img 
+                src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+                alt="Othain Logo"
+                style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+              />
+            </Avatar>
+            
+            <Typography variant="h4" sx={{ 
+              mb: 2, 
+              fontWeight: 800,
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
+                : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontSize: isMobile ? '1.75rem' : '2.25rem'
+            }}>
+              Welcome to Othain ESS
+            </Typography>
+            
+            <Typography variant="h6" sx={{ 
+              mb: 4, 
+              color: isDarkMode ? '#94a3b8' : '#64748b',
+              fontWeight: 500,
+              maxWidth: 500,
+              mx: 'auto',
+              lineHeight: 1.6,
+              fontSize: isMobile ? '1rem' : '1.25rem'
+            }}>
+              Your AI-powered Employee Self Service assistant is ready to help with HR, IT, and workplace questions.
+            </Typography>
+            
+            {getStatusBadge()}
+          </motion.div>
         </Paper>
       </motion.div>
     );
@@ -327,89 +367,148 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
-          borderRadius: 3,
+          borderRadius: '24px',
           overflow: 'hidden',
-          ...glassStyles,
-          position: 'relative',
-          zIndex: 5,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '100%',
-            backgroundImage: isDarkMode 
-              ? 'linear-gradient(to bottom, rgba(40,40,40,0.1), rgba(30,30,30,0.1))'
-              : 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.1))',
-            zIndex: 0,
-          }
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+          position: 'relative'
         }}
       >
+        {/* Enhanced Header */}
         <Box 
           sx={{ 
-            p: 2, 
-            ...glassStyles,
+            py: 4,
+            px: 3,
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            zIndex: 1,
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Header decoration */}
+          <Box sx={{
+            position: 'absolute',
+            top: '-50%',
+            left: '-10%',
+            width: '150px',
+            height: '150px',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            borderRadius: '50%',
+            opacity: 0.05,
+            filter: 'blur(30px)'
+          }} />
+
+          <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
             <Avatar
               sx={{
-                bgcolor: theme => theme.palette.mode === 'dark' ? 'black' : 'black',
-                width: 40,
-                height: 40,
-                mr: 1.5,
-                border: isDarkMode ? '2px solid rgba(40, 40, 40, 0.2)' : '2px solid white',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                background: 'none',
+                width: 48,
+                height: 48,
+                mr: 2,
+                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                position: 'relative',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  animation: 'rotate 3s linear infinite'
+                }
               }}
             >
               <img 
-              src="/othainlogopreview.png"
-              alt="Othain Logo" 
-              height="26" 
-              style={{marginBottom: '-1px' }} 
-            />
+                src={isDarkMode ? '/logowhite.png' : '/Othain-logo2.png'}
+                alt="Othain Logo"
+                style={{ width: '70%', height: '70%', objectFit: 'contain', zIndex: 1, position: 'relative' }}
+              />
             </Avatar>
-            <img 
-              src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
-              alt="Othain Logo" 
-              height={isDarkMode ? "20" : "22"} 
-              style={{ marginRight: '8px', marginBottom: '29px' }} 
-            /> 
+            
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                ESS
+              <Typography variant="h6" sx={{ 
+                fontWeight: 700, 
+                color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' }
+              }}>
+                Othain ESS Assistant
               </Typography>
               <Typography variant="caption" sx={{ 
-                color: 'text.secondary', 
-                marginLeft: isDarkMode ? '-88px' : '-95px' 
+                color: isDarkMode ? '#94a3b8' : '#64748b',
+                fontWeight: 500,
+                fontSize: { xs: '0.625rem', sm: '0.7rem', md: '0.75rem' }
               }}>
-                Employee Self Service
+                AI-Powered Employee Support
               </Typography>
             </Box>
           </Box>
+          
           {getStatusBadge()}
         </Box>
 
+        {/* Messages Area */}
         <Box 
+          ref={messagesContainerRef}
           sx={{ 
             flexGrow: 1, 
             overflow: 'auto',
-            p: { xs: 1, sm: 2, md: 3 },
+            p: { xs: 2, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: isDarkMode ? 'rgba(25, 25, 25, 0.3)' : 'rgba(245, 247, 250, 0.2)',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.3) 0%, rgba(30, 41, 59, 0.3) 100%)'
+              : 'linear-gradient(135deg, rgba(248, 250, 252, 0.3) 0%, rgba(241, 245, 249, 0.3) 100%)',
             position: 'relative',
-            zIndex: 1,
+            // Custom scrollbar
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.5) 0%, rgba(107, 114, 128, 0.5) 100%)'
+                : 'linear-gradient(135deg, rgba(203, 213, 225, 0.5) 0%, rgba(226, 232, 240, 0.5) 100%)',
+              borderRadius: '10px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.7) 0%, rgba(156, 163, 175, 0.7) 100%)'
+                : 'linear-gradient(135deg, rgba(156, 163, 175, 0.7) 0%, rgba(203, 213, 225, 0.7) 100%)',
+            }
           }}
         >
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <CircularProgress />
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100%',
+              flexDirection: 'column'
+            }}>
+              <CircularProgress sx={{ 
+                color: '#6366f1',
+                mb: 2
+              }} />
+              <Typography sx={{ 
+                color: isDarkMode ? '#94a3b8' : '#64748b',
+                fontWeight: 500
+              }}>
+                Loading conversation...
+              </Typography>
             </Box>
           ) : messages.length === 0 ? (
             <Fade in={true} timeout={1000}>
@@ -420,147 +519,194 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                   justifyContent: 'center', 
                   alignItems: 'center',
                   height: '100%',
-                  p: 3,
+                  p: 4,
                   textAlign: 'center',
-                  ...glassStyles,
-                  borderRadius: 3,
-                  backdropFilter: 'blur(8px)',
-                  border: isDarkMode ? '1px solid rgba(60, 60, 60, 0.3)' : '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.5) 0%, rgba(75, 85, 99, 0.5) 100%)'
+                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
+                  backdropFilter: 'blur(10px)',
+                  border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  borderRadius: '20px',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
-                <img 
-            src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
-            alt="Othain Logo"
-            height={isDarkMode ? "50" : "42"}
-            style={{ marginBottom: theme.spacing(2), opacity: 1 }}
-          />
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, fontSize: isMobile ? '16px' : '20px', color: theme => theme.palette.text.primary }}>
-                  Start a conversation
-                </Typography>
-                <Typography variant="body2" color="textSecondary"  sx={{ mb: 3, fontSize: isMobile ? '10px' : '16px' }}>
-                  Ask me anything about HR policies, benefits, or employment questions.
-                </Typography>
-                
-                <Box sx={{ width: '100%', maxWidth: '400px' }}>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      gap: 2
-                    }}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => setInput('What is the attendance policy at Othain?')}
-                      sx={{
-                        py: 1.5,
-                        px: 3,
-                        borderRadius: 2,
-                        justifyContent: 'center',
-                        color: isDarkMode ? 'white' : 'black',
-                        
-                        ...glassStyles,
-                        backdropFilter: 'blur(5px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                        border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-                        fontSize: isMobile ? '10px' : '12px',
-                        '&:hover': {
-                          bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
-                        }
-                      }}
-                    >
-                      What is the attendance policy at Othain?
-                    </Button>
-                    
-                    <Button
-                      variant="outlined"
-                      onClick={() => setInput('What is the process for an employee to apply for leave and obtain approval?')}
-                      sx={{
-                        py: 1.5,
-                        px: 3,
-                        borderRadius: 2,
-                        justifyContent: 'center',
-                        color: isDarkMode ? 'white' : 'black',
-                        ...glassStyles,
-                        backdropFilter: 'blur(5px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                        border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-                        fontSize: isMobile ? '10px' : '12px',
-                        '&:hover': {
-                          bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
-                        }
-                      }}
-                    >
-                      What is the process for an employee to apply for leave and obtain approval?
-                    </Button>
-                    
-                    <Button
-                      variant="outlined"
-                      onClick={() => setInput('When can I expect my salary to be credited each month?')}
-                      sx={{
-                        py: 1.5,
-                        px: 3,
-                        borderRadius: 2,
-                        justifyContent: 'center',
-                        color: isDarkMode ? 'white' : 'black',
-                        ...glassStyles,
-                        backdropFilter: 'blur(5px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                        border: isDarkMode ? '1px solid rgba(70, 70, 70, 0.5)' : '1px solid rgba(255, 255, 255, 0.5)',
-                        fontSize: isMobile ? '10px' : '12px',
-                        '&:hover': {
-                          bgcolor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)',
-                        }
-                      }}
-                    >
-                      When can I expect my salary to be credited each month?
-                    </Button>
+                {/* Welcome decoration */}
+                <Box sx={{
+                  position: 'absolute',
+                  top: '-30%',
+                  right: '-30%',
+                  width: '200px',
+                  height: '200px',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.05,
+                  filter: 'blur(40px)'
+                }} />
+
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                  style={{ zIndex: 1 }}
+                >
+                  <Avatar sx={{
+                    width: 64,
+                    height: 64,
+                    mx: 'auto',
+                    mb: 3,
+                    background: 'none',
+                    boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
+                  }}>
+                    <img 
+                      src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+                      alt="Othain Logo"
+                      style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+                    />
+                  </Avatar>
+                  
+                  <Typography variant="h5" sx={{ 
+                    mb: 2, 
+                    fontWeight: 700,
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    fontSize: isMobile ? '1.25rem' : '1.5rem'
+                  }}>
+                    Start a conversation
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ 
+                    mb: 4, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                    fontSize: isMobile ? '0.875rem' : '1rem',
+                    maxWidth: '400px'
+                  }}>
+                    Ask me anything about HR policies, benefits, IT support, or general workplace questions.
+                  </Typography>
+                  
+                  {/* Quick Start Buttons */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    gap: 2,
+                    maxWidth: '400px',
+                    width: '100%'
+                  }}>
+                    {[
+                      'What is the attendance policy at Othain?',
+                      'How do I apply for leave?',
+                      'When is salary credited each month?'
+                    ].map((question, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + (index * 0.1), duration: 0.3 }}
+                      >
+                        <Button
+                          variant="outlined"
+                          onClick={() => setInput(question)}
+                          fullWidth
+                          sx={{
+                            py: 1.5,
+                            px: 3,
+                            borderRadius: '16px',
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            color: isDarkMode ? '#d1d5db' : '#374151',
+                            background: isDarkMode 
+                              ? 'rgba(55, 65, 81, 0.3)'
+                              : 'rgba(255, 255, 255, 0.5)',
+                            backdropFilter: 'blur(5px)',
+                            border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.5)',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            fontWeight: 500,
+                            textTransform: 'none',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              background: isDarkMode 
+                                ? 'rgba(75, 85, 99, 0.4)'
+                                : 'rgba(255, 255, 255, 0.8)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+                              borderColor: '#6366f1'
+                            }
+                          }}
+                        >
+                          {question}
+                        </Button>
+                      </motion.div>
+                    ))}
                   </Box>
-                </Box>
+                </motion.div>
               </Box>
             </Fade>
           ) : (
-            messages.map((message, index) => (
-              <MessageItem
-                key={message.id ? message.id : `temp-msg-${index}`}
-                message={message}
-                isLast={index === messages.length - 1}
-                isMobile={isMobile}
-              />
-            ))
+            messages.map((message, index) => {
+              const isLastMessage = index === messages.length - 1;
+              const isStreamingMessage = message.isLoading || message.role === 'assistant';
+              
+              return (
+                <motion.div
+                  key={message.id ? message.id : `temp-msg-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    delay: isLastMessage ? 0 : Math.min(index * 0.02, 0.2), // No delay for last message, minimal delay for others
+                    duration: isLastMessage || isStreamingMessage ? 0.15 : 0.3, // Faster animation for streaming messages
+                    ease: "easeOut"
+                  }}
+                >
+                  <MessageItem
+                    message={message}
+                    isLast={index === messages.length - 1}
+                    isMobile={isMobile}
+                  />
+                </motion.div>
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </Box>
 
+        {/* Error Alert */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              m: 2, 
-              mb: 0,
-              borderRadius: 2,
-              border: '1px solid rgba(211, 47, 47, 0.2)',
-              boxShadow: '0 4px 12px rgba(211, 47, 47, 0.1)',
-            }}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
           >
-            {error}
-          </Alert>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                m: 2, 
+                mb: 0,
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)',
+                border: '1px solid rgba(220, 38, 38, 0.3)',
+                backdropFilter: 'blur(10px)',
+                fontWeight: 500
+              }}
+            >
+              {error}
+            </Alert>
+          </motion.div>
         )}
 
+        {/* Enhanced Input Area */}
         <Box 
           component="form" 
           onSubmit={handleSubmit}
           sx={{
-            p: 2,
-            ...glassStyles,
+            p: 2.5,
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+            backdropFilter: 'blur(10px)',
+            borderTop: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
             display: 'flex',
             alignItems: 'center',
-            position: 'relative',
-            zIndex: 1,
+            gap: 1.5,
+            position: 'relative'
           }}
         >
           <TextField
@@ -569,59 +715,114 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
             placeholder="Type your message here..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={!sessionId || sending}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.9)' : 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(5px)',
-                fontSize: isMobile ? '0.875rem' : '1rem',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                },
-                '&.Mui-focused': {
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (input.trim() && sessionId && !sending) {
+                  handleSubmit(e);
                 }
               }
             }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!sessionId || sending || !input.trim()}
-                    sx={{
-                      bgcolor: theme.palette.primary?.main || '#1976d2',
-                      color: theme.palette.primary?.contrastText || 'white',
-                      borderRadius: '50%',
-                      minWidth: 'auto',
-                      width: 40,
-                      height: 40,
-                      p: 0,
-                      boxShadow: '0 4px 8px rgba(67, 97, 238, 0.3)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        bgcolor: theme.palette.primary?.dark || '#1565c0',
-                        boxShadow: '0 6px 12px rgba(67, 97, 238, 0.4)',
-                      },
-                      '&.Mui-disabled': {
-                        bgcolor: theme.palette.action?.disabledBackground || 'rgba(0, 0, 0, 0.12)',
-                        color: theme.palette.action?.disabled || 'rgba(0, 0, 0, 0.26)',
-                        boxShadow: 'none',
-                      }
-                    }}
-                  >
-                    {sending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
-                  </Button>
-                </InputAdornment>
-              ),
+            disabled={!sessionId || sending}
+            multiline
+            maxRows={4}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '20px',
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                backdropFilter: 'blur(10px)',
+                fontSize: isMobile ? '0.875rem' : '1rem',
+                transition: 'all 0.2s ease',
+                border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                '&:hover': {
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
+                  borderColor: '#6366f1'
+                },
+                '&.Mui-focused': {
+                  boxShadow: '0 8px 25px rgba(99, 102, 241, 0.2)',
+                  borderColor: '#6366f1'
+                }
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: 'none'
+              },
+              '& .MuiInputBase-input': {
+                color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                '&::placeholder': {
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
+                  opacity: 1
+                }
+              }
             }}
           />
+          
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={!sessionId || sending || !input.trim()}
+            sx={{
+              borderRadius: '16px',
+              minWidth: '56px',
+              height: '56px',
+              background: !sessionId || sending || !input.trim()
+                ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
+                : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              color: 'white',
+              boxShadow: !sessionId || sending || !input.trim()
+                ? 'none'
+                : '0 8px 25px rgba(59, 130, 246, 0.3)',
+              transition: 'all 0.2s ease',
+              position: 'relative',
+              overflow: 'hidden',
+              '&:hover': {
+                background: !sessionId || sending || !input.trim()
+                  ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
+                  : 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                transform: !sessionId || sending || !input.trim() ? 'none' : 'translateY(-2px)',
+                boxShadow: !sessionId || sending || !input.trim()
+                  ? 'none'
+                  : '0 12px 35px rgba(59, 130, 246, 0.4)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '-50%',
+                left: '-50%',
+                width: '200%',
+                height: '200%',
+                background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                transform: 'rotate(45deg)',
+                transition: 'all 0.6s ease',
+                opacity: 0
+              },
+              '&:hover::before': {
+                opacity: input.trim() && !sending ? 1 : 0,
+                transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+              }
+            }}
+          >
+            {sending ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              <SendIcon sx={{ fontSize: '1.25rem', zIndex: 1 }} />
+            )}
+          </Button>
         </Box>
       </Paper>
+
+      {/* Add custom animations */}
+      <style jsx>{`
+        @keyframes rotate {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </motion.div>
   );
 };

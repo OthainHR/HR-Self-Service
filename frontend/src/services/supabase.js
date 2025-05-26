@@ -27,6 +27,29 @@ try {
 // Export the supabase client for direct use
 export { supabase };
 
+export const recordDisclaimerAcknowledgement = async (userEmail) => {
+  if (!userEmail) {
+    console.error('User email is required to call handle_disclaimer_acknowledgement.');
+    return { error: { message: 'User email is required.' } };
+  }
+  try {
+    const { data, error } = await supabase
+      .rpc('handle_disclaimer_acknowledgement', { 
+        user_email_to_log: userEmail 
+      });
+
+    if (error) {
+      console.error('Error calling handle_disclaimer_acknowledgement RPC:', error);
+      throw error;
+    }
+    return { data, error: null };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Catch error in recordDisclaimerAcknowledgement (RPC):', errorMessage);
+    return { data: null, error: { message: errorMessage } };
+  }
+};
+
 // Get the current user ID, or generate a guest ID if not authenticated
 const getUserId = async () => {
   // First check if we have a user in local storage from our auth system

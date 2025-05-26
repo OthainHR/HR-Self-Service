@@ -1,49 +1,81 @@
 import React, { useState } from 'react';
 import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress, IconButton, Button } from '@mui/material';
-import { Person as PersonIcon, SmartToy as BotIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon } from '@mui/icons-material';
+import { Person as PersonIcon, SmartToy as BotIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon, AutoAwesome as AIIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import supabase from '../supabaseClient';
+import { supabase } from '../services/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // Message component for displaying chat messages
 function MessageItem({ message, isLast, isMobile }) {
   const theme = useTheme();
   const { isDarkMode } = useDarkMode();
+  const navigate = useNavigate();
 
-  // Define base glass properties for messages
-  const generalMessageGlassProps = {
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    borderRadius: '18px', // Keep existing message bubble shape
-    // General shadow, can be overridden per message type if needed
-    boxShadow: isDarkMode ? '0 3px 12px rgba(0,0,0,0.2)' : '0 3px 12px rgba(0,0,0,0.08)',
-  };
+  // Optimize animation timing for streaming messages
+  const isStreamingMessage = message.isLoading || (message.role === 'assistant' && isLast);
+  const animationDuration = isStreamingMessage ? 0.1 : 0.3; // Much faster for streaming
 
-  // Custom link renderer inside MessageItem to hide raw ticket URL when button is shown
-  const ticketUrl = 'https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1';
+  // Custom link renderer inside MessageItem to handle internal navigation only
+  const ticketUrl = '/tickets';
+  const handleTicketButtonClick = () => navigate('/tickets');
   const showTicketButton = !message.isLoading && (
     message.content.includes('Ticket type:') || message.content.includes('Create a ticket')
   );
+  
   const LinkRenderer = ({ href, children }) => {
-    if (href === ticketUrl) {
+    // Block all external Atlassian URLs completely
+    if (href && href.includes('atlassian.net')) {
+      return null; // Don't render any Atlassian links
+    }
+    
+    // Only handle internal ticket URLs
+    if (href === ticketUrl || href === '/tickets' || `${children}` === ticketUrl) {
       // Hide raw ticket link when the ticket button is rendered
       if (showTicketButton) {
         return null;
       }
-      // If the link text is exactly the URL, display 'Create A Ticket'
-      if (`${children}` === ticketUrl) {
-        return (
-          <a href={href} target="_blank" rel="noopener noreferrer">
-            Create A Ticket
-          </a>
-        );
-      }
+      // Render as internal navigation button instead of external link
+      return (
+        <button
+          onClick={handleTicketButtonClick}
+          style={{
+            color: '#3b82f6',
+            background: 'rgba(59, 130, 246, 0.1)',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '4px 8px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: 'inherit',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'rgba(59, 130, 246, 0.2)';
+            e.target.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'rgba(59, 130, 246, 0.1)';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          Create A Ticket
+        </button>
+      );
     }
+    
+    // For any other links, render as plain text to prevent external navigation
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer">
+      <span style={{
+        color: '#64748b',
+        fontWeight: 500,
+        padding: '1px 4px'
+      }}>
         {children}
-      </a>
+      </span>
     );
   };
   const isUser = message.role === 'user';
@@ -54,14 +86,6 @@ function MessageItem({ message, isLast, isMobile }) {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
-  
-  // Determine background colors for tails based on main bubble backgrounds
-  const userBubbleBg = isDarkMode ? 'rgba(80, 80, 80, 0.65)' : 'rgba(100, 100, 100, 0.65)';
-  const botLoadingBg = isDarkMode ? 'rgba(100, 100, 60, 0.6)' : 'rgba(255, 255, 224, 0.6)';
-  const botErrorBg = isDarkMode ? 'rgba(100, 60, 60, 0.6)' : 'rgba(255, 224, 224, 0.6)';
-  const botDefaultBg = isDarkMode ? 'rgba(55, 55, 55, 0.55)' : 'rgba(248, 248, 248, 0.55)';
-
-  const botBubbleBg = isLoading ? botLoadingBg : isError ? botErrorBg : botDefaultBg;
 
   const handleFeedback = async (feedbackType) => {
     if (!message.id || feedbackSubmitted || isSubmittingFeedback) {
@@ -77,13 +101,12 @@ function MessageItem({ message, isLast, isMobile }) {
         throw new Error(sessionError?.message || 'User not authenticated. Please log in.');
       }
 
-      const apiUrl = process.env.REACT_APP_BACKEND_URL || ''; // Use REACT_APP_BACKEND_URL
-      const response = await fetch(`${apiUrl}/api/v1/feedback`, { // Use the absolute API base URL
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const response = await fetch(`${apiUrl}/api/v1/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          // 'Apikey': process.env.REACT_APP_SUPABASE_ANON_KEY, // No longer needed for calling own backend
         },
         body: JSON.stringify({
           message_id: message.id,
@@ -114,407 +137,590 @@ function MessageItem({ message, isLast, isMobile }) {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: isUser ? 'flex-end' : 'flex-start',
-        mb: 2.5,
-        maxWidth: '100%',
-        position: 'relative',
-        '&::after': isUser ? {
-          content: '""',
-          position: 'absolute',
-          bottom: 0,
-          right: 45,
-          width: 16,
-          height: 16,
-          background: userBubbleBg,
-          borderBottomRightRadius: 16,
-          boxShadow: `2px 2px 2px rgba(0, 0, 0, 0.05)`,
-          zIndex: 0,
-        } : !isUser ? {
-          content: '""',
-          position: 'absolute',
-          bottom: 0,
-          left: 45,
-          width: 16,
-          height: 16,
-          background: botBubbleBg,
-          borderBottomLeftRadius: 16,
-          boxShadow: `-2px 2px 2px rgba(0, 0, 0, 0.03)`,
-          zIndex: 0,
-          border: 'none',
-          borderTop: 'none',
-          borderRight: 'none',
-        } : {}
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: animationDuration, ease: "easeOut" }}
     >
-      {!isUser && (
-        <Tooltip 
-          title={isLoading ? "Processing..." : 
-                 isError ? "Error occurred" : 
-                 "Othain ESS"}
-          TransitionComponent={Zoom}
-          arrow
-          placement="top-start"
-        >
-          <Avatar 
-            sx={{ 
-              bgcolor: isLoading ? 'warning.light' : 
-                      isError ? 'error.main' : 
-                      isDarkMode ? 'white' : 'black', 
-              mr: 1,
-              boxShadow: theme.shadows[2],
-              width: 38,
-              height: 38,
-              zIndex: 2,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                transform: 'scale(1.05)',
-                boxShadow: theme.shadows[3],
-              },
-              border: isDarkMode ? '2px solid rgba(30, 30, 30, 0.9)' : '2px solid white',
-              animation: isLoading ? 'pulse 1.5s infinite' : 'none',
-              '@keyframes pulse': {
-                '0%': { opacity: 1 },
-                '50%': { opacity: 0.6 },
-                '100%': { opacity: 1 },
-              },
-            }}
-          >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : <img 
-          src={isDarkMode ? '/OthainOcolor.png' : '/othainlogopreview.png' }
-          alt="Othain Logo"
-          height={isDarkMode ? "20" : "25"}
-          style={{ 
-            marginBottom: isDarkMode ? 0 : -2,
-            opacity: 0.8 
-          }}
-        />}
-          </Avatar>
-        </Tooltip>
-      )}
-      
-      <Paper
-        elevation={isUser ? 3 : 2}
+      <Box
         sx={{
-          ...generalMessageGlassProps,
-          p: 2,
-          px: 2.5,
-          maxWidth: { xs: '85%', md: '70%' },
-          borderRadius: '18px 18px 18px 18px',
-          background: isUser
-            ? userBubbleBg
-            : botBubbleBg,
-          color: isUser 
-            ? 'white'
-            : theme.palette.text.primary,
-          position: 'relative',
-          zIndex: 1,
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: 'translateZ(0)',
-          '&:hover': {
-            boxShadow: theme.shadows[isUser ? 4 : 3],
-            transform: 'translateY(-1px)',
-          },
-          border: '1px solid',
-          borderColor: isUser
-            ? (isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.3)')
-            : isLoading
-              ? (isDarkMode ? 'rgba(255, 193, 7, 0.4)' : 'rgba(255, 193, 7, 0.5)')
-              : isError
-                ? (isDarkMode ? 'rgba(211, 47, 47, 0.4)' : 'rgba(211, 47, 47, 0.5)')
-                : (isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(200, 200, 200, 0.4)'),
-          boxShadow: isUser
-            ? (isDarkMode ? '0 4px 15px rgba(0,0,0,0.25)' : '0 4px 15px rgba(0,0,0,0.1)')
-            : generalMessageGlassProps.boxShadow,
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom:0,
-            borderRadius: 'inherit',
-            backgroundImage: isUser
-              ? 'radial-gradient(circle at top right, rgba(255,255,255,0.07) 0%, transparent 65%)'
-              : isLoading || isError
-                ? 'none'
-                : isDarkMode
-                  ? 'radial-gradient(circle at top left, rgba(255,255,255,0.04) 0%, transparent 55%)'
-                  : 'radial-gradient(circle at top left, rgba(255,255,255,0.15) 0%, transparent 55%)',
-            zIndex: -1,
-            pointerEvents: 'none',
-          },
+          display: 'flex',
+          justifyContent: isUser ? 'flex-end' : 'flex-start',
+          mb: 2.5,
+          maxWidth: '100%',
+          position: 'relative'
         }}
       >
-        {isUser ? (
-          <Typography 
-            variant="body1" 
-            component="div" 
-            sx={{ 
-              whiteSpace: 'pre-wrap', 
-              wordBreak: 'break-word', 
-              color: isUser ? 'white' : theme.palette.text.primary,
-              fontSize: isMobile ? '0.875rem' : '1rem', 
-              lineHeight: isMobile ? '1.4' : '1.5', 
-              fontWeight: 400,
-              letterSpacing: '0.01em',
-            }}
+        {!isUser && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: isStreamingMessage ? 0.02 : 0.1, type: "spring", stiffness: 200 }}
           >
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]} 
-              components={{ a: LinkRenderer }}
+            <Tooltip 
+              title={isLoading ? "AI is thinking..." : 
+                     isError ? "Error occurred" : 
+                     "Othain ESS Assistant"}
+              TransitionComponent={Zoom}
+              arrow
+              placement="top-start"
             >
-              {message.content}
-            </ReactMarkdown>
-          </Typography>
-        ) : (
-          <Box sx={{ 
-            transition: theme.transitions.create(['opacity', 'color'], {
-              duration: theme.transitions.duration.short,
-            }),
-            opacity: message.isLoading ? 0.5 : 1,
-            color: message.isLoading ? 'transparent' : theme.palette.text.primary,
-            '& p': { 
-              m: 0, 
-              mb: 1.5,
-              lineHeight: 1.6,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              '&:last-child': {
-                mb: 0
-              }
-            },
-            '& a': { 
-              color: 'rgba(17, 179, 207, 0.8)',
-              textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              position: 'relative',
-              '&:hover': {
-                textDecoration: 'none',
-                '&::after': {
-                  width: '100%',
-                }
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                fontSize: isMobile ? '0.875rem' : '1rem',
-                bottom: 0,
-                left: 0,
-                width: 0,
-                height: '1px',
-                backgroundColor: 'rgba(17, 179, 207, 0.8)',
-                transition: 'width 0.3s ease',
-              }
-            },
-            '& ul, & ol': {
-              pl: 2.5,
-              mb: 1.5,
-              fontSize: isMobile ? '0.875rem' : '1rem'
-            },
-            '& li': {
-              mb: 0.5,
-              fontSize: isMobile ? '0.875rem' : '1rem'
-            },
-            '& code': {
-              backgroundColor: isDarkMode 
-                ? 'rgba(70, 70, 70, 0.4)' 
-                : 'rgba(0, 0, 0, 0.04)',
-              padding: '2px 4px',
-              borderRadius: '4px',
-              fontFamily: 'monospace',
-              fontSize: isMobile ? '0.875rem' : '1rem',
-            }
-          }}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{ a: LinkRenderer }}
-            >{message.content === 'Thinking...' && message.isLoading ? ' ' :
-              message.content
-            }</ReactMarkdown>
-            {/* Ticket Link Button for better UX */}
-            {!message.isLoading && (message.content.includes('Ticket type:') || message.content.includes('Create a ticket')) && (
-              <Box sx={{ mt: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ 
-                    marginBottom: 2,
-                    borderRadius: '30px',
-                    backgroundColor: 'rgba(17, 179, 207, 0.8)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(17, 179, 207, 1)', 
-                    }
-                  }}
-                  onClick={() => window.open('https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1', '_blank')}
-                >
-                  Create A Ticket
-                </Button>
-              </Box>
-            )}
-          </Box>
+              <Avatar 
+                sx={{ 
+                  background: isLoading 
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                    : isError 
+                      ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  mr: 2,
+                  width: 40,
+                  height: 40,
+                  boxShadow: isLoading 
+                    ? '0 8px 25px rgba(245, 158, 11, 0.3)'
+                    : isError 
+                      ? '0 8px 25px rgba(220, 38, 38, 0.3)'
+                      : '0 8px 25px rgba(59, 130, 246, 0.3)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: isLoading 
+                      ? '0 12px 35px rgba(245, 158, 11, 0.4)'
+                      : isError 
+                        ? '0 12px 35px rgba(220, 38, 38, 0.4)'
+                        : '0 12px 35px rgba(59, 130, 246, 0.4)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    animation: isLoading ? 'shimmer 2s ease-in-out infinite' : 'none'
+                  }
+                }}
+              >
+                {isLoading ? (
+                  <CircularProgress size={20} sx={{ color: 'white' }} />
+                ) : (
+                  <AIIcon sx={{ fontSize: '1.25rem', color: 'white', zIndex: 1 }} />
+                )}
+              </Avatar>
+            </Tooltip>
+          </motion.div>
         )}
         
-        {!isUser && !isLoading && !isError && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: 0.5, minHeight: '24px' }}>
-            {feedbackError && (
-              <Typography variant="caption" color="error" sx={{ mr: 1 }}>
-                {feedbackError}
-              </Typography>
-            )}
-            {!feedbackSubmitted ? (
-              <>
-                <Tooltip title="Helpful">
-                  <span>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleFeedback('thumbs_up')} 
-                      disabled={isSubmittingFeedback || !!feedbackSubmitted}
-                      sx={{ 
-                        color: isSubmittingFeedback && !feedbackError ? theme.palette.text.disabled : theme.palette.text.secondary, 
-                        '&:hover': { color: !(isSubmittingFeedback || !!feedbackSubmitted) ? theme.palette.success.main : undefined }
-                      }}
-                    >
-                      {isSubmittingFeedback ? <CircularProgress size={16} color="inherit" /> : <ThumbUpIcon fontSize="inherit" />}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Tooltip title="Not Helpful">
-                  <span>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleFeedback('thumbs_down')} 
-                      disabled={isSubmittingFeedback || !!feedbackSubmitted}
-                      sx={{ 
-                        color: isSubmittingFeedback && !feedbackError ? theme.palette.text.disabled : theme.palette.text.secondary, 
-                        '&:hover': { color: !(isSubmittingFeedback || !!feedbackSubmitted) ? theme.palette.error.main : undefined }
-                      }}
-                    >
-                      {isSubmittingFeedback ? <CircularProgress size={16} color="inherit" /> : <ThumbDownIcon fontSize="inherit" />}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', color: theme.palette.success.main }}>
-                <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />
-                <Typography variant="caption">Thanks for your feedback!</Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            mt: 1,
-            pt: 0.5,
-            borderTop: `1px solid ${isUser 
-              ? 'rgba(255, 255, 255, 0.15)' 
-              : isLoading
-                ? isDarkMode ? 'rgba(255, 193, 7, 0.12)' : 'rgba(255, 193, 7, 0.15)'
-                : isError
-                  ? isDarkMode ? 'rgba(211, 47, 47, 0.12)' : 'rgba(211, 47, 47, 0.15)' 
-                  : isDarkMode ? 'rgba(70, 70, 70, 0.4)' : theme.palette.divider}`,
-          }}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: isStreamingMessage ? 0.05 : 0.15, duration: animationDuration }}
+          style={{ maxWidth: isMobile ? '85%' : '70%' }}
         >
-          <Typography
-            variant="caption"
+          <Paper
+            elevation={0}
             sx={{
-              color: isUser ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary',
-              fontSize: '0.7rem',
-              fontWeight: 500,
-            }}
-          >
-            {message.created_at && !isNaN(new Date(message.created_at).getTime()) 
-              ? new Date(message.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : '--:--'
-            }
-          </Typography>
-          
-          {isLoading && !isUser && (
-            <Box 
-              component="span" 
-              sx={{ 
-                ml: 0.75, 
-                bgcolor: isDarkMode ? 'rgba(255, 193, 7, 0.1)' : 'rgba(255, 193, 7, 0.15)', 
-                color: 'warning.main',
-                px: 0.75,
-                py: 0.25,
-                borderRadius: '10px',
-                fontSize: '0.65rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.4,
-                fontWeight: 500,
-                border: isDarkMode ? '1px solid rgba(255, 193, 7, 0.15)' : '1px solid rgba(255, 193, 7, 0.2)',
-              }}
-            >
-              <CircularProgress size={10} color="inherit" sx={{ animationDuration: '1s' }} />
-              Thinking...
-            </Box>
-          )}
-          
-          {isError && !isUser && (
-            <Box 
-              component="span" 
-              sx={{ 
-                ml: 0.75, 
-                bgcolor: isDarkMode ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.15)', 
-                color: 'error.main',
-                px: 0.75,
-                py: 0.25,
-                borderRadius: '10px',
-                fontSize: '0.5rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.4,
-                fontWeight: 500,
-                border: isDarkMode ? '1px solid rgba(211, 47, 47, 0.15)' : '1px solid rgba(211, 47, 47, 0.2)',
-              }}
-            >
-              error
-            </Box>
-          )}
-        </Box>
-      </Paper>
-      
-      {isUser && (
-        <Tooltip 
-          title="You" 
-          placement="top-end"
-          TransitionComponent={Zoom}
-          arrow
-        >
-          <Avatar 
-            sx={{ 
-              bgcolor: 'rgba(255, 255, 255, 0.1)', 
-              ml: 1,
-              boxShadow: theme.shadows[2],
-              width: 38,
-              height: 38,
-              zIndex: 2,
-              transition: 'all 0.2s ease',
+              p: 2.5,
+              borderRadius: '20px',
+              background: isUser
+                ? isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%)'
+                  : 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%)'
+                : isLoading
+                  ? isDarkMode
+                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)'
+                  : isError
+                    ? isDarkMode
+                      ? 'linear-gradient(135deg, rgba(127, 29, 29, 0.8) 0%, rgba(153, 27, 27, 0.8) 100%)'
+                      : 'linear-gradient(135deg, rgba(254, 242, 242, 0.9) 0%, rgba(254, 226, 226, 0.9) 100%)'
+                    : isDarkMode
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+              backdropFilter: 'blur(20px)',
+              border: isUser
+                ? '1px solid rgba(255, 255, 255, 0.2)'
+                : isLoading
+                  ? isDarkMode ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'
+                  : isError
+                    ? '1px solid rgba(220, 38, 38, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+              boxShadow: isUser
+                ? '0 15px 35px rgba(59, 130, 246, 0.2)'
+                : isLoading
+                  ? '0 10px 30px rgba(245, 158, 11, 0.15)'
+                  : isError
+                    ? '0 10px 30px rgba(220, 38, 38, 0.15)'
+                    : '0 10px 30px rgba(0, 0, 0, 0.08)',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                transform: 'scale(1.05)',
-                boxShadow: theme.shadows[3],
+                transform: 'translateY(-2px)',
+                boxShadow: isUser
+                  ? '0 20px 45px rgba(59, 130, 246, 0.25)'
+                  : isLoading
+                    ? '0 15px 40px rgba(245, 158, 11, 0.2)'
+                    : isError
+                      ? '0 15px 40px rgba(220, 38, 38, 0.2)'
+                      : '0 15px 40px rgba(0, 0, 0, 0.12)',
               },
-              border: isDarkMode ? '2px solid rgba(30, 30, 30, 0.9)' : '2px solid white',
+              // Sophisticated shine effect
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: 'inherit',
+                background: isUser
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%)'
+                  : isDarkMode
+                    ? 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%)'
+                    : 'linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 50%)',
+                zIndex: 0,
+                pointerEvents: 'none',
+              }
             }}
           >
-            <PersonIcon fontSize="small" sx={{ color: isDarkMode ? 'white' : 'black' }} />
-          </Avatar>
-        </Tooltip>
-      )}
-    </Box>
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              {isUser ? (
+                <Typography 
+                  variant="body1" 
+                  component="div" 
+                  sx={{ 
+                    whiteSpace: 'pre-wrap', 
+                    wordBreak: 'break-word', 
+                    color: 'white',
+                    fontSize: isMobile ? '0.8rem' : '0.875rem', 
+                    lineHeight: 1.6, 
+                    fontWeight: 500,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]} 
+                    components={{ a: LinkRenderer }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </Typography>
+              ) : (
+                <Box sx={{ 
+                  transition: theme.transitions.create(['opacity'], {
+                    duration: theme.transitions.duration.short,
+                  }),
+                  opacity: message.isLoading ? 0.7 : 1,
+                  '& p': { 
+                    m: 0, 
+                    mb: 1.25,
+                    lineHeight: 1.6,
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    fontWeight: 400,
+                    '&:last-child': {
+                      mb: 0
+                    }
+                  },
+                  '& a': { 
+                    color: '#3b82f6',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
+                    borderRadius: '6px',
+                    padding: '2px 6px',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      transform: 'translateY(-1px)'
+                    }
+                  },
+                  '& ul, & ol': {
+                    pl: 2.5,
+                    mb: 1.25,
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
+                    color: isDarkMode ? '#e2e8f0' : '#374151'
+                  },
+                  '& li': {
+                    mb: 0.5,
+                    fontSize: isMobile ? '0.8rem' : '0.875rem'
+                  },
+                  '& code': {
+                    background: isDarkMode 
+                      ? 'rgba(75, 85, 99, 0.5)' 
+                      : 'rgba(241, 245, 249, 0.8)',
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    fontFamily: 'JetBrains Mono, Monaco, Consolas, monospace',
+                    fontSize: isMobile ? '0.75rem' : '0.8rem',
+                    fontWeight: 500,
+                    border: isDarkMode ? '1px solid rgba(107, 114, 128, 0.3)' : '1px solid rgba(203, 213, 225, 0.5)'
+                  },
+                  '& blockquote': {
+                    borderLeft: '4px solid #3b82f6',
+                    pl: 2,
+                    ml: 0,
+                    my: 1.25,
+                    fontStyle: 'italic',
+                    background: isDarkMode 
+                      ? 'rgba(59, 130, 246, 0.05)'
+                      : 'rgba(59, 130, 246, 0.03)',
+                    borderRadius: '0 8px 8px 0',
+                    py: 1
+                  }
+                }}>
+                  <AnimatePresence mode="wait">
+                    {isLoading && message.content === 'Thinking...' ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: isDarkMode ? '#94a3b8' : '#64748b',
+                          fontStyle: 'italic'
+                        }}
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <AIIcon sx={{ fontSize: '1rem' }} />
+                        </motion.div>
+                        AI is thinking...
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{ a: LinkRenderer }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Enhanced Ticket Button */}
+                  {!message.isLoading && (message.content.includes('Ticket type:') || message.content.includes('Create a ticket')) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: isStreamingMessage ? 0.2 : 0.4, duration: 0.3 }}
+                    >
+                      <Box sx={{ mt: 2.5 }}>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          sx={{ 
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                            color: 'white',
+                            borderRadius: '16px',
+                            px: 3,
+                            py: 1.5,
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)'
+                            },
+                            '&::before': {
+                              content: '""',
+                              position: 'absolute',
+                              top: '-50%',
+                              left: '-50%',
+                              width: '200%',
+                              height: '200%',
+                              background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                              transform: 'rotate(45deg)',
+                              transition: 'all 0.6s ease',
+                              opacity: 0
+                            },
+                            '&:hover::before': {
+                              opacity: 1,
+                              transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                            }
+                          }}
+                          onClick={handleTicketButtonClick}
+                        >
+                          Create A Ticket
+                        </Button>
+                      </Box>
+                    </motion.div>
+                  )}
+                </Box>
+              )}
+              
+              {/* Enhanced Feedback Section */}
+              {!isUser && !isLoading && !isError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: isStreamingMessage ? 0.2 : 0.4, duration: 0.3 }}
+                >
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'flex-start', 
+                    alignItems: 'center', 
+                    mt: 2, 
+                    pt: 1.5,
+                    borderTop: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)'}`,
+                    minHeight: '32px' 
+                  }}>
+                    {feedbackError && (
+                      <Typography variant="caption" sx={{ 
+                        mr: 2,
+                        color: '#ef4444',
+                        fontWeight: 500,
+                        fontSize: '0.75rem'
+                      }}>
+                        {feedbackError}
+                      </Typography>
+                    )}
+                    {!feedbackSubmitted ? (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="This was helpful" arrow>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleFeedback('thumbs_up')} 
+                            disabled={isSubmittingFeedback || !!feedbackSubmitted}
+                            sx={{ 
+                              color: isDarkMode ? '#94a3b8' : '#64748b',
+                              borderRadius: '12px',
+                              padding: '6px',
+                              transition: 'all 0.2s ease',
+                              '&:hover': { 
+                                color: '#10b981',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                transform: 'scale(1.1)'
+                              },
+                              '&:disabled': {
+                                color: isDarkMode ? '#6b7280' : '#9ca3af'
+                              }
+                            }}
+                          >
+                            {isSubmittingFeedback ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <ThumbUpIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="This wasn't helpful" arrow>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleFeedback('thumbs_down')} 
+                            disabled={isSubmittingFeedback || !!feedbackSubmitted}
+                            sx={{ 
+                              color: isDarkMode ? '#94a3b8' : '#64748b',
+                              borderRadius: '12px',
+                              padding: '6px',
+                              transition: 'all 0.2s ease',
+                              '&:hover': { 
+                                color: '#ef4444',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                transform: 'scale(1.1)'
+                              },
+                              '&:disabled': {
+                                color: isDarkMode ? '#6b7280' : '#9ca3af'
+                              }
+                            }}
+                          >
+                            {isSubmittingFeedback ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <ThumbDownIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ) : (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                      >
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '12px',
+                          px: 2,
+                          py: 1,
+                          color: '#10b981'
+                        }}>
+                          <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+                            Thanks for your feedback!
+                          </Typography>
+                        </Box>
+                      </motion.div>
+                    )}
+                  </Box>
+                </motion.div>
+              )}
+
+              {/* Enhanced Timestamp */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  mt: 1.5,
+                  pt: 1,
+                  borderTop: `1px solid ${isUser 
+                    ? 'rgba(255, 255, 255, 0.2)' 
+                    : isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)'}`,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isUser 
+                      ? 'rgba(255, 255, 255, 0.8)' 
+                      : isDarkMode ? '#94a3b8' : '#64748b',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  {message.created_at && !isNaN(new Date(message.created_at).getTime()) 
+                    ? new Date(message.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '--:--'
+                  }
+                </Typography>
+                
+                {/* Enhanced Loading Indicator */}
+                {isLoading && !isUser && (
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      ml: 1.5,
+                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.15) 100%)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      color: '#f59e0b',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: '12px',
+                      fontSize: '0.7rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      fontWeight: 600,
+                      backdropFilter: 'blur(10px)'
+                    }}
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <CircularProgress size={12} color="inherit" />
+                    </motion.div>
+                    Thinking...
+                  </Box>
+                )}
+                
+                {/* Enhanced Error Indicator */}
+                {isError && !isUser && (
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      ml: 1.5,
+                      background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(239, 68, 68, 0.15) 100%)',
+                      border: '1px solid rgba(220, 38, 38, 0.3)',
+                      color: '#dc2626',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: '12px',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      backdropFilter: 'blur(10px)'
+                    }}
+                  >
+                    Error
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Paper>
+        </motion.div>
+        
+        {isUser && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+          >
+            <Tooltip 
+              title="You" 
+              placement="top-end"
+              TransitionComponent={Zoom}
+              arrow
+            >
+              <Avatar 
+                sx={{ 
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  ml: 2,
+                  width: 40,
+                  height: 40,
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 12px 35px rgba(0, 0, 0, 0.15)'
+                  }
+                }}
+              >
+                <PersonIcon 
+                  fontSize="small" 
+                  sx={{ 
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    fontSize: '1.25rem'
+                  }} 
+                />
+              </Avatar>
+            </Tooltip>
+          </motion.div>
+        )}
+      </Box>
+
+      {/* Add custom animations */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+          }
+          50% {
+            transform: translateX(0%) translateY(0%) rotate(45deg);
+          }
+          100% {
+            transform: translateX(100%) translateY(100%) rotate(45deg);
+          }
+        }
+      `}</style>
+    </motion.div>
   );
 }
 

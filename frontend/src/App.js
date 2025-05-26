@@ -27,6 +27,8 @@ const Chat = lazy(() => import('./pages/Chat'));
 const Knowledge = lazy(() => import('./pages/Knowledge'));
 const Register = lazy(() => import('./pages/Register')); 
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const Ticketing = lazy(() => import('./pages/Ticketing'));
+const TicketDetailPage = lazy(() => import('./features/ticketing/pages/TicketDetailPage'));
 
 // --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
@@ -168,13 +170,11 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     // You can also log the error to an error reporting service
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       // You can render any custom fallback UI
-      console.error("ErrorBoundary rendering fallback UI due to error:", this.state.error);
       return <h1>Something went wrong rendering this section. Error: {this.state.error?.message || 'Unknown error'}</h1>;
     }
 
@@ -210,32 +210,24 @@ const AdminRoute = ({ children }) => {
 
 
   // ---- Add AdminRoute Debug Log ----
-  console.log(`--- AdminRoute Render #${renderCount} ---`); // Log render count
-  console.log(`AdminRoute #${renderCount}: isLoading=${isLoading}`);
-  // Log only email for brevity, handle null case
-  console.log(`AdminRoute #${renderCount}: user email=`, user ? user.email : user);
+  
   // ---- End AdminRoute Debug Log ----
 
   if (isLoading) {
-    console.log(`AdminRoute #${renderCount}: Rendering Loading Indicator...`);
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
   const isAuthenticated = !!user;
   const isAdmin = user?.email === 'admin@example.com';
-  console.log(`AdminRoute #${renderCount}: Post-loading check -> isAuthenticated=${isAuthenticated}, isAdmin=${isAdmin}`);
 
   if (!isAuthenticated) {
-    console.log(`AdminRoute #${renderCount}: Not authenticated, redirecting to login.`);
     return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin) {
-    console.warn(`AdminRoute #${renderCount}: User is not an admin. Redirecting to chat.`, user?.email);
     return <Navigate to="/chat" replace />;
   }
 
-  console.log(`AdminRoute #${renderCount}: Checks passed. Preparing to render children.`); // Modified log
   // Wrap children in Error Boundary
   return (
     <ErrorBoundary>
@@ -277,7 +269,9 @@ const AppContent = () => {
                 <Route path="/chat/:chatId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/knowledge" element={<ProtectedRoute><Knowledge /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-                <Route path="/admin-report" element={<AdminRoute><AdminReport /></AdminRoute>} />
+                <Route path="/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
+                <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
+                <Route path="/ticket/:ticketId" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
 
                 {/* Fallback route - redirect to home or login based on auth */}
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />

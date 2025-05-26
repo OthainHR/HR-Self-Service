@@ -24,7 +24,8 @@ import {
   Chat, 
   Book, 
   Logout, 
-  Home
+  Home,
+  ConfirmationNumber
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -97,10 +98,10 @@ const NavBar = () => {
   const drawerContent = () => (
     <Box
       sx={{ 
-        width: 250,
+        width: '100%',
         height: '100%',
-        background: isDarkMode ? 'rgba(34, 34, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(10px)',
+        position: 'relative',
+        zIndex: 1
       }}
       role="presentation"
       onClick={toggleDrawer(false)}
@@ -109,12 +110,38 @@ const NavBar = () => {
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center', 
+        alignItems: 'center',
         p: 2,
-        background: isDarkMode ? 'rgba(73, 73, 73, 0.85)' : 'rgba(17, 179, 207, 0.85)',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+          : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
         backdropFilter: 'blur(10px)',
-        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-50%',
+          left: '-30%',
+          width: '120px',
+          height: '120px',
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          borderRadius: '50%',
+          opacity: 0.08,
+          filter: 'blur(30px)'
+        }
       }}>
-        <img src="/othainwhite.png" alt="Othain Logo" height={30} style={{ filter: 'brightness(0) invert(1)' }} />
+        <img 
+          src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
+          alt="Othain Logo" 
+          height={28} 
+          style={{ 
+            filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
+            zIndex: 1,
+            position: 'relative'
+          }} 
+        />
       </Box>
       <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.08)' }} />
       <List>
@@ -170,12 +197,35 @@ const NavBar = () => {
           </ListItem>
         )}
         
+        {isAuthenticated && (
+          <ListItem 
+            component={RouterLink} 
+            to="/tickets"
+            sx={{ 
+              my: 0.5, 
+              borderRadius: 1,
+              mx: 1,
+              backgroundColor: isActive('/tickets') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+              '&:hover': {
+                background: 'rgba(67, 218, 238, 0.1)',
+              }
+            }}
+          >
+            <ListItemIcon><ConfirmationNumber sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemText 
+              primary="Ticketing" 
+              primaryTypographyProps={{ 
+                fontWeight: isActive('/tickets') ? 700 : 500,
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+              }}
+            />
+          </ListItem>
+        )}
+        
         {isAuthenticated && isAdmin && (
           <ListItem 
             component={RouterLink} 
-            to="/knowledge" 
-            button
-            selected={isActive('/knowledge')}
+            to="/knowledge"
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
@@ -200,14 +250,12 @@ const NavBar = () => {
         {isAdmin && (
           <ListItem 
             component={RouterLink} 
-            to="/admin/report" 
-            button
-            selected={isActive('/admin/report')}
+            to="/report"
             sx={{ 
               my: 0.5, 
               borderRadius: 1,
               mx: 1,
-              backgroundColor: isActive('/admin/report') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+              backgroundColor: isActive('/report') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
               '&:hover': {
                 background: 'rgba(67, 218, 238, 0.1)',
               }
@@ -217,7 +265,7 @@ const NavBar = () => {
             <ListItemText 
               primary="Weekly Report" 
               primaryTypographyProps={{ 
-                fontWeight: isActive('/admin/report') ? 700 : 500,
+                fontWeight: isActive('/report') ? 700 : 500,
                 color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
@@ -304,11 +352,29 @@ const NavBar = () => {
     <AppBar 
       position="sticky" 
       sx={{
-        background: 'rgba(18, 18, 18, 0.9)',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        zIndex: 10
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'
+          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+        borderTop: 'none',
+        zIndex: 1300,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-50%',
+          right: '-10%',
+          width: '200px',
+          height: '200px',
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          borderRadius: '50%',
+          opacity: 0.03,
+          filter: 'blur(40px)',
+          zIndex: -1
+        }
       }}
     >
       <Toolbar>
@@ -319,14 +385,28 @@ const NavBar = () => {
             color="inherit"
             aria-label="menu"
             sx={{ 
-              mr: 2,
+              mr: 1.5,
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+                : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+              borderRadius: '10px',
+              color: isDarkMode ? '#f1f5f9' : '#1e293b',
+              width: '36px',
+              height: '36px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                background: 'rgba(255, 255, 255, 0.15)'
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.9) 0%, rgba(107, 114, 128, 0.9) 100%)'
+                  : 'linear-gradient(135deg, rgba(241, 245, 249, 0.9) 0%, rgba(226, 232, 240, 0.9) 100%)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
               }
             }}
             onClick={toggleDrawer(true)}
           >
-            <MenuIcon />
+            <MenuIcon sx={{ fontSize: '1.25rem' }} />
           </IconButton>
         )}
         
@@ -336,22 +416,36 @@ const NavBar = () => {
           alignItems: 'center', 
           mr: 2, 
           flexShrink: 0,
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+            : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          padding: '6px 10px',
+          border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+          cursor: 'pointer',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            opacity: 0.9,
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
           }
         }}>
           <Box
             component="img"
             onClick={() => navigate('/')}
-            src="/logowhite.png" 
+            src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
             alt="Othain Logo" 
             sx={{
-              height: { xs: '20px', sm: '30px' }, 
-              filter: 'brightness(0) invert(1)', 
-              marginRight: '8px',
-              marginBottom: '10px',
-              marginTop: { xs: '9px', sm: '0' },
-              transition: 'transform 0.2s ease'
+              height: { xs: '16px', sm: '24px' }, 
+              filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
+              marginRight: '2px',
+              transition: 'transform 0.2s ease',
+              '&:hover': {
+                transform: 'scale(1.05)'
+              }
             }} 
           />
         </Box>
@@ -363,11 +457,17 @@ const NavBar = () => {
           sx={{ 
             flexGrow: 1,
             fontFamily: '"Lexend", sans-serif',
-            fontWeight: 500,
-            textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-            marginLeft: '-10px',
-            marginTop: { xs: '10px', sm: '0' },
-            fontSize: { xs: '0.6rem', sm: '1.25rem' }
+            fontWeight: 700,
+            fontSize: { xs: '0.75rem', sm: '1rem' },
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
+              : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: 'none',
+            marginLeft: '0.5rem',
+            letterSpacing: '0.025em'
           }}
         >
           Employee Self Service
@@ -383,31 +483,52 @@ const NavBar = () => {
               sx={{ 
                 px: 2,
                 py: 1,
-                borderRadius: 2,
-                fontSize: '0.875rem',
-                fontWeight: isActive('/') ? 700 : 500,
-                backgroundColor: isActive('/') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                background: isActive('/') 
+                  ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                  : isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                color: isActive('/') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                backdropFilter: 'blur(10px)',
+                border: isActive('/') 
+                  ? '1px solid rgba(59, 130, 246, 0.3)'
+                  : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                boxShadow: isActive('/') ? '0 8px 25px rgba(59, 130, 246, 0.3)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
                 overflow: 'hidden',
                 '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                  background: isActive('/') 
+                    ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                      : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: isActive('/') 
+                    ? '0 12px 35px rgba(59, 130, 246, 0.4)'
+                    : '0 8px 25px rgba(0, 0, 0, 0.1)'
                 },
                 '&::before': {
                   content: '""',
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
-                  opacity: 0,
-                  transition: 'opacity 0.3s ease',
+                  top: '-50%',
+                  left: '-50%',
+                  width: '200%',
+                  height: '200%',
+                  background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'rotate(45deg)',
+                  transition: 'all 0.6s ease',
+                  opacity: 0
                 },
                 '&:hover::before': {
-                  opacity: 1
+                  opacity: 1,
+                  transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                 }
               }}
+              startIcon={<Home />}
             >
               Home
             </Button>
@@ -420,33 +541,113 @@ const NavBar = () => {
                 sx={{ 
                   px: 2,
                   py: 1,
-                  borderRadius: 2,
-                  fontSize: '0.875rem',
-                  fontWeight: isActive('/chat') ? 700 : 500,
-                  backgroundColor: isActive('/chat') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/chat') 
+                    ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/chat') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                  backdropFilter: 'blur(10px)',
+                  border: isActive('/chat') 
+                    ? '1px solid rgba(5, 150, 105, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/chat') ? '0 8px 25px rgba(5, 150, 105, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                    background: isActive('/chat') 
+                      ? 'linear-gradient(135deg, #047857 0%, #059669 100%)'
+                      : isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/chat') 
+                      ? '0 12px 35px rgba(5, 150, 105, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
                   },
                   '&::before': {
                     content: '""',
                     position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
-                    opacity: 0,
-                    transition: 'opacity 0.3s ease',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
                   },
                   '&:hover::before': {
-                    opacity: 1
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                   }
                 }}
+                startIcon={<Chat />}
               >
                 Chat
+              </Button>
+            )}
+            
+            {isAuthenticated && (
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/tickets"
+                sx={{ 
+                  px: 2,
+                  py: 1,
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/tickets') 
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/tickets') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                  backdropFilter: 'blur(10px)',
+                  border: isActive('/tickets') 
+                    ? '1px solid rgba(245, 158, 11, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/tickets') ? '0 8px 25px rgba(245, 158, 11, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    background: isActive('/tickets') 
+                      ? 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)'
+                      : isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/tickets') 
+                      ? '0 12px 35px rgba(245, 158, 11, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
+                  },
+                  '&:hover::before': {
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                  }
+                }}
+                startIcon={<ConfirmationNumber />}
+              >
+                Tickets
               </Button>
             )}
             
@@ -458,31 +659,52 @@ const NavBar = () => {
                 sx={{ 
                   px: 2,
                   py: 1,
-                  borderRadius: 2,
-                  fontSize: '0.875rem',
-                  fontWeight: isActive('/knowledge') ? 700 : 500,
-                  backgroundColor: isActive('/knowledge') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/knowledge') 
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/knowledge') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                  backdropFilter: 'blur(10px)',
+                  border: isActive('/knowledge') 
+                    ? '1px solid rgba(139, 92, 246, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/knowledge') ? '0 8px 25px rgba(139, 92, 246, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                    background: isActive('/knowledge') 
+                      ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
+                      : isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/knowledge') 
+                      ? '0 12px 35px rgba(139, 92, 246, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
                   },
                   '&::before': {
                     content: '""',
                     position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
-                    opacity: 0,
-                    transition: 'opacity 0.3s ease',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
                   },
                   '&:hover::before': {
-                    opacity: 1
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                   }
                 }}
+                startIcon={<Book />}
               >
                 Knowledge Base
               </Button>
@@ -492,35 +714,56 @@ const NavBar = () => {
               <Button 
                 color="inherit" 
                 component={RouterLink} 
-                to="/admin/report"
+                to="/report"
                 sx={{ 
                   px: 2,
                   py: 1,
-                  borderRadius: 2,
-                  fontSize: '0.875rem',
-                  fontWeight: isActive('/admin/report') ? 700 : 500,
-                  backgroundColor: isActive('/admin/report') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/report') 
+                    ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/report') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                  backdropFilter: 'blur(10px)',
+                  border: isActive('/report') 
+                    ? '1px solid rgba(220, 38, 38, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/report') ? '0 8px 25px rgba(220, 38, 38, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                    background: isActive('/report') 
+                      ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
+                      : isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/report') 
+                      ? '0 12px 35px rgba(220, 38, 38, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
                   },
                   '&::before': {
                     content: '""',
                     position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
-                    opacity: 0,
-                    transition: 'opacity 0.3s ease',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
                   },
                   '&:hover::before': {
-                    opacity: 1
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                   }
                 }}
+                startIcon={<Book />}
               >
                 Weekly Report
               </Button>
@@ -546,16 +789,44 @@ const NavBar = () => {
               color="inherit"
               sx={{
                 ml: 1,
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(5px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+                  : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
+                backdropFilter: 'blur(10px)',
+                border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                borderRadius: '10px',
+                color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                width: '36px',
+                height: '36px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
                 '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.9) 0%, rgba(107, 114, 128, 0.9) 100%)'
+                    : 'linear-gradient(135deg, rgba(241, 245, 249, 0.9) 0%, rgba(226, 232, 240, 0.9) 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: '-50%',
+                  left: '-50%',
+                  width: '200%',
+                  height: '200%',
+                  background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'rotate(45deg)',
+                  transition: 'all 0.6s ease',
+                  opacity: 0
+                },
+                '&:hover::before': {
+                  opacity: 1,
+                  transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                 }
               }}
             >
-              <AccountCircle />
+              <AccountCircle sx={{ fontSize: '1.25rem', zIndex: 1 }} />
             </IconButton>
             <Menu
               id="menu-appbar"
@@ -573,21 +844,49 @@ const NavBar = () => {
               onClose={handleClose}
               sx={{
                 '& .MuiPaper-root': {
-                  borderRadius: 2,
-                  background: 'rgba(255, 255, 255, 0.85)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.6)',
-                  mt: 1
+                  borderRadius: '16px',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+                  border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                  mt: 1,
+                  minWidth: '200px',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    right: '-30%',
+                    width: '150px',
+                    height: '150px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    borderRadius: '50%',
+                    opacity: 0.05,
+                    filter: 'blur(40px)'
+                  }
                 }
               }}
             >
               <MenuItem 
                 disabled
                 sx={{
-                  opacity: 0.7,
-                  fontWeight: 500,
-                  color: isDarkMode ? 'rgba(7, 7, 7, 0.8)' : 'rgba(0, 0, 0, 0.8)'
+                  opacity: 1,
+                  fontWeight: 600,
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.3) 0%, rgba(75, 85, 99, 0.3) 100%)'
+                    : 'linear-gradient(135deg, rgba(241, 245, 249, 0.3) 0%, rgba(226, 232, 240, 0.3) 100%)',
+                  borderRadius: '12px',
+                  margin: '8px',
+                  padding: '12px 16px',
+                  zIndex: 1,
+                  position: 'relative',
+                  fontSize: '0.875rem',
+                  '&.Mui-disabled': {
+                    opacity: 1
+                  }
                 }}
               >
                 {user?.email || 'User'}
@@ -595,9 +894,21 @@ const NavBar = () => {
               <MenuItem 
                 onClick={handleLogout}
                 sx={{
-                  color: isDarkMode ? theme.palette.grey[500] : theme.palette.grey[500],
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                  background: 'transparent',
+                  borderRadius: '12px',
+                  margin: '8px',
+                  padding: '12px 16px',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  zIndex: 1,
+                  position: 'relative',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    background: 'rgba(63, 81, 181, 0.1)'
+                    background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)',
+                    color: '#dc2626',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.15)'
                   }
                 }}
               >
@@ -614,18 +925,47 @@ const NavBar = () => {
               variant="outlined"
               startIcon={<AccountCircle />}
               sx={{ 
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
                 px: 2,
-                py: 0.7,
-                borderRadius: 2,
-                fontSize: '0.875rem',
-                fontWeight: isActive('/login') ? 700 : 500,
-                backgroundColor: isActive('/login') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
-                backdropFilter: 'blur(5px)',
+                py: 1,
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                background: isActive('/login') 
+                  ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                  : isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                color: isActive('/login') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                backdropFilter: 'blur(10px)',
+                boxShadow: isActive('/login') ? '0 8px 25px rgba(59, 130, 246, 0.3)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
                 '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  borderColor: 'rgba(255, 255, 255, 0.5)',
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                  background: isActive('/login') 
+                    ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  color: 'white',
+                  borderColor: 'rgba(59, 130, 246, 0.5)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)'
+                },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: '-50%',
+                  left: '-50%',
+                  width: '200%',
+                  height: '200%',
+                  background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'rotate(45deg)',
+                  transition: 'all 0.6s ease',
+                  opacity: 0
+                },
+                '&:hover::before': {
+                  opacity: 1,
+                  transform: 'translateX(100%) translateY(100%) rotate(45deg)'
                 }
               }}
             >
@@ -642,10 +982,27 @@ const NavBar = () => {
         onClose={toggleDrawer(false)}
         sx={{
           '& .MuiDrawer-paper': {
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)',
-            border: 'none'
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+            border: 'none',
+            width: '250px',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '-50%',
+              right: '-30%',
+              width: '200px',
+              height: '200px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              borderRadius: '50%',
+              opacity: 0.05,
+              filter: 'blur(40px)'
+            }
           }
         }}
       >
