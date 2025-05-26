@@ -190,7 +190,7 @@ export default function TicketForm() {
       let defaultAssigneeEmail = null;
       if (categoryObj) {
         const name = categoryObj.name.toLowerCase();
-        if (name.includes('it, ai, operations')) {
+        if (name.includes('it requests') || name.includes('ai requests') || name.includes('it, ai, operations')) {
           defaultAssigneeEmail = 'it@othainsoft.com';
         } else if (name.includes('hr')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
