@@ -44,7 +44,6 @@ const Home = () => {
           return firstName.charAt(0).toUpperCase() + firstName.slice(1);
         }
       } catch (e) {
-        console.error("Failed to parse first name from email:", e);
         return user.email; 
       }
       return user.email;
@@ -117,7 +116,7 @@ const Home = () => {
   // Main action cards
   const actionCards = [
     {
-      title: 'AI Assistant',
+      title: 'ESS Assistant',
       description: 'Get instant answers to your HR and IT questions with our intelligent chatbot',
       icon: ChatIcon,
       action: () => navigate('/chat'),
