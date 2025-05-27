@@ -67,15 +67,30 @@ function MessageItem({ message, isLast, isMobile }) {
       );
     }
     
-    // For any other links, render as plain text to prevent external navigation
+    // For any other links, render as a standard anchor tag opening in a new tab
     return (
-      <span style={{
-        color: '#64748b',
-        fontWeight: 500,
-        padding: '1px 4px'
-      }}>
+      <a 
+        href={href} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style={{
+          color: isDarkMode ? '#93c5fd' : '#3b82f6', // Brighter blue for dark mode
+          fontWeight: 500,
+          textDecoration: 'underline',
+          cursor: 'pointer',
+          padding: '1px 2px',
+          borderRadius: '3px',
+          transition: 'background-color 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = isDarkMode ? 'rgba(147, 197, 253, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+        }}
+      >
         {children}
-      </span>
+      </a>
     );
   };
   const isUser = message.role === 'user';
