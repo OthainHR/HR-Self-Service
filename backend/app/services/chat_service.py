@@ -24,36 +24,6 @@ from app.utils.supabase_chat_utils import (
 # REMOVE In-memory storage 
 # chat_sessions = {}
 
-# ── Ticket shortcut logic constants and function ──
-TICKET_TRIGGER_KEYWORDS = [
-    "access request", "access",
-    "desktop", "computer", "laptop", "support",
-    "get it help",
-    "hardware", "software",
-    "login", "account", "accounts",
-    "reset", "vpn", "network",
-    "error", "issue", "problem", "crash", "freeze", "timeout",
-    "install", "setup", "configure",
-    "cannot", "unable", "trouble", "fail", 
-]
-
-TICKET_LINK_MARKDOWN = "[Create A Ticket](https://othaingroup.atlassian.net/servicedesk/customer/portal/7/group/-1)"
-
-# Re-add the link text itself for checking
-TICKET_LINK_TEXT = "Create A Ticket"
-
-def should_show_ticket_link(message: str) -> bool:
-    msg = message.lower()
-    # check any multi-word phrases first
-    for phrase in ("access request", "get it help", "hardware and software", "not working", "not working properly", "I'm having trouble", "I cannot", "I cannot access", "I cannot login", "I cannot sign in", "I cannot sign up", "I am unable", "I am unable to", "I am unable to access", "I am unable to login", "I am unable to sign in", "I am unable to sign up"):
-        if phrase in msg:
-            return True
-    # then individual keywords
-    for kw in ("access", "desktop", "computer", "laptop", "support", "hardware", "software", "login", "account", "reset", "vpn", "network", "cannot", "unable", "trouble", "issue", "problem", "error", "fix"):
-        if kw in msg:
-            return True
-    return False
-
 def create_session(db, user_id: str, user_email: Optional[str] = None) -> Optional[ChatSession]: # db param might be unused now
     """Create a new chat session in Supabase."""
     db_session = db_create_chat_session(user_id, user_email=user_email)
@@ -111,30 +81,46 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
             "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
 
-            "If someone asks about anything outside of HR (for example: hardware issues, software problems, login or account access, "
-            "laptop/desktop support, etc.), you should first categorize the issue into one of four ticket types, then respond with a polite fallback.  "
-            "The categories are:\n"
-            "  • Access Request — for Logins and Accounts, Applications\n"
-            "  • Desktop/Laptop Support — for General IT Requests and Hardware/Software Issues\n"
-            "  • Get IT Help — for General IT Requests and Hardware/Software Issues\n"
-            "  • Request an AI Task — for AI-specific tasks\n\n"
-
-            "After classifying, respond in this friendly format (*exactly* – your code will append the link):\n\n"
-
-            "🚩 Ticket type: <YourCategoryHere>\n\n"
-
-            "Then begin your apology with one of these rotating openers, restating **only the key issue** (not the full sentence). "
-            "For example, if the user said \"my laptop is giving me a blue screen,\" you'd restate \"blue-screen\":\n"
-            "  – \"😣 Oh no, that blue-screen is a pain.\"\n"
-            "  – \"😣 Oh no—blue screens are the worst.\"\n"
-            "  – \"😭 Bummer, that blue-screen sounds rough.\"\n"
-            "  – \"🤔 Uh-oh, that blue-screen must be annoying.\"\n"
-            "  – \"😟 Yikes, a blue-screen must be so frustrating.\"\n"
-            "  – \"😟 That blue-screen is tough—sorry you're experiencing it.\"\n\n"
-
-            "Follow with exactly:\n\n"
-            "\"Don't worry, our IT heroes are standing by!\"\n\n"
-            "\"👉 Create a ticket so they can dive in right away.\"\n\n"
+            "If the user asks about something the chatbot itself cannot directly resolve, you must:\n\n"
+            "1. **Classify the issue** into the single *most specific* category from the list below.  \n"
+            "2. **Respond** with the fallback template exactly as specified.\n\n"
+            "────────────────────────────────────────────────────────\n"
+            "CATEGORIES (pick one)                 \n"
+            "────────────────────────────────────────────────────────\n"
+            "• IT Requests  \n"
+            "• HR Requests  \n"
+            "• Payroll Requests  \n"
+            "• Operations  \n"
+            "• Accounts  \n"
+            "• AI Requests  \n"
+            "────────────────────────────────────────────────────────\n"
+            "RESPONSE FORMAT (**exactly**)                          \n"
+            "────────────────────────────────────────────────────────\n"
+            "🚩 Ticket type: <Category>\n\n"
+            "<Rotating opener from the list below, restating **only** the key issue>\n\n"
+            "“Don’t worry, our support heroes are standing by!”\n\n"
+            "“👉 Create a ticket so they can dive in right away.”\n"
+            "────────────────────────────────────────────────────────\n"
+            "APPROVED ROTATING OPENERS (use in this order, then loop)\n"
+            "────────────────────────────────────────────────────────\n"
+            "1. 😣 Oh no, that **<issue>** is a pain.  \n"
+            "2. 😣 Oh no—**<issue>** is the worst.  \n"
+            "3. 😭 Bummer, that **<issue>** sounds rough.  \n"
+            "4. 🤔 Uh-oh, that **<issue>** must be annoying.  \n"
+            "5. 😟 Yikes, **<issue>** must be so frustrating.  \n"
+            "6. 😟 That **<issue>** is tough—sorry you're experiencing it.  \n\n"
+            "────────────────────────────────────────────────────────\n"
+            "NOTES\n"
+            "────────────────────────────────────────────────────────\n"
+            "• Never add extra text before or after the format; our code appends the ticket-creation link.  \n"
+            "• Replace **<issue>** with a concise noun-phrase (“blue-screen”, “benefits inquiry”, etc.).  \n"
+            "• Cycle through the six openers in order; do not invent new ones.  \n"
+            "• If the user’s question is covered by built-in knowledge, answer normally—only invoke this fallback when escalation is needed.\n"
+            
+            "Othain Cab Service FAQ (handle directly; do NOT trigger fallback):\n"
+            "• Othain Cab Service lets employees schedule a cab to and from work.\n"
+            "• Book a cab via the Book A Cab page by selecting a pickup time and location. You must book a cab at least 3 hours in advance.\n"
+            "• The service is available to all Othain employees.\n"
         )
     }
     openai_messages.append(system_message)
@@ -148,11 +134,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
         openai_messages.append({"role": "user", "content": message})
     assistant_response = get_chat_completion(openai_messages)
 
-    # 4️⃣ IT-support category: always append the ticket link
-    if should_show_ticket_link(message):
-        assistant_response = f"{assistant_response}\n\n{TICKET_LINK_MARKDOWN}"
-
-    # 3️⃣ Log the potentially modified assistant's reply to DB
+    # 3️⃣ Log the assistant's reply to DB
     db_add_chat_message(session_id, "assistant", assistant_response, user_email=user_email)
 
     return ChatResponse(
@@ -225,11 +207,7 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
         full_response += chunk
         yield chunk
 
-    # 4️⃣ IT-support category: always append the ticket link
-    if should_show_ticket_link(message):
-        full_response = f"{full_response}\n\n{TICKET_LINK_MARKDOWN}"
-
-    # 5️⃣ Log the full assistant response after streaming finishes
+    # 4️⃣ Log the full assistant response after streaming finishes
     if full_response: # Avoid logging empty responses
         db_add_chat_message(session_id, "assistant", full_response, user_email=user_email)
     else:
