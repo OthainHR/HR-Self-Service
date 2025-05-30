@@ -526,111 +526,115 @@ const Home = () => {
             ))}
           </Grid>
           {/* Centered Book A Cab Card */}
-          {bookACabCard && (loadingWhitelistStatus || loadingCabServiceGlobalVisibility) ? (
-            <Grid item xs={12} sm={6} md={4}>
-               <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 150, background: 'transparent', boxShadow: 'none' }}>
-                <CircularProgress />
-              </Card>
-            </Grid>
-          ) : bookACabCard && canUserAccessCabService && (
-            <Grid item xs={12} sm={6} md={4} key={bookACabCard.title}>
-              <motion.div
-                custom={gridCards.length}
-                initial="hidden"
-                animate="visible"
-                variants={cardVariants}
-              >
-                <Card
-                  onClick={bookACabCard.action}
-                  sx={{
-                    height: '100%',
-                    minHeight: '280px',
-                    cursor: 'pointer',
-                    borderRadius: '20px',
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
-                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                    backdropFilter: 'blur(20px)',
-                    border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                    boxShadow: `0 10px 30px ${bookACabCard.shadowColor}`,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      transform: 'translateY(-6px) scale(1.02)',
-                      boxShadow: `0 15px 35px ${bookACabCard.shadowColor}`
-                    }
-                  }}
-                >
-                  {/* Card shine effect */}
-                  <Box sx={{
-                    position: 'absolute',
-                    top: '-50%',
-                    left: '-50%',
-                    width: '200%',
-                    height: '200%',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
-                    transform: 'rotate(45deg)',
-                    transition: 'all 0.6s ease',
-                    opacity: 0,
-                    '.MuiCard-root:hover &': {
-                      opacity: 1,
-                      transform: 'translateX(100%) translateY(100%) rotate(45deg)'
-                    }
-                  }} />
+          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 6 }}> 
+            {
+              bookACabCard && (loadingWhitelistStatus || loadingCabServiceGlobalVisibility) ? (
+                <Grid item xs={12} sm={10} md={8}>
+                  <Card sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 150, background: 'transparent', boxShadow: 'none' }}>
+                    <CircularProgress />
+                  </Card>
+                </Grid>
+              ) : bookACabCard && canUserAccessCabService ? (
+                <Grid item xs={12} sm={10} md={8} key={bookACabCard.title}>
+                  <motion.div
+                    custom={gridCards.length}
+                    initial="hidden"
+                    animate="visible"
+                    variants={cardVariants}
+                  >
+                    <Card
+                      onClick={bookACabCard.action}
+                      sx={{
+                        height: '100%',
+                        minHeight: '280px',
+                        cursor: 'pointer',
+                        borderRadius: '20px',
+                        background: isDarkMode 
+                          ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                        backdropFilter: 'blur(20px)',
+                        border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                        boxShadow: `0 10px 30px ${bookACabCard.shadowColor}`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
+                          transform: 'translateY(-6px) scale(1.02)',
+                          boxShadow: `0 15px 35px ${bookACabCard.shadowColor}`
+                        }
+                      }}
+                    >
+                      {/* Card shine effect */}
+                      <Box sx={{
+                        position: 'absolute',
+                        top: '-50%',
+                        left: '-50%',
+                        width: '200%',
+                        height: '200%',
+                        background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                        transform: 'rotate(45deg)',
+                        transition: 'all 0.6s ease',
+                        opacity: 0,
+                        '.MuiCard-root:hover &': {
+                          opacity: 1,
+                          transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                        }
+                      }} />
 
-                  <CardContent sx={{ 
-                    p: 3, 
-                    textAlign: 'center', 
-                    position: 'relative', 
-                    zIndex: 1,
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center'
-                  }}>
-                    <Box sx={{
-                      background: bookACabCard.gradient,
-                      borderRadius: '16px',
-                      width: '60px',
-                      height: '60px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 1.5rem auto',
-                      boxShadow: `0 8px 25px ${bookACabCard.shadowColor}`
-                    }}>
-                      {React.createElement(bookACabCard.icon, { sx: { fontSize: '2rem', color: 'white' } })}
-                    </Box>
-                    
-                    <Typography 
-                      variant="h6" 
-                      component="h3" 
-                      sx={{ 
-                        fontWeight: 700,
-                        marginBottom: '0.75rem',
-                        color: isDarkMode ? '#f3f4f6' : '#1f2937'
-                      }}
-                    >
-                      {bookACabCard.title}
-                    </Typography>
-                    
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: isDarkMode ? '#d1d5db' : '#6b7280',
-                        lineHeight: 1.6
-                      }}
-                    >
-                      {bookACabCard.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Grid>
-          )}
+                      <CardContent sx={{ 
+                        p: 3, 
+                        textAlign: 'center', 
+                        position: 'relative', 
+                        zIndex: 1,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                      }}>
+                        <Box sx={{
+                          background: bookACabCard.gradient,
+                          borderRadius: '16px',
+                          width: '60px',
+                          height: '60px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 1.5rem auto',
+                          boxShadow: `0 8px 25px ${bookACabCard.shadowColor}`
+                        }}>
+                          {React.createElement(bookACabCard.icon, { sx: { fontSize: '2rem', color: 'white' } })}
+                        </Box>
+                        
+                        <Typography 
+                          variant="h6" 
+                          component="h3" 
+                          sx={{ 
+                            fontWeight: 700,
+                            marginBottom: '0.75rem',
+                            color: isDarkMode ? '#f3f4f6' : '#1f2937'
+                          }}
+                        >
+                          {bookACabCard.title}
+                        </Typography>
+                        
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: isDarkMode ? '#d1d5db' : '#6b7280',
+                            lineHeight: 1.6
+                          }}
+                        >
+                          {bookACabCard.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ) : null
+            }
+          </Box>
         </motion.div>
 
         {/* Quick Links Section */}
