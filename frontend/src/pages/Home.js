@@ -343,7 +343,15 @@ const Home = () => {
                 justifyContent: 'center',
                 margin: '0 auto 1.5rem auto',
                 boxShadow: '0 8px 25px rgba(99, 102, 241, 0.3)',
-                animation: 'pulse 3s infinite'
+                animation: 'pulse 3s infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': {
+                    transform: 'scale(1)',
+                  },
+                  '50%': {
+                    transform: 'scale(1.05)',
+                  },
+                },
               }}>
                 <RocketIcon sx={{ fontSize: '2rem', color: 'white' }} />
               </Box>
@@ -387,7 +395,7 @@ const Home = () => {
               </Typography>
 
               <Chip 
-                label="✨ Powered by the Othain AI Agent" 
+                label="✨ Othain AI Agent" 
                 sx={{
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   color: 'white',
@@ -770,18 +778,6 @@ const Home = () => {
           </Box>
         </motion.div>
       </Container>
-
-      {/* Add custom animations */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-      `}</style>
     </Box>
   );
 };

@@ -532,7 +532,15 @@ export default function TicketingPage() {
                   boxShadow: '0 6px 20px rgba(99, 102, 241, 0.3)',
                   animation: 'pulse 2s infinite',
                   position: 'relative',
-                  zIndex: 1
+                  zIndex: 1,
+                  '@keyframes pulse': {
+                    '0%, 100%': {
+                      transform: 'scale(1)',
+                    },
+                    '50%': {
+                      transform: 'scale(1.05)',
+                    },
+                  },
                 }}>
                   <FontAwesomeIcon icon={faSpinner} spin size="lg" style={{ color: 'white' }} />
                 </div>
@@ -620,7 +628,7 @@ export default function TicketingPage() {
       </Box>
 
       {/* Add custom animations */}
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes shine {
           0%, 100% {
             transform: translateX(-100%) translateY(-100%) rotate(45deg);
@@ -638,7 +646,7 @@ export default function TicketingPage() {
             transform: scale(1.05);
           }
         }
-      `}</style>
+      `}</style> */}
     </div>
   );
 } 
