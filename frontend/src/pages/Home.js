@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide } from '@mui/material';
 import { 
   Chat as ChatIcon, 
   QuestionAnswer as QuestionAnswerIcon, 
   Info as InfoIcon, 
   OndemandVideo as OndemandVideoIcon, 
+  AdsClick as AdsClickIcon,
   Launch as LaunchIcon,
   Rocket as RocketIcon,
+  SmartToy as SmartToyIcon,
   Business as BusinessIcon,
   School as SchoolIcon,
   Assignment as AssignmentIcon,
@@ -16,13 +18,15 @@ import {
   Security as SecurityIcon,
   Support as SupportIcon,
   Dashboard as DashboardIcon,
-  ConfirmationNumber as TicketIcon
+  ConfirmationNumber as TicketIcon,
+  DirectionsCar as DirectionsCarIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { motion } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
+import { supabase } from '../services/supabase';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -30,6 +34,9 @@ const Home = () => {
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isAdmin = user?.user_metadata?.role === 'admin';
+  const isHrAdmin = user?.email === 'hr@othainsoft.com';
+  const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
+  const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
 
   const getDisplayName = () => {
     if (user?.name) {
@@ -52,6 +59,29 @@ const Home = () => {
   };
 
   const displayName = getDisplayName();
+
+  useEffect(() => {
+    const checkWhitelist = async () => {
+      if (!user) { setLoadingWhitelistStatus(false); return; }
+      if (isHrAdmin) { setIsUserWhitelisted(true); setLoadingWhitelistStatus(false); return; }
+      try {
+        setLoadingWhitelistStatus(true);
+        const { data, error } = await supabase
+          .from('cab_booking_whitelist')
+          .select('email')
+          .eq('email', user.email)
+          .maybeSingle();
+        if (error) throw error;
+        setIsUserWhitelisted(!!data);
+      } catch (err) {
+        console.error('Error checking whitelist status in Home:', err);
+        setIsUserWhitelisted(false);
+      } finally {
+        setLoadingWhitelistStatus(false);
+      }
+    };
+    checkWhitelist();
+  }, [user, isHrAdmin]);
 
   // Enhanced quick links with icons and categories
   const quickLinks = [
@@ -78,7 +108,7 @@ const Home = () => {
     },
     { 
       label: 'Goals & PMS', 
-      url: 'https://othainsoft.keka.com/#/org/documents/org/folder/5823/document/40977',
+      url: 'https://othainsoft.keka.com/#/me/performance/',
       icon: AssignmentIcon,
       category: 'Performance',
       color: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
@@ -118,7 +148,7 @@ const Home = () => {
     {
       title: 'ESS Assistant',
       description: 'Get instant answers to your HR and IT questions with our intelligent chatbot',
-      icon: ChatIcon,
+      icon: SmartToyIcon,
       action: () => navigate('/chat'),
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
       shadowColor: 'rgba(59, 130, 246, 0.3)'
@@ -132,14 +162,52 @@ const Home = () => {
       shadowColor: 'rgba(5, 150, 105, 0.3)'
     },
     {
+      title: 'Book A Cab',
+      description: 'Book transportation for late night shifts with pickup and drop-off locations',
+      icon: DirectionsCarIcon,
+      action: () => navigate('/cab-service'),
+      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+      shadowColor: 'rgba(220, 38, 38, 0.3)'
+    },
+    {
       title: 'Onboarding Guide',
       description: 'New to Othain? Watch our comprehensive onboarding video and learn about company policies, procedures, and culture',
       icon: OndemandVideoIcon,
       action: () => navigate('/onboarding'),
       gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
       shadowColor: 'rgba(234, 88, 12, 0.3)'
+    }, 
+    {
+      title: 'My Performance',
+      description: 'View your performance goals, feedback, and ratings',
+      icon: AdsClickIcon,
+      action: () => window.open('https://othainsoft.keka.com/#/me/performance/', '_blank'),
+      gradient: 'linear-gradient(135deg,rgb(171, 12, 234) 0%,rgb(177, 22, 249) 100%)',
+      shadowColor: 'rgba(182, 12, 234, 0.3)'
+    },
+    {
+      title: 'My Pay',
+      description: 'View your pay slips, salary details, and other financial information',
+      icon: AccountBalanceIcon,
+      action: () => window.open('https://othainsoft.keka.com/#/myfinances/pay/salary', '_blank'),
+      gradient: 'linear-gradient(135deg,rgb(12, 64, 234) 0%,rgb(12, 104, 234) 100%)',
+      shadowColor: 'rgba(12, 64, 234, 0.3)'
+    },
+    {
+      title: 'My Leave',
+      description: 'View your leave balance, apply for leave, and view your leave history',
+      icon: BeachAccessIcon,
+      action: () => window.open('https://othainsoft.keka.com/#/me/leave/summary', '_blank'),
+      gradient: 'linear-gradient(135deg,rgb(234, 12, 149) 0%,rgb(234, 12, 123) 100%)',
+      shadowColor: 'rgba(234, 12, 167, 0.3)'
     }
+
   ];
+
+  // Prepare main grid cards, excluding 'Book A Cab'
+  const gridCards = actionCards.filter(card => card.title !== 'Book A Cab');
+  // Find the 'Book A Cab' card to render separately
+  const bookACabCard = actionCards.find(card => card.title === 'Book A Cab');
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -329,7 +397,7 @@ const Home = () => {
           </Typography>
           
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            {actionCards.map((card, index) => (
+            {gridCards.map((card, index) => (
               <Grid item xs={12} md={4} key={card.title}>
                 <motion.div
                   custom={index}
@@ -399,7 +467,7 @@ const Home = () => {
                         margin: '0 auto 1.5rem auto',
                         boxShadow: `0 8px 25px ${card.shadowColor}`
                       }}>
-                        <card.icon sx={{ fontSize: '2rem', color: 'white' }} />
+                        {React.createElement(card.icon, { sx: { fontSize: '2rem', color: 'white' } })}
                       </Box>
                       
                       <Typography 
@@ -429,6 +497,108 @@ const Home = () => {
               </Grid>
             ))}
           </Grid>
+          {/* Centered Book A Cab Card */}
+          {bookACabCard && (isUserWhitelisted || isHrAdmin) && (
+            <Grid container justifyContent="center" sx={{ mt: 2, mb: 6 }}>
+              <Grid item xs={12} md={4}>
+                <motion.div
+                  custom={gridCards.length}
+                  initial="hidden"
+                  animate="visible"
+                  variants={cardVariants}
+                >
+                  <Card
+                    onClick={bookACabCard.action}
+                    sx={{
+                      height: '100%',
+                      minHeight: '280px',
+                      cursor: 'pointer',
+                      borderRadius: '20px',
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                      backdropFilter: 'blur(20px)',
+                      border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      boxShadow: `0 10px 30px ${bookACabCard.shadowColor}`,
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      '&:hover': {
+                        transform: 'translateY(-6px) scale(1.02)',
+                        boxShadow: `0 15px 35px ${bookACabCard.shadowColor}`
+                      }
+                    }}
+                  >
+                    {/* Card shine effect */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: '-50%',
+                      left: '-50%',
+                      width: '200%',
+                      height: '200%',
+                      background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                      transform: 'rotate(45deg)',
+                      transition: 'all 0.6s ease',
+                      opacity: 0,
+                      '.MuiCard-root:hover &': {
+                        opacity: 1,
+                        transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                      }
+                    }} />
+
+                    <CardContent sx={{ 
+                      p: 3, 
+                      textAlign: 'center', 
+                      position: 'relative', 
+                      zIndex: 1,
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
+                    }}>
+                      <Box sx={{
+                        background: bookACabCard.gradient,
+                        borderRadius: '16px',
+                        width: '60px',
+                        height: '60px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 1.5rem auto',
+                        boxShadow: `0 8px 25px ${bookACabCard.shadowColor}`
+                      }}>
+                        {React.createElement(bookACabCard.icon, { sx: { fontSize: '2rem', color: 'white' } })}
+                      </Box>
+                      
+                      <Typography 
+                        variant="h6" 
+                        component="h3" 
+                        sx={{ 
+                          fontWeight: 700,
+                          marginBottom: '0.75rem',
+                          color: isDarkMode ? '#f3f4f6' : '#1f2937'
+                        }}
+                      >
+                        {bookACabCard.title}
+                      </Typography>
+                      
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: isDarkMode ? '#d1d5db' : '#6b7280',
+                          lineHeight: 1.6
+                        }}
+                      >
+                        {bookACabCard.description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            </Grid>
+          )}
         </motion.div>
 
         {/* Quick Links Section */}

@@ -25,6 +25,25 @@ function MessageItem({ message, isLast, isMobile }) {
     message.content.includes('Ticket type:') || message.content.includes('Create a ticket')
   );
   
+  // Cab booking button logic
+  const cabUrl = '/cab-service';
+  const handleCabBookingClick = () => navigate('/cab-service');
+  const showCabButton = !message.isLoading && (
+    message.content.toLowerCase().includes('book a cab') || 
+    message.content.toLowerCase().includes('request a cab') ||
+    message.content.toLowerCase().includes('booking a cab') ||
+    message.content.toLowerCase().includes('cab booking') ||
+    message.content.toLowerCase().includes('book cab') ||
+    message.content.toLowerCase().includes('transportation') ||
+    message.content.toLowerCase().includes('cab service') ||
+    message.content.toLowerCase().includes('pickup') ||
+    message.content.toLowerCase().includes('drop off') ||
+    message.content.toLowerCase().includes('drop-off') ||
+    message.content.toLowerCase().includes('late night shift') ||
+    message.content.toLowerCase().includes('night shift') ||
+    message.content.toLowerCase().includes('othain cab service')
+  );
+  
   const LinkRenderer = ({ href, children }) => {
     // Block all external Atlassian URLs completely
     if (href && href.includes('atlassian.net')) {
@@ -66,6 +85,42 @@ function MessageItem({ message, isLast, isMobile }) {
         </button>
       );
     }
+
+    // Handle internal cab booking URLs
+    if (href === cabUrl || href === '/cab-service' || `${children}` === cabUrl) {
+      // Hide raw cab link when the cab button is rendered
+      if (showCabButton) {
+        return null;
+      }
+      // Render as internal navigation button instead of external link
+      return (
+        <button
+          onClick={handleCabBookingClick}
+          style={{
+            color: '#dc2626',
+            background: 'rgba(220, 38, 38, 0.1)',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '4px 8px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: 'inherit',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'rgba(220, 38, 38, 0.2)';
+            e.target.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'rgba(220, 38, 38, 0.1)';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          🚗 Book A Cab
+        </button>
+      );
+    }
     
     // For any other links, render as a standard anchor tag opening in a new tab
     return (
@@ -75,7 +130,7 @@ function MessageItem({ message, isLast, isMobile }) {
         rel="noopener noreferrer"
         style={{
           color: isDarkMode ? '#93c5fd' : '#3b82f6', // Brighter blue for dark mode
-          fontWeight: 500,
+        fontWeight: 500,
           textDecoration: 'underline',
           cursor: 'pointer',
           padding: '1px 2px',
@@ -476,6 +531,59 @@ function MessageItem({ message, isLast, isMobile }) {
                           onClick={handleTicketButtonClick}
                         >
                           Create A Ticket
+                        </Button>
+                      </Box>
+                    </motion.div>
+                  )}
+
+                  {/* Enhanced Cab Booking Button */}
+                  {showCabButton && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: isStreamingMessage ? 0.2 : 0.4, duration: 0.3 }}
+                    >
+                      <Box sx={{ mt: 2.5 }}>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          sx={{ 
+                            background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                            color: 'white',
+                            borderRadius: '16px',
+                            px: 3,
+                            py: 1.5,
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            boxShadow: '0 8px 25px rgba(220, 38, 38, 0.3)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 35px rgba(220, 38, 38, 0.4)'
+                            },
+                            '&::before': {
+                              content: '""',
+                              position: 'absolute',
+                              top: '-50%',
+                              left: '-50%',
+                              width: '200%',
+                              height: '200%',
+                              background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                              transform: 'rotate(45deg)',
+                              transition: 'all 0.6s ease',
+                              opacity: 0
+                            },
+                            '&:hover::before': {
+                              opacity: 1,
+                              transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                            }
+                          }}
+                          onClick={handleCabBookingClick}
+                        >
+                          🚗 Book A Cab
                         </Button>
                       </Box>
                     </motion.div>

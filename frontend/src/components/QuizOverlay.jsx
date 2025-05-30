@@ -194,16 +194,16 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
         ))}
 
         {/* Confetti Effect */}
-        {runConfetti && feedback && feedback.success === true && (
-          <Confetti
-            width={width}
-            height={height}
-            recycle={false}
-            numberOfPieces={200}
-            gravity={0.15}
-            onConfettiComplete={() => setRunConfetti(false)}
-          />
-        )}
+      {runConfetti && feedback && feedback.success === true && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={200}
+          gravity={0.15}
+          onConfettiComplete={() => setRunConfetti(false)}
+        />
+      )}
 
         <motion.div
           variants={modalVariants}
@@ -317,9 +317,9 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                     <Typography variant="h6" sx={{ 
                       color: getFeedbackColor(),
                       fontWeight: 700,
-                      position: 'relative',
-                      zIndex: 1
-                    }}>
+        position: 'relative',
+        zIndex: 1
+      }}>
                       {feedback.message}
                     </Typography>
                   </Box>
@@ -344,7 +344,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
               }
             }}>
               <AnimatePresence>
-                {showQuizContent && (
+        {showQuizContent && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -352,11 +352,11 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                     transition={{ duration: 0.3 }}
                   >
                     {quizData.questions.map((question, index) => {
-                      const isIncorrect = feedback && feedback.incorrectIds && feedback.incorrectIds.includes(question.id);
+              const isIncorrect = feedback && feedback.incorrectIds && feedback.incorrectIds.includes(question.id);
                       
-                      return (
+              return (
                         <motion.div
-                          key={question.id}
+                  key={question.id} 
                           custom={index}
                           variants={questionVariants}
                           initial="hidden"
@@ -393,7 +393,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                               mb: 2,
                               fontSize: { xs: '1rem', sm: '1.125rem' }
                             }}>
-                              {question.text}
+                    {question.text}
                             </Typography>
 
                             <RadioGroup
@@ -409,9 +409,9 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                                     key={optionIndex}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                  >
+                      >
                                     <FormControlLabel
-                                      value={option}
+                          value={option} 
                                       control={
                                         <Radio 
                                           sx={{
@@ -427,7 +427,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                                           fontWeight: isSelected ? 600 : 400,
                                           color: isIncorrectOption ? '#dc2626' : '#374151'
                                         }}>
-                                          {option}
+                        {option}
                                         </Typography>
                                       }
                                       sx={{
@@ -468,13 +468,13 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                             </RadioGroup>
                           </Box>
                         </motion.div>
-                      );
-                    })}
+              );
+            })}
                   </motion.div>
-                )}
+        )}
               </AnimatePresence>
             </Box>
-
+        
             {/* Action Buttons */}
             <Box sx={{ 
               display: 'flex', 
@@ -484,19 +484,19 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
               pt: 3,
               borderTop: '1px solid rgba(226, 232, 240, 0.5)'
             }}>
-              {showQuizContent && (
+            {showQuizContent && (
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    onClick={handleSubmit}
+                  onClick={handleSubmit} 
                     disabled={!allQuestionsAnswered}
                     sx={{
                       background: allQuestionsAnswered 
                         ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
                         : 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
-                      color: 'white',
+                    color: 'white', 
                       px: 4,
                       py: 1.5,
                       borderRadius: '12px',
@@ -506,7 +506,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                       boxShadow: allQuestionsAnswered 
                         ? '0 8px 25px rgba(99, 102, 241, 0.3)'
                         : '0 4px 12px rgba(148, 163, 184, 0.3)',
-                      border: 'none',
+                    border: 'none', 
                       '&:hover': {
                         background: allQuestionsAnswered 
                           ? 'linear-gradient(135deg, #5856eb 0%, #7c3aed 100%)'
@@ -520,20 +520,20 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                         background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
                         color: 'rgba(255, 255, 255, 0.7)'
                       }
-                    }}
-                  >
-                    Submit Answers
+                  }}
+                >
+                  Submit Answers
                   </Button>
                 </motion.div>
-              )}
+            )}
 
-              {canProceed && (
+            {canProceed && (
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    onClick={onProceed}
+                onClick={onProceed}
                     sx={{
                       background: feedback?.success === true 
                         ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
@@ -548,7 +548,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                       boxShadow: feedback?.success === true 
                         ? '0 8px 25px rgba(16, 185, 129, 0.3)'
                         : '0 8px 25px rgba(245, 158, 11, 0.3)',
-                      border: 'none',
+                  border: 'none', 
                       '&:hover': {
                         background: feedback?.success === true 
                           ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
@@ -558,9 +558,9 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
                           : '0 12px 30px rgba(245, 158, 11, 0.4)',
                         transform: 'translateY(-2px)'
                       }
-                    }}
-                  >
-                    Continue
+                }}
+              >
+                Continue
                   </Button>
                 </motion.div>
               )}

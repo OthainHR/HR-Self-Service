@@ -646,22 +646,22 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
               const isStreamingMessage = message.isLoading || message.role === 'assistant';
               
               return (
-                <motion.div
-                  key={message.id ? message.id : `temp-msg-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                key={message.id ? message.id : `temp-msg-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                   transition={{ 
                     delay: isLastMessage ? 0 : Math.min(index * 0.02, 0.2), // No delay for last message, minimal delay for others
                     duration: isLastMessage || isStreamingMessage ? 0.15 : 0.3, // Faster animation for streaming messages
                     ease: "easeOut"
                   }}
-                >
-                  <MessageItem
-                    message={message}
-                    isLast={index === messages.length - 1}
-                    isMobile={isMobile}
-                  />
-                </motion.div>
+              >
+                <MessageItem
+                  message={message}
+                  isLast={index === messages.length - 1}
+                  isMobile={isMobile}
+                />
+              </motion.div>
               );
             })
           )}

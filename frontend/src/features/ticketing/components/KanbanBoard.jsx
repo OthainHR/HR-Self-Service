@@ -12,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Select, MenuItem, FormControl, Chip, 
+  Select, MenuItem, FormControl, InputLabel, Chip, 
   Box, Typography, useTheme, Fade, Slide
 } from '@mui/material';
 
@@ -124,7 +124,7 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpdateTicketStatus }) => {
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, assignOptions }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -140,6 +140,14 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpd
     }
     navigate(`/ticket/${ticketId}`);
   };
+
+  // Dynamic assignee placeholder based on role
+  const assigneeLabelMap = {
+    it_admin: 'IT Admin',
+    hr_admin: 'HR Admin',
+    payroll_admin: 'Accounts Admin'
+  };
+  const assigneeLabel = assigneeLabelMap[currentUserRole] || 'Assignee';
 
   return (
     <Fade in={true} timeout={800}>
@@ -486,6 +494,26 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpd
                         backdropFilter: 'blur(10px)',
                         marginTop: '0.375rem'
                       }}>
+                        {/* Assignee selector */}
+                        {assignOptions.length > 0 && (
+                          <FormControl size="small" fullWidth onClick={e => e.stopPropagation()} sx={{ mb: 1 }}>
+                            <InputLabel>{assigneeLabel}</InputLabel>
+                            <Select
+                              value={ticket.assignee || ''}
+                              displayEmpty
+                              label={assigneeLabel}
+                              onChange={e => handleUpdateTicketAssignee(ticket.id, e.target.value || null)}
+                              sx={{
+                                minWidth: '100%',
+                              }}
+                            >
+                              <MenuItem value="">{assigneeLabel}</MenuItem>
+                              {assignOptions.map(option => (
+                                <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        )}
                         <FormControl
                           size="small"
                           fullWidth
@@ -629,18 +657,38 @@ export default function KanbanBoard() {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [tickets, setTickets] = useState([]);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [assignOptions, setAssignOptions] = useState([]);
+  useEffect(() => {
+    const fetchAssignees = async () => {
+      if (!currentUserRole) {
+        setAssignOptions([]);
+        return;
+      }
+      const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
+      let query = supabase.from('ticket_assignees').select('user_id, name, role');
+      if (!adminRoles.includes(currentUserRole)) {
+        query = query.eq('role', currentUserRole);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        setAssignOptions(data.map(row => ({ id: row.user_id, name: row.name })));
+      } else {
+        setAssignOptions([]);
+      }
+    };
+    fetchAssignees();
+  }, [currentUserRole]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [filters, setFilters] = useState({ search: '', category: '', sub_category: '', status: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
-        console.error('Error fetching session for kanban:', sessionError);
         return;
       }
       if (session) {
@@ -656,10 +704,9 @@ export default function KanbanBoard() {
     const fetchCategories = async () => {
       const { data, error: fetchError } = await supabase.from('categories').select('id, name').order('name');
       if (fetchError) {
-        console.error('Error fetching categories for kanban:', fetchError);
-      } else {
-        setCategories(data || []);
+        return;
       }
+      setCategories(data || []);
     };
 
     const fetchSubCategories = async () => {
@@ -673,10 +720,9 @@ export default function KanbanBoard() {
         .eq('category_id', filters.category)
         .order('name');
       if (fetchError) {
-        console.error('Error fetching sub-categories for kanban:', fetchError);
-      } else {
-        setSubCategories(data || []);
+        return;
       }
+      setSubCategories(data || []);
     };
 
     fetchUserRole();
@@ -708,7 +754,6 @@ export default function KanbanBoard() {
       if (fetchError) throw fetchError;
       setTickets(data || []);
     } catch (fetchError) {
-      console.error('Error fetching tickets for kanban:', fetchError);
       setError(`Failed to load tickets: ${fetchError.message}`);
       setTickets([]);
     } finally {
@@ -739,15 +784,28 @@ export default function KanbanBoard() {
         .eq('id', ticketId);
 
       if (updateError) {
-        console.error('Error updating ticket status from kanban:', updateError);
         setError(`Failed to update ticket: ${updateError.message}`);
         await fetchTickets();
-      } else {
-        console.log(`Ticket ${ticketId} status updated to ${newStatus} from kanban`);
       }
     } catch (err) {
-      console.error('Unexpected error updating ticket status from kanban:', err);
       setError('An unexpected error occurred while updating the ticket.');
+      await fetchTickets();
+    }
+  };
+
+  const handleUpdateTicketAssignee = async (ticketId, newAssigneeId) => {
+    setTickets(prev => prev.map(ticket => ticket.id === ticketId ? { ...ticket, assignee: newAssigneeId } : ticket));
+    try {
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({ assignee: newAssigneeId })
+        .eq('id', ticketId);
+      if (updateError) {
+        setError(`Failed to update assignee: ${updateError.message}`);
+        await fetchTickets();
+      }
+    } catch (err) {
+      setError('An unexpected error occurred while updating the assignee.');
       await fetchTickets();
     }
   };
@@ -1113,6 +1171,8 @@ export default function KanbanBoard() {
             currentUserRole={currentUserRole}
             statusOrder={statusOrder}
             handleUpdateTicketStatus={handleUpdateTicketStatus}
+            handleUpdateTicketAssignee={handleUpdateTicketAssignee}
+            assignOptions={assignOptions}
           />
         ))}
       </div>

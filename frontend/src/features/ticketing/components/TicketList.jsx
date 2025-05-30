@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/TicketList.css';
+import { supabase } from '../../../services/supabase';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Paper, FormControl, InputLabel, Select, MenuItem, Box, Typography,
@@ -17,7 +18,10 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Pending as PendingIcon,
-  HourglassEmpty as HourglassIcon
+  HourglassEmpty as HourglassIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -27,10 +31,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx'; // Import the xlsx library
 
-const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUserRole }) => {
+const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+
+  // State for assignee editing
+  const [editingAssignee, setEditingAssignee] = useState(null); // { ticketId: string, tempAssigneeId: string | null }
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
@@ -41,6 +48,29 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Fetch assignees from Supabase ticket_assignees table
+  const [assignOptions, setAssignOptions] = useState([]);
+  useEffect(() => {
+    const fetchAssignees = async () => {
+      if (!currentUserRole) {
+        setAssignOptions([]);
+        return;
+      }
+      // Only super-admin ('admin') sees all; others see only their own role
+      let query = supabase.from('ticket_assignees').select('user_id, name, role');
+      if (currentUserRole !== 'admin') {
+        query = query.eq('role', currentUserRole);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        setAssignOptions(data.map(row => ({ id: row.user_id, name: row.name })));
+      } else {
+        setAssignOptions([]);
+      }
+    };
+    fetchAssignees();
+  }, [currentUserRole]);
   
   // Handle responsive design
   useEffect(() => {
@@ -224,6 +254,39 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
 
   const isAdmin = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'].includes(currentUserRole);
 
+  // Dynamic assignee placeholder based on role
+  const assigneeLabelMap = {
+    it_admin: 'IT Admin',
+    hr_admin: 'HR Admin',
+    payroll_admin: 'Accounts Admin'
+  };
+  const assigneeLabel = assigneeLabelMap[currentUserRole] || 'Assignee';
+
+  const handleEditAssigneeClick = (ticketId, currentAssigneeId) => {
+    setEditingAssignee({ ticketId, tempAssigneeId: currentAssigneeId });
+  };
+
+  const handleAssigneeChange = (newAssigneeId) => {
+    if (editingAssignee) {
+      setEditingAssignee(prev => ({ ...prev, tempAssigneeId: newAssigneeId }));
+    }
+  };
+
+  const handleConfirmAssigneeChange = () => {
+    if (editingAssignee) {
+      const selectedAssignee = assignOptions.find(opt => opt.id === editingAssignee.tempAssigneeId);
+      const assigneeName = selectedAssignee ? selectedAssignee.name : 'the selected user';
+      if (window.confirm(`Are you sure you want to assign this ticket to ${assigneeName}?`)) {
+        handleUpdateTicketAssignee(editingAssignee.ticketId, editingAssignee.tempAssigneeId);
+      }
+      setEditingAssignee(null);
+    }
+  };
+
+  const handleCancelAssigneeChange = () => {
+    setEditingAssignee(null);
+  };
+
   if (!tickets || tickets.length === 0) {
     return (
       <Fade in={true} timeout={600}>
@@ -374,17 +437,17 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
                   width: isMobile ? '100%' : 'auto'
                 }}>
                   {!isMobile && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      color: isDarkMode ? '#94a3b8' : '#64748b',
-                      fontSize: '0.875rem',
-                      fontWeight: 600
-                    }}>
-                      <FontAwesomeIcon icon={faFilter} />
-                      Filters:
-                    </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                    fontSize: '0.875rem',
+                    fontWeight: 600
+                  }}>
+                    <FontAwesomeIcon icon={faFilter} />
+                    Filters:
+                  </div>
                   )}
                   
                   {/* Modern Filter Dropdowns */}
@@ -394,73 +457,73 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
                     flexDirection: isMobile ? 'column' : 'row',
                     width: isMobile ? '100%' : 'auto'
                   }}>
-                    {[
-                      { 
-                        label: 'Category', 
-                        value: selectedCategory, 
-                        onChange: (val) => { setSelectedCategory(val); setSelectedSubCategory(''); },
-                        options: categories.map(cat => ({ value: cat, label: cat }))
-                      },
-                      { 
-                        label: 'Subcategory', 
-                        value: selectedSubCategory, 
-                        onChange: setSelectedSubCategory,
-                        options: subCategories.map(sub => ({ value: sub, label: sub })),
-                        disabled: !selectedCategory
-                      },
-                      { 
-                        label: 'Status', 
-                        value: selectedStatus, 
-                        onChange: setSelectedStatus,
-                        options: statusOrder.map(stat => ({ value: stat, label: stat.replace('_', ' ') }))
-                      }
-                    ].map((filter, index) => (
-                      <div key={filter.label} style={{
-                        background: isDarkMode 
-                          ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
-                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: '12px',
-                        border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                  {[
+                    { 
+                      label: 'Category', 
+                      value: selectedCategory, 
+                      onChange: (val) => { setSelectedCategory(val); setSelectedSubCategory(''); },
+                      options: categories.map(cat => ({ value: cat, label: cat }))
+                    },
+                    { 
+                      label: 'Subcategory', 
+                      value: selectedSubCategory, 
+                      onChange: setSelectedSubCategory,
+                      options: subCategories.map(sub => ({ value: sub, label: sub })),
+                      disabled: !selectedCategory
+                    },
+                    { 
+                      label: 'Status', 
+                      value: selectedStatus, 
+                      onChange: setSelectedStatus,
+                      options: statusOrder.map(stat => ({ value: stat, label: stat.replace('_', ' ') }))
+                    }
+                  ].map((filter, index) => (
+                    <div key={filter.label} style={{
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: '12px',
+                      border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
                         minWidth: isMobile ? 'auto' : '120px',
                         width: isMobile ? '100%' : 'auto',
-                        opacity: filter.disabled ? 0.5 : 1,
-                        pointerEvents: filter.disabled ? 'none' : 'auto'
-                      }}>
+                      opacity: filter.disabled ? 0.5 : 1,
+                      pointerEvents: filter.disabled ? 'none' : 'auto'
+                    }}>
                         <FormControl size={isMobile ? "small" : "small"} fullWidth>
-                          <InputLabel 
-                            sx={{ 
-                              color: isDarkMode ? '#94a3b8' : '#64748b',
+                        <InputLabel 
+                          sx={{ 
+                            color: isDarkMode ? '#94a3b8' : '#64748b',
                               fontSize: isMobile ? '0.8rem' : '0.875rem',
-                              fontWeight: 600
-                            }}
-                          >
-                            {filter.label}
-                          </InputLabel>
-                          <Select
-                            value={filter.value}
-                            label={filter.label}
-                            onChange={(e) => filter.onChange(e.target.value)}
-                            sx={{
-                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                              '& .MuiSelect-select': {
-                                color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                            fontWeight: 600
+                          }}
+                        >
+                          {filter.label}
+                        </InputLabel>
+                        <Select
+                          value={filter.value}
+                          label={filter.label}
+                          onChange={(e) => filter.onChange(e.target.value)}
+                          sx={{
+                            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                            '& .MuiSelect-select': {
+                              color: isDarkMode ? '#f3f4f6' : '#1f2937',
                                 fontSize: isMobile ? '0.8rem' : '0.875rem',
                                 fontWeight: 500,
                                 padding: isMobile ? '8px 14px' : '10px 14px'
-                              }
-                            }}
-                          >
-                            <MenuItem value="">All</MenuItem>
-                            {filter.options.map(option => (
-                              <MenuItem key={option.value} value={option.value}>
-                                {option.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </div>
-                    ))}
+                            }
+                          }}
+                        >
+                          <MenuItem value="">All</MenuItem>
+                          {filter.options.map(option => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </div>
+                  ))}
                   </div>
                 </div>
               </div>
@@ -520,14 +583,14 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
                     }}
                     onMouseEnter={(e) => {
                       if (!isMobile) {
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.4)';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.4)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isMobile) {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
                       }
                     }}
                   >
@@ -763,38 +826,86 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
                                   {formatNameFromEmail(ticket.requester_email).charAt(0)}
                                 </Avatar>
                                 {!isMobile && (
-                                  <Typography variant="body2" sx={{ 
-                                    fontWeight: 500, 
+                                <Typography variant="body2" sx={{ 
+                                  fontWeight: 500, 
                                     color: isDarkMode ? '#d1d5db' : '#4b5563',
                                     fontSize: '0.8rem'
-                                  }}>
-                                    {formatNameFromEmail(ticket.requester_email)}
-                                  </Typography>
+                                }}>
+                                  {formatNameFromEmail(ticket.requester_email)}
+                                </Typography>
                                 )}
                               </div>
                             </TableCell>
 
-                            {/* Assignee */}
-                            <TableCell>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
-                                <Avatar sx={{ 
-                                  width: isMobile ? 24 : 32, 
-                                  height: isMobile ? 24 : 32, 
-                                  fontSize: isMobile ? '0.7rem' : '0.875rem',
-                                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                                }}>
-                                  {formatNameFromEmail(ticket.assignee_email).charAt(0)}
-                                </Avatar>
-                                {!isMobile && (
-                                  <Typography variant="body2" sx={{ 
-                                    fontWeight: 500, 
-                                    color: isDarkMode ? '#d1d5db' : '#4b5563',
-                                    fontSize: '0.8rem'
-                                  }}>
-                                    {formatNameFromEmail(ticket.assignee_email)}
-                                  </Typography>
-                                )}
-                              </div>
+                            {/* Assignee - Modified */}
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              {editingAssignee?.ticketId === ticket.id ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <FormControl size="small" fullWidth>
+                                    <Select
+                                      value={editingAssignee.tempAssigneeId || ''}
+                                      displayEmpty
+                                      onChange={(e) => handleAssigneeChange(e.target.value || null)}
+                                      sx={{
+                                        minWidth: isMobile ? 80 : 120,
+                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' }
+                                      }}
+                                    >
+                                      <MenuItem value="">
+                                        <em>{assigneeLabel}</em>
+                                      </MenuItem>
+                                      {assignOptions.map(option => (
+                                        <MenuItem key={option.id} value={option.id}>
+                                          {option.name}
+                                        </MenuItem>
+                                      ))}
+                                    </Select>
+                                  </FormControl>
+                                  <IconButton onClick={handleConfirmAssigneeChange} size="small" color="primary">
+                                    <CheckIcon />
+                                  </IconButton>
+                                  <IconButton onClick={handleCancelAssigneeChange} size="small" color="error">
+                                    <CloseIcon />
+                                  </IconButton>
+                                </Box>
+                              ) : (
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  {ticket.assignee && assignOptions.length > 0 ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
+                                      <Avatar sx={{ 
+                                        width: isMobile ? 24 : 32, 
+                                        height: isMobile ? 24 : 32, 
+                                        fontSize: isMobile ? '0.7rem' : '0.875rem',
+                                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                      }}>
+                                        {formatNameFromEmail(ticket.assignee_email).charAt(0)}
+                                      </Avatar>
+                                      {!isMobile && (
+                                        <Typography variant="body2" sx={{ 
+                                          fontWeight: 500, 
+                                          color: isDarkMode ? '#d1d5db' : '#4b5563',
+                                          fontSize: '0.8rem'
+                                        }}>
+                                          {formatNameFromEmail(ticket.assignee_email)}
+                                        </Typography>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                                      Unassigned
+                                    </Typography>
+                                  )}
+                                  {isAdmin && assignOptions.length > 0 && (
+                                    <IconButton 
+                                      onClick={() => handleEditAssigneeClick(ticket.id, ticket.assignee || null)} 
+                                      size="small"
+                                      sx={{ ml: 1, color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                                    >
+                                      <EditIcon fontSize="inherit" />
+                                    </IconButton>
+                                  )}
+                                </Box>
+                              )}
                             </TableCell>
 
                             {/* Enhanced Status */}
@@ -998,7 +1109,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, currentUse
                                       lineHeight: isMobile ? '1.2' : '1',
                                       fontSize: isMobile ? '0.65rem' : 'inherit'
                                     }}>
-                                      {displayStr}
+                                    {displayStr}
                                     </span>
                                   </div>
                                 );

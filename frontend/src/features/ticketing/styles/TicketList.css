@@ -322,9 +322,9 @@
 
 /* Wider Due At column for desktop */
 @media (min-width: 769px) {
-  .ticket-table th:nth-child(7),
-  .ticket-table td:nth-child(7) {
-    min-width: 150px;
+.ticket-table th:nth-child(7),
+.ticket-table td:nth-child(7) {
+  min-width: 150px;
   }
 }
 

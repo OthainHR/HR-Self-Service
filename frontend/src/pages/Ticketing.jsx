@@ -6,7 +6,7 @@ export default function Ticketing() {
     <div style={{
       width: '100%',
       minHeight: '100vh',
-      display: 'flex',
+      display: 'flex', 
       flexDirection: 'column'
     }}>
       <TicketingPage />

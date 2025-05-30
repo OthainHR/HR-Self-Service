@@ -317,8 +317,8 @@ export default function AdminReport() {
                 }}>
                   Date Range & Actions
                 </Typography>
-              </Box>
-              
+      </Box>
+
               <Box sx={{ 
                 display: 'flex', 
                 gap: 2, 
@@ -459,7 +459,7 @@ export default function AdminReport() {
 
         {/* Dashboard Charts */}
         <AnimatePresence>
-          {!!rows.length && (
+      {!!rows.length && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -485,11 +485,11 @@ export default function AdminReport() {
                       Analytics Dashboard
                     </Typography>
                   </Box>
-                  <QADashboard rows={rows} />
+          <QADashboard rows={rows} />
                 </CardContent>
               </Card>
             </motion.div>
-          )}
+      )}
         </AnimatePresence>
 
         {/* Data Table */}
@@ -549,9 +549,9 @@ export default function AdminReport() {
                     }
                   }}>
                     <Table size="small" stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          {columns.map(col => (
+            <TableHead>
+              <TableRow>
+                {columns.map(col => (
                             <TableCell 
                               key={col.id}
                               sortDirection={sortBy === col.id ? sortDirection : false}
@@ -569,31 +569,31 @@ export default function AdminReport() {
                                     : 'linear-gradient(135deg, rgba(241, 245, 249, 0.9) 0%, rgba(226, 232, 240, 0.9) 100%)'
                                 }
                               }}
-                            >
-                              <TableSortLabel
+                  >
+                    <TableSortLabel
                                 active={sortBy === col.id}
                                 direction={sortBy === col.id ? sortDirection : 'asc'}
-                                onClick={() => handleSort(col.id)}
+                      onClick={() => handleSort(col.id)}
                                 sx={{
                                   '& .MuiTableSortLabel-icon': {
                                     color: '#6366f1 !important'
                                   }
                                 }}
-                              >
+                    >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                   <span>{col.icon}</span>
-                                  {col.label}
+                      {col.label}
                                 </Box>
-                              </TableSortLabel>
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
+                    </TableSortLabel>
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
                         {sortedRows.map((r, idx) => (
                           <TableRow 
                             key={r.session_id + idx}
-                            sx={{
+                    sx={{
                               background: idx % 2 === 0 
                                 ? 'transparent'
                                 : isDarkMode 
@@ -607,8 +607,8 @@ export default function AdminReport() {
                                 transition: 'all 0.2s ease'
                               },
                               cursor: 'pointer'
-                            }}
-                          >
+                    }}
+                  >
                             <TableCell sx={{ 
                               color: isDarkMode ? '#cbd5e1' : '#475569',
                               fontFamily: 'monospace',
@@ -652,20 +652,20 @@ export default function AdminReport() {
                             }}>
                               {r.answered_at}
                             </TableCell>
-                          </TableRow>
+                  </TableRow>
                         ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+            </TableBody>
+          </Table>
+        </TableContainer>
                 </CardContent>
               </Card>
             </motion.div>
-          )}
+      )}
         </AnimatePresence>
 
         {/* No Data State */}
         <AnimatePresence>
-          {!loading && !rows.length && !error && (
+      {!loading && !rows.length && !error && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}

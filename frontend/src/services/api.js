@@ -57,12 +57,6 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Error:', {
-      message: error.message,
-      response: error.response ? { status: error.response.status, data: error.response.data } : 'No response',
-      config: error.config,
-    });
-
     if (error.response?.status === 401) {
         
         // Note: Supabase client automatically handles token refresh.
@@ -164,7 +158,7 @@ export const auth = {
       },
     });
     if (error) {
-      console.error('Error signing in with Microsoft:', error.message);
+      
       throw error;
     }
     return { user: data?.user, session: data?.session, url: data?.url }; // data might be null if redirect happens
@@ -225,11 +219,11 @@ export const chatApi = {
       // Get the token directly before making the fetch call
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
-        console.error("Error getting session for streaming:", sessionError);
+        
         throw new Error("Authentication error");
       }
       if (!session?.access_token) {
-        console.error("No session token found for streaming.");
+        
         throw new Error("User not authenticated");
       }
       
@@ -245,7 +239,6 @@ export const chatApi = {
       if (!response.ok) {
         // Handle HTTP errors (like 404, 500 from the backend)
         const errorText = await response.text();
-        console.error(`Streaming API Error ${response.status}:`, errorText);
         throw new Error(`Request failed with status code ${response.status}: ${errorText}`);
       }
       
@@ -272,7 +265,7 @@ export const chatApi = {
       onChunkReceived(null); // Pass null or a specific signal
       
     } catch (error) {
-      console.error('sendMessage stream error:', error);
+      
       // Propagate the error so the UI can handle it
       throw error;
     }

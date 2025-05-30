@@ -125,15 +125,15 @@ const DisclaimerOverlay = ({ open, onClose }) => {
   return (
     <AnimatePresence>
       {open && (
-        <Modal
-          open={open}
+    <Modal
+      open={open}
           onClose={handleModalClose}
-          aria-labelledby="disclaimer-title"
-          aria-describedby="disclaimer-description"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+      aria-labelledby="disclaimer-title"
+      aria-describedby="disclaimer-description"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
             p: 2,
             '& .MuiModal-root': {
               outline: 'none',
@@ -178,9 +178,9 @@ const DisclaimerOverlay = ({ open, onClose }) => {
               <FloatingParticle key={i} delay={i * 0.3} />
             ))}
 
-            <Paper 
+        <Paper 
               elevation={0}
-              sx={{ 
+          sx={{ 
                 position: 'relative',
                 zIndex: 1,
                 background: isDarkMode 
@@ -191,11 +191,11 @@ const DisclaimerOverlay = ({ open, onClose }) => {
                 borderRadius: '24px',
                 padding: { xs: 3, sm: 4, md: 5 },
                 maxWidth: '650px',
-                width: '90vw',
+            width: '90vw',    
                 maxHeight: '80vh',
                 overflowY: 'auto',
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-                outline: 'none',
+            outline: 'none',  
                 '&:focus': {
                   outline: 'none'
                 },
@@ -290,7 +290,7 @@ const DisclaimerOverlay = ({ open, onClose }) => {
                     }}
                   >
                     Please read and acknowledge the following disclaimer
-                  </Typography>
+          </Typography>
                 </motion.div>
 
                 {/* Content */}
@@ -315,10 +315,10 @@ const DisclaimerOverlay = ({ open, onClose }) => {
                         color: isDarkMode ? '#e2e8f0' : '#374151'
                       }}
                     >
-                      {`Othain Employee Self Service provides information and guidance for general reference purposes only. Although we make every effort to ensure responses are helpful and current, they may occasionally be incomplete, outdated, or incorrect. Othain Group does not guarantee the accuracy or suitability of AI-generated responses.
+            {`Othain Employee Self Service provides information and guidance for general reference purposes only. Although we make every effort to ensure responses are helpful and current, they may occasionally be incomplete, outdated, or incorrect. Othain Group does not guarantee the accuracy or suitability of AI-generated responses.
 
 If you have further questions, notice inaccuracies, or require official confirmation, please contact **hr@othainsoft.com**.`}
-                    </Typography>
+          </Typography>
                   </Box>
                 </motion.div>
 
@@ -359,13 +359,13 @@ If you have further questions, notice inaccuracies, or require official confirma
                       }}
                     >
                       I Understand & Agree
-                    </Button>
-                  </Box>
+            </Button>
+          </Box>
                 </motion.div>
               </motion.div>
-            </Paper>
+        </Paper>
           </motion.div>
-        </Modal>
+    </Modal>
       )}
     </AnimatePresence>
   );

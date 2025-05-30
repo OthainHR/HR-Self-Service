@@ -29,6 +29,7 @@ const Register = lazy(() => import('./pages/Register'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const Ticketing = lazy(() => import('./pages/Ticketing'));
 const TicketDetailPage = lazy(() => import('./features/ticketing/pages/TicketDetailPage'));
+const CabService = lazy(() => import('./pages/CabService'));
 
 // --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
@@ -272,6 +273,7 @@ const AppContent = () => {
                 <Route path="/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
                 <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
                 <Route path="/ticket/:ticketId" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
+                <Route path="/cab-service" element={<ProtectedRoute><CabService /></ProtectedRoute>} />
 
                 {/* Fallback route - redirect to home or login based on auth */}
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />

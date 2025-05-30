@@ -40,6 +40,7 @@ export default function TicketingPage() {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [allTickets, setAllTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +58,7 @@ export default function TicketingPage() {
         // Determine role from session
         role = session.user?.user_metadata?.role || null;
         const email = session.user?.email?.toLowerCase();
+        setCurrentUserEmail(email);
         // Treat the tickets account as admin
         if (email === 'tickets@othainsoft.com') {
           role = 'admin';
@@ -86,6 +88,7 @@ export default function TicketingPage() {
         setIsLoading(false);
       } else {
         setCurrentUserRole(null);
+        setCurrentUserEmail(null);
         setTabValue(0); // Default to dashboard if no session
       }
     };
@@ -98,6 +101,7 @@ export default function TicketingPage() {
         if (session) {
           let role = session.user?.user_metadata?.role || null;
           const email = session.user?.email?.toLowerCase();
+          setCurrentUserEmail(email);
           if (email === 'tickets@othainsoft.com') {
             role = 'admin';
           }
@@ -115,6 +119,7 @@ export default function TicketingPage() {
           }
         } else {
           setCurrentUserRole(null);
+          setCurrentUserEmail(null);
           setTabValue(0); // Default to dashboard if session ends
         }
       }
@@ -186,6 +191,46 @@ export default function TicketingPage() {
       const { data: ticketData, error: fetchError } = await supabase.from('v_ticket_board').select('*').order('created_at', { ascending: false });
       if (fetchError) {
         setError(`Failed to reload tickets: ${fetchError.message}`);
+      } else {
+        setAllTickets(ticketData || []);
+      }
+    }
+  };
+
+  const handleUpdateTicketAssignee = async (ticketId, newAssigneeId) => {
+    setAllTickets(prevTickets => 
+      prevTickets.map(ticket => 
+        ticket.id === ticketId ? { ...ticket, assignee: newAssigneeId } : ticket
+      )
+    );
+    try {
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({ assignee: newAssigneeId })
+        .eq('id', ticketId);
+
+      if (updateError) {
+        setError(`Failed to update assignee: ${updateError.message}`);
+        const { data: ticketData, error: fetchError } = await supabase
+          .from('v_ticket_board')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (fetchError) {
+          setError(`Failed to reload tickets after assignee update failure: ${fetchError.message}`);
+        } else {
+          setAllTickets(ticketData || []);
+        }
+      } else {
+        setError(null);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred while updating the assignee.');
+      const { data: ticketData, error: fetchError } = await supabase
+        .from('v_ticket_board')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (fetchError) {
+        setError(`Failed to reload tickets after assignee update error: ${fetchError.message}`);
       } else {
         setAllTickets(ticketData || []);
       }
@@ -558,12 +603,18 @@ export default function TicketingPage() {
             ) : viewMode === 'kanban' ? (
               <KanbanBoard />
             ) : (
-              <TicketList tickets={allTickets} statusOrder={statusOrder} handleUpdateTicketStatus={handleUpdateTicketStatus} currentUserRole={currentUserRole} />
+              <TicketList
+                tickets={allTickets}
+                statusOrder={statusOrder}
+                handleUpdateTicketStatus={handleUpdateTicketStatus}
+                handleUpdateTicketAssignee={handleUpdateTicketAssignee}
+                currentUserRole={currentUserRole}
+              />
             )}
           </TabPanel>
           
           <TabPanel value={tabValue} index={1}>
-            <TicketForm />
+              <TicketForm />
           </TabPanel>
         </Box>
       </Box>

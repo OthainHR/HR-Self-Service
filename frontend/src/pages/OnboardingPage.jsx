@@ -550,8 +550,8 @@ const OnboardingPage = () => {
         </Fade>
 
         <motion.div
-          initial="hidden"
-          animate="visible"
+        initial="hidden"
+        animate="visible"
           variants={containerVariants}
         >
           <Box sx={{
@@ -583,8 +583,8 @@ const OnboardingPage = () => {
                           color: isDarkMode ? '#f1f5f9' : '#1e293b'
                         }}>
                           {chapters[currentChapterIndex]?.title || 'Welcome to Our Platform!'}
-                        </Typography>
-                      </Box>
+            </Typography>
+          </Box>
                       <Chip 
                         label={`${completedChapters.size} / ${chapters.length} Complete`}
                         sx={{
@@ -596,52 +596,52 @@ const OnboardingPage = () => {
                       />
                     </Box>
                     
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={progressValue} 
-                      sx={{ 
-                        height: 8, 
-                        borderRadius: 20,
+          <LinearProgress 
+            variant="determinate" 
+            value={progressValue} 
+            sx={{ 
+              height: 8, 
+              borderRadius: 20, 
                         backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)',
-                        '& .MuiLinearProgress-bar': { 
+              '& .MuiLinearProgress-bar': { 
                           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           borderRadius: 20
-                        }
-                      }} 
-                    />
-                  </Box>
+              }
+            }} 
+          />
+        </Box>
 
                   {/* Video Player */}
                   <Box 
-                    ref={videoContainerRef}
+          ref={videoContainerRef}
                     sx={{ 
                       position: 'relative',
-                      borderRadius: '20px',
+            borderRadius: '20px',
                       overflow: 'hidden',
                       background: '#000',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
                       mb: 3
-                    }}
-                  >
-                    <video 
-                      ref={videoRef}
-                      width="100%" 
+          }}
+        >
+          <video 
+            ref={videoRef}
+            width="100%" 
                       style={{ 
                         display: 'block', 
                         borderRadius: '20px', 
                         cursor: 'pointer'
-                      }}
-                      onTimeUpdate={handleTimeUpdate}
-                      onEnded={handleVideoEnded}
-                      onClick={togglePlayPause}
-                    >
-                      <source src={videoSrc} type="video/mp4" />
+            }}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={handleVideoEnded}
+            onClick={togglePlayPause}
+          >
+            <source src={videoSrc} type="video/mp4" />
                       Your browser does not support the video tag.
-                    </video>
+          </video>
 
                     {/* Enhanced Controls */}
                     <Box sx={{
-                      position: 'absolute',
+              position: 'absolute',
                       bottom: 0,
                       left: 0,
                       right: 0,
@@ -649,11 +649,11 @@ const OnboardingPage = () => {
                       p: 2
                     }}>
                       <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
+              display: 'flex', 
+              alignItems: 'center',
                         justifyContent: 'center',
                         gap: 1,
-                        flexWrap: 'wrap'
+              flexWrap: 'wrap' 
                       }}>
                         <Box
                           component="button"
@@ -663,45 +663,45 @@ const OnboardingPage = () => {
                             ...modernButtonStyles,
                             minWidth: 'auto',
                             padding: '8px'
-                          }}
-                        >
+            }}
+          >
                           <SkipPreviousIcon fontSize="small" />
                         </Box>
 
                         <Box
                           component="button"
-                          onClick={togglePlayPause}
+              onClick={togglePlayPause}
                           sx={{
                             ...modernButtonStyles,
                             minWidth: 'auto',
                             padding: '8px'
                           }}
-                        >
+            >
                           {isPlaying ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
                         </Box>
 
                         <Box
                           component="button"
-                          onClick={handleNext}
-                          disabled={isNextButtonDisabled}
+              onClick={handleNext} 
+              disabled={isNextButtonDisabled}
                           sx={{
                             ...modernButtonStyles,
                             minWidth: 'auto',
                             padding: '8px'
                           }}
-                        >
+            >
                           <SkipNextIcon fontSize="small" />
                         </Box>
 
                         <Box
                           component="button"
-                          onClick={handleToggleFullscreen}
+              onClick={handleToggleFullscreen}
                           sx={{
                             ...modernButtonStyles,
                             minWidth: 'auto',
                             padding: '8px'
                           }}
-                        >
+            >
                           {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
                         </Box>
                       </Box>
@@ -772,13 +772,13 @@ const OnboardingPage = () => {
                     }
                   }}>
                     <AnimatePresence>
-                      {chapters.map((chapter, index) => {
-                        const isCompleted = completedChapters.has(index);
-                        const isActive = index === currentChapterIndex;
-                        
-                        return (
+          {chapters.map((chapter, index) => {
+            const isCompleted = completedChapters.has(index);
+            const isActive = index === currentChapterIndex;
+
+            return (
                           <motion.div
-                            key={chapter.id}
+                key={chapter.id} 
                             custom={index}
                             initial="hidden"
                             animate="visible"
@@ -819,27 +819,27 @@ const OnboardingPage = () => {
                                     mb: 0.5,
                                     fontSize: '0.875rem'
                                   }}>
-                                    {chapter.title}
+                    {chapter.title}
                                   </Typography>
                                   <Typography variant="caption" sx={{
                                     color: isDarkMode ? '#94a3b8' : '#64748b',
                                     fontSize: '0.75rem'
                                   }}>
-                                    {chapter.duration}
+                    {chapter.duration}
                                   </Typography>
                                 </Box>
-                                {isCompleted && (
+                {isCompleted && (
                                   <CheckCircleIcon sx={{ 
                                     color: '#10b981',
                                     fontSize: '1.25rem',
                                     ml: 1
                                   }} />
-                                )}
+                )}
                               </Box>
                             </Box>
                           </motion.div>
-                        );
-                      })}
+            );
+          })}
                     </AnimatePresence>
                   </Box>
                 </CardContent>
