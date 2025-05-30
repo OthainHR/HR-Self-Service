@@ -25,11 +25,13 @@ import {
   Book, 
   Logout, 
   Home,
-  ConfirmationNumber
+  ConfirmationNumber,
+  DirectionsCar
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import DarkModeSwitch from './DarkModeSwitch';
+import { supabase } from '../services/supabase';
 
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
@@ -37,18 +39,66 @@ const NavBar = () => {
   const isAuthenticated = !!user;
   const location = useLocation();
 
-  // ---- START RE-ADDED DEBUG LOG ----
-  useEffect(() => {
-    
-    if (isLoading) {
-        
-    } else if (user) {
+  const isHrAdmin = user?.email === 'hr@othainsoft.com';
+  const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
+  const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
+  const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
+  const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
 
-    } else {
-        
-    }
-  }, [user, isLoading]);
-  // ---- END RE-ADDED DEBUG LOG ----
+  useEffect(() => {
+    const checkWhitelist = async () => {
+      if (!user) {
+        setLoadingWhitelistStatus(false);
+        return;
+      }
+      if (isHrAdmin) {
+        setIsUserWhitelisted(true);
+        setLoadingWhitelistStatus(false);
+        return;
+      }
+      try {
+        setLoadingWhitelistStatus(true);
+        const { data, error } = await supabase
+          .from('cab_booking_whitelist')
+          .select('email')
+          .eq('email', user.email)
+          .maybeSingle();
+        if (error) throw error;
+        setIsUserWhitelisted(!!data);
+      } catch (err) {
+        console.error('Error checking whitelist status in NavBar:', err);
+        setIsUserWhitelisted(false);
+      } finally {
+        setLoadingWhitelistStatus(false);
+      }
+    };
+    checkWhitelist();
+  }, [user, isHrAdmin]);
+
+  useEffect(() => {
+    const fetchCabServiceVisibility = async () => {
+      setLoadingCabServiceGlobalVisibility(true);
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('is_enabled')
+          .eq('key', 'cab_service_visibility')
+          .single();
+        if (error) {
+          console.error('Error fetching cab service visibility in NavBar:', error);
+          setCabServiceGlobalVisibility(true); // Default to true
+        } else {
+          setCabServiceGlobalVisibility(data ? data.is_enabled : true);
+        }
+      } catch (err) {
+        console.error('Exception fetching cab service visibility in NavBar:', err);
+        setCabServiceGlobalVisibility(true); // Default to true
+      } finally {
+        setLoadingCabServiceGlobalVisibility(false);
+      }
+    };
+    fetchCabServiceVisibility();
+  }, []);
 
   // Temporary check using email for admin - Replace with proper role check later
   const isAdmin = user?.email === 'admin@example.com';
@@ -216,6 +266,31 @@ const NavBar = () => {
               primary="Ticketing" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/tickets') ? 700 : 500,
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+              }}
+            />
+          </ListItem>
+        )}
+        
+        {isAuthenticated && cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && (
+          <ListItem 
+            component={RouterLink} 
+            to="/cab-service"
+            sx={{ 
+              my: 0.5, 
+              borderRadius: 1,
+              mx: 1,
+              backgroundColor: isActive('/cab-service') ? 'rgba(67, 218, 238, 0.2)' : 'transparent',
+              '&:hover': {
+                background: 'rgba(67, 218, 238, 0.1)',
+              }
+            }}
+          >
+            <ListItemIcon><DirectionsCar sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemText 
+              primary="Book A Cab" 
+              primaryTypographyProps={{ 
+                fontWeight: isActive('/cab-service') ? 700 : 500,
                 color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
               }}
             />
@@ -648,6 +723,65 @@ const NavBar = () => {
                 startIcon={<ConfirmationNumber />}
               >
                 Tickets
+              </Button>
+            )}
+            
+            {isAuthenticated && cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && (
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/cab-service"
+                sx={{ 
+                  px: 2,
+                  py: 1,
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/cab-service') 
+                    ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                    : isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/cab-service') ? 'white' : (isDarkMode ? '#f1f5f9' : '#1e293b'),
+                  backdropFilter: 'blur(10px)',
+                  border: isActive('/cab-service') 
+                    ? '1px solid rgba(150, 5, 5, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/cab-service') ? '0 8px 25px rgba(150, 5, 5, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    background: isActive('/cab-service') 
+                      ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                      : isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/cab-service') 
+                      ? '0 12px 35px rgba(150, 5, 5, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
+                  },
+                  '&:hover::before': {
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                  }
+                }}
+                startIcon={<DirectionsCar />}
+              >
+                Book A Cab
               </Button>
             )}
             
