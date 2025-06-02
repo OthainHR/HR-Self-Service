@@ -51,7 +51,9 @@ import {
   LocalTaxi as LocalTaxiIcon,
   Replay as ReplayIcon,
   LocationOff as LocationOffIcon,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -889,6 +891,35 @@ const CabService = () => {
     }
   };
 
+  // Sorting state for bookings table
+  const [sortBy, setSortBy] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  // Handle table sorting for admin bookings table
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Compute sorted bookings based on sortBy and sortDirection
+  const sortedBookings = React.useMemo(() => {
+    if (!sortBy) return bookings;
+    return [...bookings].sort((a, b) => {
+      const aVal = a[sortBy] ?? '';
+      const bVal = b[sortBy] ?? '';
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const cmp = aVal.localeCompare(bVal);
+        return sortDirection === 'asc' ? cmp : -cmp;
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [bookings, sortBy, sortDirection]);
 
   return (
     <Box
@@ -1439,7 +1470,17 @@ const CabService = () => {
                       <TableCell>Pickup Time</TableCell>
                       <TableCell>Department</TableCell>
                       <TableCell>Pickup Location</TableCell>
-                      <TableCell>Drop-off Location</TableCell>
+                      <TableCell
+                        onClick={() => handleSort('dropoff_location')}
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Drop-off Location
+                        {sortBy === 'dropoff_location' && (
+                          sortDirection === 'asc'
+                            ? <ArrowUpwardIcon fontSize="small" sx={{ ml: 0.5 }} />
+                            : <ArrowDownwardIcon fontSize="small" sx={{ ml: 0.5 }} />
+                        )}
+                      </TableCell>
                       <TableCell>Booking Date</TableCell>
                       <TableCell>Status</TableCell>
                       {isAdmin && (
@@ -1448,7 +1489,7 @@ const CabService = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {bookings.map((booking) => (
+                    {sortedBookings.map((booking) => (
                       <TableRow key={booking.id}>
                         {isAdmin && (
                           <>
