@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -108,11 +108,37 @@ const CabService = () => {
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
 
+  // User's specific cab configuration from whitelist
+  const [userCabConfig, setUserCabConfig] = useState({
+    allowedPickup: null,
+    preferredDropoff: null, // This will be treated as allowedDropoff if set
+    isConfigured: false,
+    allowedPickupTime: null, 
+  });
+
+  // State for editing a whitelist entry
+  const [showEditWhitelistEntryDialog, setShowEditWhitelistEntryDialog] = useState(false);
+  const [editingWhitelistEntry, setEditingWhitelistEntry] = useState(null);
+  const [newWhitelistedUserDetails, setNewWhitelistedUserDetails] = useState({
+    pick_up_location: '',
+    drop_off_location: '',
+    pickup_time: '', 
+  });
+
+  const setSnackbarWithLogging = React.useCallback((newState) => {
+    // console.log('[CabService - setSnackbarWithLogging] Called with:', newState); // Optional: keep for debugging
+    // console.trace('[CabService - setSnackbarWithLogging] Trace for this call:'); // Optional: keep for debugging
+    try {
+      setSnackbar(newState); // Call setSnackbar directly
+    } catch (e) {
+      // console.error('[CabService - setSnackbarWithLogging] !!! ERROR DURING setSnackbar() CALL !!!:', e); // Optional: keep for debugging
+    }
+  }, [setSnackbar]); // Add setSnackbar as a dependency
 
   // Dropdown options
   const pickupTimes = ['9pm', '11:30pm', '2:30am'];
   const departments = ['GBT', 'Presidio', 'Othain'];
-  const pickupLocations = ['Building # 9', 'Building # 16'];
+  const pickupLocations = ['Building # 9', 'Building # 16']; // Reverted to include #
   const dropoffLocations = [
     'Chilakalaguda', 'Pragathi Nagar', 'JNTU', 'KPHB', 'Gurram Gudda',
     'Badangpet', 'Madhapur', 'Siddique Nagar', 'Shaikpet', 'Kataydhan',
@@ -125,7 +151,7 @@ const CabService = () => {
     'New Bhoiguda', 'Sitafalmandi', 'Kothapet', 'Nagol', 'BN Reddy Colony',
     'Hastinapur', 'Rajendra Nagar', 'Atthapur', 'Lingampalli', 'Sangareddy',
     'Vasanth Nagar', 'Gajularamaram', 'Parvathapur', 'Ram Nagar',
-    'Himayath Nagar', 'Rampally'
+    'Himayath Nagar', 'Rampally', 'Aparna MariGold Gundlapochalli', 'Greenwood Residency, Koukur'
   ];
 
   // Check if user is whitelisted or HR admin
@@ -144,19 +170,31 @@ const CabService = () => {
         setLoadingWhitelistStatus(true);
         const { data, error } = await supabase
           .from('cab_booking_whitelist')
-          .select('email')
+          .select('email, pick_up_location, drop_off_location, pickup_time') // Fetch new fields
           .eq('email', user.email)
           .maybeSingle(); // Use maybeSingle as it might return null if not found
 
         if (error) {
           console.error('Error checking whitelist status:', error);
           setIsUserWhitelisted(false); // Default to not whitelisted on error
+          setUserCabConfig({ allowedPickup: null, preferredDropoff: null, isConfigured: false, allowedPickupTime: null });
         } else {
           setIsUserWhitelisted(!!data); // True if data is not null (email found)
+          if (data) {
+            setUserCabConfig({
+              allowedPickup: data.pick_up_location,
+              preferredDropoff: data.drop_off_location,
+              isConfigured: true,
+              allowedPickupTime: data.pickup_time, // Store whitelisted pickup time
+            });
+          } else {
+            setUserCabConfig({ allowedPickup: null, preferredDropoff: null, isConfigured: false, allowedPickupTime: null });
+          }
         }
       } catch (err) {
         console.error('Exception checking whitelist status:', err);
         setIsUserWhitelisted(false);
+        setUserCabConfig({ allowedPickup: null, preferredDropoff: null, isConfigured: false, allowedPickupTime: null });
       } finally {
         setLoadingWhitelistStatus(false);
       }
@@ -227,7 +265,7 @@ const CabService = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      setSnackbar({
+      setSnackbarWithLogging({
         open: true,
         message: 'Failed to load booking history',
         severity: 'error'
@@ -254,7 +292,7 @@ const CabService = () => {
       filterBookings(data || [], selectedDate, selectedPickupTime, selectedPickupLocation);
     } catch (error) {
       console.error('Error loading admin report:', error);
-      setSnackbar({
+      setSnackbarWithLogging({
         open: true,
         message: 'Failed to load admin report',
         severity: 'error'
@@ -327,7 +365,8 @@ const CabService = () => {
   const handleBookCab = async () => {
     // Validate form
     if (!formData.pickupTime || !formData.department || !formData.pickupLocation || !formData.dropoffLocation) {
-      setSnackbar({
+      // console.warn('[CabService - handleBookCab] Form validation failed. Missing fields.');
+      setSnackbarWithLogging({
         open: true,
         message: 'Please fill in all required fields',
         severity: 'error'
@@ -344,56 +383,101 @@ const CabService = () => {
         department: formData.department,
         pickup_location: formData.pickupLocation,
         dropoff_location: formData.dropoffLocation,
-        booking_date: new Date().toISOString().split('T')[0] // Today's date
+        booking_date: new Date().toISOString().split('T')[0], // Today's date
+        needs_escort: false, // Explicitly set default for new bookings
       };
 
-      const { data, error } = await supabase
+      const { error: insertError } = await supabase // Renamed to insertError
         .from('cab_bookings')
         .insert([bookingData])
-        .select()
-        .single();
+        // The 'error' object from the insert itself is the primary indicator of success/failure.
+        ;
 
-      if (error) throw error;
+      // If Supabase client returns any error object, treat it as an error.
+      // Only throw if it has a .message property (more like a true error)
+      if (insertError && insertError.message) {
+        console.error('Supabase insert operation returned an error object WITH A MESSAGE:', insertError);
+        throw insertError; // Re-throw to be caught by the catch block below
+      } else if (insertError) {
+        console.warn('[CabService - handleBookCab] Supabase insertError was truthy but had no .message. Treating as non-critical:', insertError);
+        // For now, let this proceed to the success path. Depending on the content of insertError,
+        // you might want to handle this differently or still throw it.
+      }
 
-      setSnackbar({
+      // If insertError is null, we proceed as success
+      setSnackbarWithLogging({
         open: true,
-        message: 'Cab booked successfully! Confirmation email sent.',
+        message: 'Cab booked successfully! Confirmation email sent.', // Restored original success message
         severity: 'success'
       });
 
-      // Reset form
+      loadBookings(); // Restored loadBookings() call
+      
+      // Defer closing dialog and resetting form slightly to see if it changes behavior
+      // setTimeout(() => { // Removing setTimeout as the main issue seems resolved
+      setShowBookingDialog(false);
+      // console.log('[CabService - handleBookCab] (setTimeout) setShowBookingDialog(false) called.');
+      // Reset form - this was missing from the success path after the previous reset was removed
       setFormData({
         pickupTime: '',
         department: '',
         pickupLocation: '',
         dropoffLocation: ''
       });
+      // console.log('[CabService - handleBookCab] (setTimeout) Form reset.');
+      // }, 0);
 
-      // Refresh bookings
-      loadBookings();
-      setShowBookingDialog(false);
-
-    } catch (error) {
+    } catch (error) { // This is the outer catch block
+      // Restore original catch block logging and snackbar message setting
       console.error('Error booking cab:', error);
-      setSnackbar({
+      let detailedErrorMessage = 'Failed to book cab. Please try again.';
+      if (error && typeof error === 'object') {
+        // console.error('Supabase error details:', JSON.stringify(error, null, 2)); // Can be kept for debugging if needed
+        if (error.message) {
+          detailedErrorMessage = `Failed to book cab: ${error.message}`;
+        }
+        if (error.details) {
+          detailedErrorMessage += ` (Details: ${error.details})`;
+        }
+        if (error.hint) {
+          detailedErrorMessage += ` (Hint: ${error.hint})`;
+        }
+      }
+      setSnackbarWithLogging({
         open: true,
-        message: 'Failed to book cab. Please try again.',
+        message: detailedErrorMessage, // Restored dynamic error message
         severity: 'error'
       });
     } finally {
       setLoading(false);
+      // console.log('[CabService - handleBookCab] setLoading(false) in finally block.');
     }
   };
 
   // Handle rebook with last booking data
   const handleRebook = () => {
+    
     if (lastBooking) {
-      setFormData({
+      let rebookFormData = {
         pickupTime: lastBooking.pickup_time,
         department: lastBooking.department,
         pickupLocation: lastBooking.pickup_location,
         dropoffLocation: lastBooking.dropoff_location
-      });
+      };
+
+      // Override with whitelisted values if they exist for non-HR user
+      if (!isHrAdmin && userCabConfig.isConfigured) {
+        if (userCabConfig.allowedPickupTime) {
+          rebookFormData.pickupTime = userCabConfig.allowedPickupTime;
+        }
+        if (userCabConfig.allowedPickup) {
+          rebookFormData.pickupLocation = userCabConfig.allowedPickup;
+        }
+        if (userCabConfig.preferredDropoff) {
+          rebookFormData.dropoffLocation = userCabConfig.preferredDropoff;
+        }
+      }
+      setFormData(rebookFormData);
       setShowBookingDialog(true);
     }
   };
@@ -470,7 +554,7 @@ const CabService = () => {
       selectedPickupLocation && `Location: ${selectedPickupLocation}`
     ].filter(Boolean).join(', ');
 
-    setSnackbar({
+    setSnackbarWithLogging({
       open: true,
       message: `Exported ${bookings.length} cab bookings to Excel (${filterInfo})`,
       severity: 'success'
@@ -500,7 +584,7 @@ const CabService = () => {
       if (count === 0 || !data || data.length === 0) {
         console.warn('Update successful according to Supabase, but no rows were affected. Booking ID:', bookingId);
         // This might happen if the RLS policy prevents the update but doesn't return an error object.
-        setSnackbar({
+        setSnackbarWithLogging({
           open: true,
           message: 'Update sent, but status may not have changed in DB. Check permissions.',
           severity: 'warning'
@@ -531,7 +615,7 @@ const CabService = () => {
       );
 
       if (count > 0 && data && data.length > 0) {
-        setSnackbar({
+        setSnackbarWithLogging({
           open: true,
           message: `Escort status updated to ${confirmedNeedsEscort ? 'Yes' : 'No'}`,
           severity: 'success'
@@ -541,7 +625,7 @@ const CabService = () => {
     } catch (error) {
       // This will catch errors from the try block, including re-thrown Supabase errors
       console.error('Failed to update escort status (catch block):', error);
-      setSnackbar({
+      setSnackbarWithLogging({
         open: true,
         message: 'Failed to update escort status. Check console for details.',
         severity: 'error'
@@ -556,13 +640,13 @@ const CabService = () => {
     try {
       const { data, error } = await supabase
         .from('cab_booking_whitelist')
-        .select('email, created_at, added_by')
+        .select('email, created_at, added_by, pick_up_location, drop_off_location, pickup_time')
         .order('email', { ascending: true });
       if (error) throw error;
       setWhitelistedEmails(data || []);
     } catch (err) {
       console.error('Error fetching whitelisted emails:', err);
-      setSnackbar({ open: true, message: 'Failed to load whitelist', severity: 'error' });
+      setSnackbarWithLogging({ open: true, message: 'Failed to load whitelist', severity: 'error' });
     } finally {
       setLoadingWhitelistManagement(false);
     }
@@ -582,7 +666,7 @@ const CabService = () => {
       setAllSystemUsers(data.map(u => ({ email: u.user_email })) || []); // Ensure data is in expected format for Autocomplete
     } catch (err) {
       console.error('Error fetching all system users:', err);
-      setSnackbar({ open: true, message: 'Failed to load system users for whitelist', severity: 'error' });
+      setSnackbarWithLogging({ open: true, message: 'Failed to load system users for whitelist', severity: 'error' });
     } finally {
       setLoadingWhitelistManagement(false);
     }
@@ -595,20 +679,27 @@ const CabService = () => {
       // Check if already whitelisted to prevent duplicate error
       const existing = whitelistedEmails.find(e => e.email === emailToAdd);
       if (existing) {
-        setSnackbar({ open: true, message: `${emailToAdd} is already whitelisted.`, severity: 'info' });
+        setSnackbarWithLogging({ open: true, message: `${emailToAdd} is already whitelisted.`, severity: 'info' });
         return;
       }
 
       const { error } = await supabase
         .from('cab_booking_whitelist')
-        .insert({ email: emailToAdd }); 
+        .insert({ 
+          email: emailToAdd, 
+          added_by: user.email,
+          pick_up_location: newWhitelistedUserDetails.pick_up_location || null,
+          drop_off_location: newWhitelistedUserDetails.drop_off_location || null,
+          pickup_time: newWhitelistedUserDetails.pickup_time || null, // Add pickup_time
+        }); 
       if (error) throw error;
-      setSnackbar({ open: true, message: `${emailToAdd} added to whitelist.`, severity: 'success' });
+      setSnackbarWithLogging({ open: true, message: `${emailToAdd} added to whitelist.`, severity: 'success' });
       fetchWhitelistedEmails(); // Refresh list
       setSelectedUserToWhitelist(null); // Reset selection
+      setNewWhitelistedUserDetails({ pick_up_location: '', drop_off_location: '', pickup_time: '' }); // Reset details
     } catch (err) {
       console.error('Error adding to whitelist:', err);
-      setSnackbar({ open: true, message: `Failed to add ${emailToAdd} to whitelist.`, severity: 'error' });
+      setSnackbarWithLogging({ open: true, message: `Failed to add ${emailToAdd} to whitelist.`, severity: 'error' });
     } finally {
       setLoadingWhitelistManagement(false);
     }
@@ -623,11 +714,11 @@ const CabService = () => {
         .delete()
         .eq('email', emailToRemove);
       if (error) throw error;
-      setSnackbar({ open: true, message: `${emailToRemove} removed from whitelist.`, severity: 'success' });
+      setSnackbarWithLogging({ open: true, message: `${emailToRemove} removed from whitelist.`, severity: 'success' });
       fetchWhitelistedEmails(); // Refresh list
     } catch (err) {
       console.error('Error removing from whitelist:', err);
-      setSnackbar({ open: true, message: `Failed to remove ${emailToRemove}.`, severity: 'error' });
+      setSnackbarWithLogging({ open: true, message: `Failed to remove ${emailToRemove}.`, severity: 'error' });
     } finally {
       setLoadingWhitelistManagement(false);
     }
@@ -642,7 +733,14 @@ const CabService = () => {
       const parts = prefix.split('.');
       const first = capitalizeFirstLetter(parts[0] || '');
       const last = capitalizeFirstLetter(parts[1] || '');
-      return { 'First Name': first, 'Last Name': last, 'Email': email };
+      return { 
+        'First Name': first, 
+        'Last Name': last, 
+        'Email': email,
+        'Default Pickup Location': item.pick_up_location || 'N/A',
+        'Default Drop-off Location': item.drop_off_location || 'N/A',
+        'Default Pickup Time': item.pickup_time || 'N/A', // Added pickup time
+      };
     });
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -650,7 +748,10 @@ const CabService = () => {
     worksheet['!cols'] = [
       { wch: 15 }, // First Name
       { wch: 15 }, // Last Name
-      { wch: 25 }  // Email
+      { wch: 25 },  // Email
+      { wch: 20 }, // Default Pickup Location
+      { wch: 20 },  // Default Drop-off Location
+      { wch: 15 }   // Default Pickup Time
     ];
     // Header styling
     const range = XLSX.utils.decode_range(worksheet['!ref']);
@@ -665,7 +766,7 @@ const CabService = () => {
     }
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Whitelist');
     XLSX.writeFile(workbook, `cab_booking_whitelist_${whitelistedEmails.length}_entries.xlsx`);
-    setSnackbar({ open: true, message: `Exported ${whitelistedEmails.length} users to Excel`, severity: 'success' });
+    setSnackbarWithLogging({ open: true, message: `Exported ${whitelistedEmails.length} users to Excel`, severity: 'success' });
   };
 
   // Load whitelist management data if HR Admin
@@ -704,14 +805,14 @@ const CabService = () => {
         throw error;
       }
       setCabServiceGlobalVisibility(newVisibility);
-      setSnackbar({
+      setSnackbarWithLogging({
         open: true,
         message: `Cab Service visibility ${newVisibility ? 'enabled' : 'disabled'} for all users.`,
         severity: 'success',
       });
     } catch (err) {
       console.error('Error updating cab service visibility:', err);
-      setSnackbar({
+      setSnackbarWithLogging({
         open: true,
         message: 'Failed to update cab service visibility.',
         severity: 'error',
@@ -724,6 +825,69 @@ const CabService = () => {
   };
 
   const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin);
+
+
+  // Effect to pre-fill form data based on userCabConfig when booking dialog opens
+  useEffect(() => {
+    if (showBookingDialog && userCabConfig.isConfigured && !isHrAdmin) {
+      let newFormData = {};
+      if (userCabConfig.allowedPickup) {
+        newFormData.pickupLocation = userCabConfig.allowedPickup;
+      }
+      if (userCabConfig.allowedPickupTime) { 
+        newFormData.pickupTime = userCabConfig.allowedPickupTime;
+      }
+      // Pre-fill dropoff if not already set by user in current session or from rebook
+      if (userCabConfig.preferredDropoff && !formData.dropoffLocation) { // Treat preferredDropoff as allowedDropoff
+        newFormData.dropoffLocation = userCabConfig.preferredDropoff;
+      }
+      if (Object.keys(newFormData).length > 0) {
+        setFormData(prev => ({ ...prev, ...newFormData }));
+      }
+    }
+    // If dialog closes, reset part of form potentially affected by userCabConfig if not rebooking.
+    // This part might need refinement based on how rebook interacts.
+    // For now, let's assume rebook directly sets formData, overriding this.
+  }, [showBookingDialog, userCabConfig, isHrAdmin]);
+
+
+  const handleOpenEditWhitelistDialog = (entry) => {
+    setEditingWhitelistEntry({
+      email: entry.email,
+      pick_up_location: entry.pick_up_location || '',
+      drop_off_location: entry.drop_off_location || '',
+      pickup_time: entry.pickup_time || '', // Added pickup_time
+    });
+    setShowEditWhitelistEntryDialog(true);
+  };
+
+  const handleSaveWhitelistEntryUpdate = async () => {
+    if (!editingWhitelistEntry || !editingWhitelistEntry.email) return;
+    setLoadingWhitelistManagement(true);
+    try {
+      const { error } = await supabase
+        .from('cab_booking_whitelist')
+        .update({
+          pick_up_location: editingWhitelistEntry.pick_up_location || null,
+          drop_off_location: editingWhitelistEntry.drop_off_location || null,
+          pickup_time: editingWhitelistEntry.pickup_time || null, // Added pickup_time
+          added_by: user.email, // Or a dedicated 'updated_by' field
+          updated_at: new Date().toISOString() 
+        })
+        .eq('email', editingWhitelistEntry.email);
+      
+      if (error) throw error;
+      setSnackbarWithLogging({ open: true, message: `Whitelist entry for ${editingWhitelistEntry.email} updated.`, severity: 'success' });
+      fetchWhitelistedEmails();
+      setShowEditWhitelistEntryDialog(false);
+      setEditingWhitelistEntry(null);
+    } catch (err) {
+      console.error('Error updating whitelist entry:', err);
+      setSnackbarWithLogging({ open: true, message: `Failed to update whitelist entry for ${editingWhitelistEntry.email}.`, severity: 'error' });
+    } finally {
+      setLoadingWhitelistManagement(false);
+    }
+  };
 
 
   return (
@@ -1332,7 +1496,17 @@ const CabService = () => {
                         </TableCell>
                         <TableCell>{booking.dropoff_location}</TableCell>
                         <TableCell>
-                          {new Date(booking.booking_date).toLocaleDateString()}
+                          {(() => {
+                            // Display date as YYYY-MM-DD to avoid timezone interpretation issues with new Date()
+                            // The booking_date is already stored in 'YYYY-MM-DD' format
+                            if (booking.booking_date) {
+                              const parts = booking.booking_date.split('-');
+                              if (parts.length === 3) {
+                                return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}/${parts[0]}`;
+                              }
+                            }
+                            return 'Invalid Date'; // Fallback for unexpected format
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Chip
@@ -1409,7 +1583,7 @@ const CabService = () => {
               </Box>
 
               {/* Add to Whitelist Form */}
-              <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'flex-start' }}>
                 <Autocomplete
                   sx={{ flexGrow: 1 }}
                   options={allSystemUsers.filter(u => !whitelistedEmails.some(w => w.email === u.email))}
@@ -1454,6 +1628,58 @@ const CabService = () => {
                 </Button>
               </Box>
 
+              {/* New Fields for Pickup/Dropoff for adding user */}
+              {selectedUserToWhitelist && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel>Default Pickup Location (Optional)</InputLabel>
+                      <Select
+                        value={newWhitelistedUserDetails.pick_up_location}
+                        onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, pick_up_location: e.target.value}))}
+                        label="Default Pickup Location (Optional)"
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {pickupLocations.map((loc) => (
+                          <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel>Default Drop-off Location (Optional)</InputLabel>
+                      <Select
+                        value={newWhitelistedUserDetails.drop_off_location}
+                        onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, drop_off_location: e.target.value}))}
+                        label="Default Drop-off Location (Optional)"
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {dropoffLocations.map((loc) => (
+                          <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}> {/* Added Pickup Time for new user */}
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel>Default Pickup Time (Optional)</InputLabel>
+                      <Select
+                        value={newWhitelistedUserDetails.pickup_time}
+                        onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, pickup_time: e.target.value}))}
+                        label="Default Pickup Time (Optional)"
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {pickupTimes.map((time) => (
+                          <MenuItem key={time} value={time}>{time}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              )}
+
+
               {/* Whitelisted Emails Table */}
               {loadingWhitelistManagement && whitelistedEmails.length === 0 ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress /></Box>
@@ -1470,6 +1696,9 @@ const CabService = () => {
                         <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Added By</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Date Added</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Pickup Location</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Drop-off Location</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Pickup Time</TableCell> {/* Added Pickup Time header */}
                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                       </TableRow>
                     </TableHead>
@@ -1479,7 +1708,13 @@ const CabService = () => {
                           <TableCell>{item.email}</TableCell>
                           <TableCell>{item.added_by || 'N/A'}</TableCell>
                           <TableCell>{new Date(item.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>{item.pick_up_location || 'Not set'}</TableCell>
+                          <TableCell>{item.drop_off_location || 'Not set'}</TableCell>
+                          <TableCell>{item.pickup_time || 'Not set'}</TableCell> {/* Display pickup_time */}
                           <TableCell align="right">
+                            <IconButton onClick={() => handleOpenEditWhitelistDialog(item)} size="small" sx={{mr:1}}>
+                               <FilterIcon /> {/* Using FilterIcon as a placeholder for Edit Icon */}
+                            </IconButton>
                             <Button 
                               variant="outlined" 
                               color="error" 
@@ -1547,61 +1782,142 @@ const CabService = () => {
                   Pickup Time*
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  {pickupTimes.map((time) => (
-                    <Button
-                      key={time}
-                      variant={formData.pickupTime === time ? 'contained' : 'outlined'}
-                      onClick={() => handleInputChange('pickupTime', time)}
-                      startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
-                      sx={{
-                        minWidth: 140,
-                        height: 56,
-                        borderRadius: 3,
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        background: formData.pickupTime === time 
-                          ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-                          : isDarkMode 
-                            ? 'rgba(255, 255, 255, 0.05)'
-                            : 'rgba(255, 255, 255, 0.9)',
-                        borderColor: formData.pickupTime === time 
-                          ? 'transparent'
-                          : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-                        borderWidth: 2,
-                        color: formData.pickupTime === time 
-                          ? 'white'
-                          : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                        boxShadow: formData.pickupTime === time 
-                          ? '0 8px 32px rgba(59, 130, 246, 0.3)'
-                          : isDarkMode 
-                            ? '0 4px 20px rgba(0, 0, 0, 0.3)'
-                            : '0 4px 20px rgba(0, 0, 0, 0.08)',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
+                  {(!isHrAdmin && userCabConfig.isConfigured && userCabConfig.allowedPickupTime) ? (
+                    // Case 1: Whitelisted user with a specific pickup time
+                    pickupTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant={formData.pickupTime === time ? 'contained' : 'outlined'}
+                        onClick={() => handleInputChange('pickupTime', time)}
+                        disabled={time !== userCabConfig.allowedPickupTime} // Disable if not the allowed time
+                        startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 140,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                           background: formData.pickupTime === time 
-                            ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
                             : isDarkMode 
-                              ? 'rgba(255, 255, 255, 0.1)'
-                              : 'rgba(59, 130, 246, 0.05)',
+                              ? 'rgba(255, 255, 255, 0.05)'
+                              : 'rgba(255, 255, 255, 0.9)',
                           borderColor: formData.pickupTime === time 
                             ? 'transparent'
-                            : '#3b82f6',
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                          borderWidth: 2,
+                          color: formData.pickupTime === time 
+                            ? 'white'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
                           boxShadow: formData.pickupTime === time 
-                            ? '0 12px 40px rgba(59, 130, 246, 0.4)'
-                            : '0 8px 32px rgba(59, 130, 246, 0.15)',
-                        },
-                        '&:active': {
-                          transform: 'translateY(0px)',
-                        }
-                      }}
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                            ? '0 8px 32px rgba(59, 130, 246, 0.3)'
+                            : isDarkMode 
+                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            background: formData.pickupTime === time 
+                              ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                              : isDarkMode 
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : 'rgba(59, 130, 246, 0.05)',
+                            borderColor: formData.pickupTime === time 
+                              ? 'transparent'
+                              : '#3b82f6',
+                            boxShadow: formData.pickupTime === time 
+                              ? '0 12px 40px rgba(59, 130, 246, 0.4)'
+                              : '0 8px 32px rgba(59, 130, 246, 0.15)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0px)',
+                          }
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    ))
+                  ) : (!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.allowedPickupTime) ? (
+                    // Case 2: Whitelisted user, but no specific pickup time assigned by HR
+                    pickupTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant='outlined'
+                        disabled // All buttons disabled
+                        startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 140,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none'
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    ))
+                  ) : (
+                    // Case 3: HR Admin or non-whitelisted/non-configured user (all options available)
+                    pickupTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant={formData.pickupTime === time ? 'contained' : 'outlined'}
+                        onClick={() => handleInputChange('pickupTime', time)}
+                        startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 140,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          background: formData.pickupTime === time 
+                            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                            : isDarkMode 
+                              ? 'rgba(255, 255, 255, 0.05)'
+                              : 'rgba(255, 255, 255, 0.9)',
+                          borderColor: formData.pickupTime === time 
+                            ? 'transparent'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                          borderWidth: 2,
+                          color: formData.pickupTime === time 
+                            ? 'white'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                          boxShadow: formData.pickupTime === time 
+                            ? '0 8px 32px rgba(59, 130, 246, 0.3)'
+                            : isDarkMode 
+                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            background: formData.pickupTime === time 
+                              ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                              : isDarkMode 
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : 'rgba(59, 130, 246, 0.05)',
+                            borderColor: formData.pickupTime === time 
+                              ? 'transparent'
+                              : '#3b82f6',
+                            boxShadow: formData.pickupTime === time 
+                              ? '0 12px 40px rgba(59, 130, 246, 0.4)'
+                              : '0 8px 32px rgba(59, 130, 246, 0.15)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0px)',
+                          }
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    ))
+                  )}
                 </Box>
               </Box>
             </Grid>
@@ -1729,61 +2045,142 @@ const CabService = () => {
                   Pickup Location*
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  {pickupLocations.map((location) => (
-                    <Button
-                      key={location}
-                      variant={formData.pickupLocation === location ? 'contained' : 'outlined'}
-                      onClick={() => handleInputChange('pickupLocation', location)}
-                      startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
-                      sx={{
-                        minWidth: 160,
-                        height: 56,
-                        borderRadius: 3,
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        background: formData.pickupLocation === location 
-                          ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
-                          : isDarkMode 
-                            ? 'rgba(255, 255, 255, 0.05)'
-                            : 'rgba(255, 255, 255, 0.9)',
-                        borderColor: formData.pickupLocation === location 
-                          ? 'transparent'
-                          : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-                        borderWidth: 2,
-                        color: formData.pickupLocation === location 
-                          ? 'white'
-                          : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                        boxShadow: formData.pickupLocation === location 
-                          ? '0 8px 32px rgba(220, 38, 38, 0.3)'
-                          : isDarkMode 
-                            ? '0 4px 20px rgba(0, 0, 0, 0.3)'
-                            : '0 4px 20px rgba(0, 0, 0, 0.08)',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
+                  {(!isHrAdmin && userCabConfig.isConfigured && userCabConfig.allowedPickup) ? (
+                    // Case 1: Whitelisted user with a specific pickup location
+                    pickupLocations.map((location) => (
+                      <Button
+                        key={location}
+                        variant={formData.pickupLocation === location ? 'contained' : 'outlined'}
+                        onClick={() => handleInputChange('pickupLocation', location)}
+                        disabled={location !== userCabConfig.allowedPickup} // Disable if not the allowed location
+                        startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 160,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                           background: formData.pickupLocation === location 
-                            ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
+                            ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
                             : isDarkMode 
-                              ? 'rgba(255, 255, 255, 0.1)'
-                              : 'rgba(220, 38, 38, 0.05)',
+                              ? 'rgba(255, 255, 255, 0.05)'
+                              : 'rgba(255, 255, 255, 0.9)',
                           borderColor: formData.pickupLocation === location 
                             ? 'transparent'
-                            : '#dc2626',
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                          borderWidth: 2,
+                          color: formData.pickupLocation === location 
+                            ? 'white'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
                           boxShadow: formData.pickupLocation === location 
-                            ? '0 12px 40px rgba(220, 38, 38, 0.4)'
-                            : '0 8px 32px rgba(220, 38, 38, 0.15)',
-                        },
-                        '&:active': {
-                          transform: 'translateY(0px)',
-                        }
-                      }}
-                    >
-                      {location}
-                    </Button>
-                  ))}
+                            ? '0 8px 32px rgba(220, 38, 38, 0.3)'
+                            : isDarkMode 
+                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            background: formData.pickupLocation === location 
+                              ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
+                              : isDarkMode 
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : 'rgba(220, 38, 38, 0.05)',
+                            borderColor: formData.pickupLocation === location 
+                              ? 'transparent'
+                              : '#dc2626',
+                            boxShadow: formData.pickupLocation === location 
+                              ? '0 12px 40px rgba(220, 38, 38, 0.4)'
+                              : '0 8px 32px rgba(220, 38, 38, 0.15)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0px)',
+                          }
+                        }}
+                      >
+                        {location}
+                      </Button>
+                    ))
+                  ) : (!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.allowedPickup) ? (
+                     // Case 2: Whitelisted user, but no specific pickup location assigned by HR
+                    pickupLocations.map((location) => (
+                      <Button
+                        key={location}
+                        variant='outlined'
+                        disabled // All buttons disabled
+                        startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 160,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none'
+                        }}
+                      >
+                        {location}
+                      </Button>
+                    ))
+                  ) : (
+                    // Case 3: HR Admin or non-whitelisted/non-configured user (all options available)
+                    pickupLocations.map((location) => (
+                      <Button
+                        key={location}
+                        variant={formData.pickupLocation === location ? 'contained' : 'outlined'}
+                        onClick={() => handleInputChange('pickupLocation', location)}
+                        startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                          minWidth: 160,
+                          height: 56,
+                          borderRadius: 3,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          background: formData.pickupLocation === location 
+                            ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                            : isDarkMode 
+                              ? 'rgba(255, 255, 255, 0.05)'
+                              : 'rgba(255, 255, 255, 0.9)',
+                          borderColor: formData.pickupLocation === location 
+                            ? 'transparent'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                          borderWidth: 2,
+                          color: formData.pickupLocation === location 
+                            ? 'white'
+                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                          boxShadow: formData.pickupLocation === location 
+                            ? '0 8px 32px rgba(220, 38, 38, 0.3)'
+                            : isDarkMode 
+                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            background: formData.pickupLocation === location 
+                              ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
+                              : isDarkMode 
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : 'rgba(220, 38, 38, 0.05)',
+                            borderColor: formData.pickupLocation === location 
+                              ? 'transparent'
+                              : '#dc2626',
+                            boxShadow: formData.pickupLocation === location 
+                              ? '0 12px 40px rgba(220, 38, 38, 0.4)'
+                              : '0 8px 32px rgba(220, 38, 38, 0.15)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0px)',
+                          }
+                        }}
+                      >
+                        {location}
+                      </Button>
+                    ))
+                  )}
                 </Box>
               </Box>
             </Grid>
@@ -1818,6 +2215,7 @@ const CabService = () => {
                 </Typography>
                 <FormControl 
                   fullWidth
+                  disabled={!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.preferredDropoff} // Disable completely if whitelisted and no dropoff is set by HR
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 3,
@@ -1845,12 +2243,26 @@ const CabService = () => {
                     value={formData.dropoffLocation}
                     onChange={(e) => handleInputChange('dropoffLocation', e.target.value)}
                     label="Drop-off Location *"
+                    readOnly={!isHrAdmin && userCabConfig.isConfigured && !!userCabConfig.preferredDropoff} // If a specific dropoff is set, it's readonly
                   >
-                    {dropoffLocations.map((location) => (
-                      <MenuItem key={location} value={location}>
-                        {location}
+                    {(!isHrAdmin && userCabConfig.isConfigured && userCabConfig.preferredDropoff) ? (
+                      // Case 1: Whitelisted user with a specific dropoff location
+                      <MenuItem value={userCabConfig.preferredDropoff} key={userCabConfig.preferredDropoff}>
+                        {userCabConfig.preferredDropoff} (Assigned)
                       </MenuItem>
-                    ))}
+                    ) : (!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.preferredDropoff) ? (
+                      // Case 2: Whitelisted user, but no specific dropoff assigned by HR (no options available)
+                      <MenuItem value="" disabled>
+                        Drop-off Location not assigned by HR. Contact HR.
+                      </MenuItem>
+                    ) : (
+                       // Case 3: HR Admin or non-whitelisted/non-configured user (all options available)
+                       dropoffLocations.map((location) => (
+                        <MenuItem key={location} value={location}>
+                          {location}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Box>
@@ -1864,7 +2276,13 @@ const CabService = () => {
           <Button
             variant="contained"
             onClick={handleBookCab}
-            disabled={loading}
+            disabled={loading 
+              || (!isHrAdmin && userCabConfig.isConfigured && (
+                  (!!userCabConfig.allowedPickupTime && !formData.pickupTime) || 
+                  (!!userCabConfig.allowedPickup && !formData.pickupLocation) || 
+                  (!!userCabConfig.preferredDropoff && !formData.dropoffLocation)
+              )) // Ensure fixed values are set if whitelisted
+            }
             startIcon={loading ? <CircularProgress size={20} /> : <CarIcon />}
             sx={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
@@ -1882,16 +2300,80 @@ const CabService = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={() => setSnackbarWithLogging({ ...snackbar, open: false })} // Use logging version
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbarWithLogging({ ...snackbar, open: false })} // Use logging version
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Edit Whitelist Entry Dialog */}
+      {editingWhitelistEntry && (
+        <Dialog open={showEditWhitelistEntryDialog} onClose={() => { setShowEditWhitelistEntryDialog(false); setEditingWhitelistEntry(null); }} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit Whitelist for {editingWhitelistEntry.email}</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{mt: 1}}>
+              <Grid item xs={12}>
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Default Pickup Location</InputLabel>
+                  <Select
+                    value={editingWhitelistEntry.pick_up_location || ''}
+                    onChange={(e) => setEditingWhitelistEntry(prev => ({ ...prev, pick_up_location: e.target.value }))}
+                    label="Default Pickup Location"
+                  >
+                    <MenuItem value=""><em>None / Not Set</em></MenuItem>
+                    {pickupLocations.map((loc) => (
+                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Default Drop-off Location</InputLabel>
+                  <Select
+                    value={editingWhitelistEntry.drop_off_location || ''}
+                    onChange={(e) => setEditingWhitelistEntry(prev => ({ ...prev, drop_off_location: e.target.value }))}
+                    label="Default Drop-off Location"
+                  >
+                    <MenuItem value=""><em>None / Not Set</em></MenuItem>
+                    {dropoffLocations.map((loc) => (
+                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}> {/* Added Pickup Time to Edit Dialog */}
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Default Pickup Time</InputLabel>
+                  <Select
+                    value={editingWhitelistEntry.pickup_time || ''}
+                    onChange={(e) => setEditingWhitelistEntry(prev => ({ ...prev, pickup_time: e.target.value }))}
+                    label="Default Pickup Time"
+                  >
+                    <MenuItem value=""><em>None / Not Set</em></MenuItem>
+                    {pickupTimes.map((time) => (
+                      <MenuItem key={time} value={time}>{time}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => { setShowEditWhitelistEntryDialog(false); setEditingWhitelistEntry(null); }} color="inherit">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveWhitelistEntryUpdate} variant="contained" disabled={loadingWhitelistManagement}>
+              {loadingWhitelistManagement ? <CircularProgress size={24} /> : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
