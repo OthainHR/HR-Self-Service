@@ -75,6 +75,15 @@ const CabService = () => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
+  // Helper to format YYYY-MM-DD without timezone issues
+  const formatIsoDate = (iso) => {
+    const parts = iso.split('-');
+    if (parts.length === 3) {
+      return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}/${parts[0]}`;
+    }
+    return iso;
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     pickupTime: '',
@@ -103,6 +112,8 @@ const CabService = () => {
   // Whitelist management state (for HR admin)
   const [whitelistedEmails, setWhitelistedEmails] = useState([]);
   const [allSystemUsers, setAllSystemUsers] = useState([]);
+  // State for users who haven't booked a cab today (admin metric)
+  const [unbookedUsers, setUnbookedUsers] = useState([]);
   const [selectedUserToWhitelist, setSelectedUserToWhitelist] = useState(null);
   const [loadingWhitelistManagement, setLoadingWhitelistManagement] = useState(false);
 
@@ -773,11 +784,26 @@ const CabService = () => {
 
   // Load whitelist management data if HR Admin
   useEffect(() => {
-    if (isHrAdmin) {
-      fetchWhitelistedEmails();
+    if (isAdmin) {
+      // Fetch all system users for admin dashboard
       fetchAllSystemUsers();
     }
-  }, [isHrAdmin]);
+    if (isHrAdmin) {
+      // Fetch whitelist data for HR admins
+      fetchWhitelistedEmails();
+    }
+  }, [isAdmin, isHrAdmin]);
+
+  // Compute unbooked users for selected date (admin only)
+  useEffect(() => {
+    if (!isAdmin) return;
+    const bookedEmails = allBookings
+      .filter(b => b.booking_date === selectedDate)
+      .map(b => b.user_email);
+    const bookedSet = new Set(bookedEmails);
+    const unbooked = whitelistedEmails.filter(w => !bookedSet.has(w.email));
+    setUnbookedUsers(unbooked);
+  }, [isAdmin, allBookings, whitelistedEmails, selectedDate]);
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -1445,7 +1471,7 @@ const CabService = () => {
                 <CarIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary">
                   {isAdmin 
-                    ? `No cab bookings found for ${new Date(selectedDate).toLocaleDateString()}`
+                    ? `No cab bookings found for ${formatIsoDate(selectedDate)}`
                     : 'No bookings yet'
                   }
                 </Typography>
@@ -1586,6 +1612,22 @@ const CabService = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+            )}
+            {isAdmin && !loadingBookings && whitelistedEmails.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Members without bookings on {formatIsoDate(selectedDate)} ({unbookedUsers.length})
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {unbookedUsers.map(u => (
+                    <Chip
+                      key={u.email}
+                      label={`${u.email} | ${u.pickup_time || 'N/A'} | ${u.pick_up_location || 'N/A'} | ${u.drop_off_location || 'N/A'}`}
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Box>
             )}
           </Paper>
         </motion.div>
