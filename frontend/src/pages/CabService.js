@@ -1005,6 +1005,33 @@ const CabService = () => {
     }
   };
 
+  // Add after handleRebook
+  // Handle cancel booking
+  const handleCancelBooking = async (bookingId) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('cab_bookings')
+        .delete()
+        .eq('id', bookingId);
+      if (error) throw error;
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Booking cancelled successfully.',
+        severity: 'success',
+      });
+      loadBookings();
+    } catch (error) {
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Failed to cancel booking. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -1663,6 +1690,19 @@ const CabService = () => {
                                 }
                               }}
                             />
+                          </TableCell>
+                        )}
+                        {!isAdmin && booking.booking_date === new Date().toISOString().split('T')[0] && (
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleCancelBooking(booking.id)}
+                              disabled={loading}
+                            >
+                              Cancel
+                            </Button>
                           </TableCell>
                         )}
                       </TableRow>
