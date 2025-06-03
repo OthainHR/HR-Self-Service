@@ -848,7 +848,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                       onChange={(e) => handleAssigneeChange(e.target.value || null)}
                                       sx={{
                                         minWidth: isMobile ? 80 : 120,
-                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' }
+                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                        disabled: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
                                       }}
                                     >
                                       <MenuItem value="">
@@ -871,25 +872,25 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                               ) : (
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   {ticket.assignee && assignOptions.length > 0 ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
-                                      <Avatar sx={{ 
-                                        width: isMobile ? 24 : 32, 
-                                        height: isMobile ? 24 : 32, 
-                                        fontSize: isMobile ? '0.7rem' : '0.875rem',
-                                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                                      }}>
-                                        {formatNameFromEmail(ticket.assignee_email).charAt(0)}
-                                      </Avatar>
-                                      {!isMobile && (
-                                        <Typography variant="body2" sx={{ 
-                                          fontWeight: 500, 
-                                          color: isDarkMode ? '#d1d5db' : '#4b5563',
-                                          fontSize: '0.8rem'
-                                        }}>
-                                          {formatNameFromEmail(ticket.assignee_email)}
-                                        </Typography>
-                                      )}
-                                    </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
+                                  <Avatar sx={{ 
+                                    width: isMobile ? 24 : 32, 
+                                    height: isMobile ? 24 : 32, 
+                                    fontSize: isMobile ? '0.7rem' : '0.875rem',
+                                    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                  }}>
+                                    {formatNameFromEmail(ticket.assignee_email).charAt(0)}
+                                  </Avatar>
+                                  {!isMobile && (
+                                    <Typography variant="body2" sx={{ 
+                                      fontWeight: 500, 
+                                      color: isDarkMode ? '#d1d5db' : '#4b5563',
+                                      fontSize: '0.8rem'
+                                    }}>
+                                      {formatNameFromEmail(ticket.assignee_email)}
+                                    </Typography>
+                                  )}
+                                </div>
                                   ) : (
                                     <Typography variant="body2" sx={{ fontStyle: 'italic', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
                                       Unassigned
@@ -900,6 +901,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                       onClick={() => handleEditAssigneeClick(ticket.id, ticket.assignee || null)} 
                                       size="small"
                                       sx={{ ml: 1, color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                                      disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
                                     >
                                       <EditIcon fontSize="inherit" />
                                     </IconButton>

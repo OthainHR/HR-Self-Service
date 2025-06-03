@@ -495,25 +495,24 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpd
                         marginTop: '0.375rem'
                       }}>
                         {/* Assignee selector */}
-                        {assignOptions.length > 0 && (
-                          <FormControl size="small" fullWidth onClick={e => e.stopPropagation()} sx={{ mb: 1 }}>
-                            <InputLabel>{assigneeLabel}</InputLabel>
-                            <Select
-                              value={ticket.assignee || ''}
-                              displayEmpty
-                              label={assigneeLabel}
-                              onChange={e => handleUpdateTicketAssignee(ticket.id, e.target.value || null)}
-                              sx={{
-                                minWidth: '100%',
-                              }}
-                            >
-                              <MenuItem value="">{assigneeLabel}</MenuItem>
-                              {assignOptions.map(option => (
-                                <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
+                        <FormControl size="small" fullWidth onClick={e => e.stopPropagation()} sx={{ mb: 1 }} disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}>
+                          <InputLabel>{assigneeLabel}</InputLabel>
+                          <Select
+                            value={ticket.assignee || ''}
+                            displayEmpty
+                            label={assigneeLabel}
+                            onChange={e => handleUpdateTicketAssignee(ticket.id, e.target.value || null)}
+                            sx={{
+                              minWidth: '100%',
+                            }}
+                            disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
+                          >
+                            <MenuItem value="">{assigneeLabel}</MenuItem>
+                            {assignOptions.map(option => (
+                              <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                         <FormControl
                           size="small"
                           fullWidth
