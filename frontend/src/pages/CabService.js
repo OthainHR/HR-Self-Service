@@ -53,7 +53,9 @@ import {
   LocationOff as LocationOffIcon,
   Download as DownloadIcon,
   ArrowUpward as ArrowUpwardIcon,
-  ArrowDownward as ArrowDownwardIcon
+  ArrowDownward as ArrowDownwardIcon,
+  WbSunny as MorningIcon, // Added MorningIcon
+  NightsStay as EveningIcon // Added EveningIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -116,6 +118,10 @@ const CabService = () => {
   const [unbookedUsers, setUnbookedUsers] = useState([]);
   const [selectedUserToWhitelist, setSelectedUserToWhitelist] = useState(null);
   const [loadingWhitelistManagement, setLoadingWhitelistManagement] = useState(false);
+
+  // State for reminder buttons (HR admin)
+  const [loadingMorningReminder, setLoadingMorningReminder] = useState(false);
+  const [loadingEveningReminder, setLoadingEveningReminder] = useState(false);
 
   // Global cab service visibility (controlled by HR Admin)
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
@@ -947,6 +953,58 @@ const CabService = () => {
     });
   }, [bookings, sortBy, sortDirection]);
 
+  // Handle sending reminders (HR Admin)
+  const handleSendReminder = async (reminderType) => {
+    if (!isHrAdmin) return;
+
+    if (reminderType === 'morning') {
+      setLoadingMorningReminder(true);
+    } else if (reminderType === 'evening') {
+      setLoadingEveningReminder(true);
+    }
+
+    try {
+      const functionName = `send-cab-booking-reminders?reminder=${reminderType}`;
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        method: 'GET',
+      });
+
+      if (error) {
+        throw error; // Throw to be caught by the catch block
+      }
+
+      if (data && data.success) {
+        let successMessage = `Successfully sent ${reminderType} reminders.`;
+        if (data.message) { // For weekend message
+            successMessage = data.message;
+        } else if (typeof data.sent !== 'undefined') {
+            successMessage = `Successfully sent ${reminderType} reminders to ${data.sent} user(s).`;
+        }
+        setSnackbarWithLogging({
+          open: true,
+          message: successMessage,
+          severity: 'success',
+        });
+      } else {
+        // This case might occur if data.success is false or data is not as expected
+        throw new Error(data?.error || 'Failed to send reminders. Unknown response from server.');
+      }
+    } catch (err) {
+      console.error(`Error sending ${reminderType} reminders:`, err);
+      setSnackbarWithLogging({
+        open: true,
+        message: `Failed to send ${reminderType} reminders: ${err.message || 'Please check console for details.'}`,
+        severity: 'error',
+      });
+    } finally {
+      if (reminderType === 'morning') {
+        setLoadingMorningReminder(false);
+      } else if (reminderType === 'evening') {
+        setLoadingEveningReminder(false);
+      }
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -1653,8 +1711,40 @@ const CabService = () => {
                 🔑 Cab Booking Whitelist Management
               </Typography>
 
-              {/* Export Whitelist Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              {/* Action Buttons: Export Whitelist and Send Reminders */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<MorningIcon />}
+                  onClick={() => handleSendReminder('morning')}
+                  disabled={loadingMorningReminder || loadingEveningReminder}
+                  sx={{ 
+                    borderColor: isDarkMode ? '#facc15' : '#eab308',
+                    color: isDarkMode ? '#facc15' : '#eab308',
+                    '&:hover': {
+                      borderColor: isDarkMode ? '#fde047' : '#f59e0b',
+                      backgroundColor: isDarkMode ? 'rgba(250, 204, 21, 0.1)' : 'rgba(245, 158, 11, 0.05)',
+                    }
+                  }}
+                >
+                  {loadingMorningReminder ? <CircularProgress size={24} color="inherit" /> : 'Send Morning Reminders'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<EveningIcon />}
+                  onClick={() => handleSendReminder('evening')}
+                  disabled={loadingMorningReminder || loadingEveningReminder}
+                  sx={{
+                    borderColor: isDarkMode ? '#818cf8' : '#6366f1',
+                    color: isDarkMode ? '#818cf8' : '#6366f1',
+                    '&:hover': {
+                      borderColor: isDarkMode ? '#a78bfa' : '#818cf8',
+                      backgroundColor: isDarkMode ? 'rgba(129, 140, 248, 0.1)' : 'rgba(99, 102, 241, 0.05)',
+                    }
+                  }}
+                >
+                  {loadingEveningReminder ? <CircularProgress size={24} color="inherit" /> : 'Send Evening Reminders'}
+                </Button>
                 <Button
                   variant="outlined"
                   startIcon={<DownloadIcon />}
@@ -1868,60 +1958,60 @@ const CabService = () => {
                   {(!isHrAdmin && userCabConfig.isConfigured && userCabConfig.allowedPickupTime) ? (
                     // Case 1: Whitelisted user with a specific pickup time
                     pickupTimes.map((time) => (
-                      <Button
-                        key={time}
-                        variant={formData.pickupTime === time ? 'contained' : 'outlined'}
-                        onClick={() => handleInputChange('pickupTime', time)}
+                    <Button
+                      key={time}
+                      variant={formData.pickupTime === time ? 'contained' : 'outlined'}
+                      onClick={() => handleInputChange('pickupTime', time)}
                         disabled={time !== userCabConfig.allowedPickupTime} // Disable if not the allowed time
-                        startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
-                        sx={{
-                          minWidth: 140,
-                          height: 56,
-                          borderRadius: 3,
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          textTransform: 'none',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      startIcon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                      sx={{
+                        minWidth: 140,
+                        height: 56,
+                        borderRadius: 3,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        background: formData.pickupTime === time 
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                          : isDarkMode 
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(255, 255, 255, 0.9)',
+                        borderColor: formData.pickupTime === time 
+                          ? 'transparent'
+                          : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                        borderWidth: 2,
+                        color: formData.pickupTime === time 
+                          ? 'white'
+                          : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        boxShadow: formData.pickupTime === time 
+                          ? '0 8px 32px rgba(59, 130, 246, 0.3)'
+                          : isDarkMode 
+                            ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                            : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
                           background: formData.pickupTime === time 
-                            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                            ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
                             : isDarkMode 
-                              ? 'rgba(255, 255, 255, 0.05)'
-                              : 'rgba(255, 255, 255, 0.9)',
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : 'rgba(59, 130, 246, 0.05)',
                           borderColor: formData.pickupTime === time 
                             ? 'transparent'
-                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-                          borderWidth: 2,
-                          color: formData.pickupTime === time 
-                            ? 'white'
-                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                            : '#3b82f6',
                           boxShadow: formData.pickupTime === time 
-                            ? '0 8px 32px rgba(59, 130, 246, 0.3)'
-                            : isDarkMode 
-                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
-                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            background: formData.pickupTime === time 
-                              ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
-                              : isDarkMode 
-                                ? 'rgba(255, 255, 255, 0.1)'
-                                : 'rgba(59, 130, 246, 0.05)',
-                            borderColor: formData.pickupTime === time 
-                              ? 'transparent'
-                              : '#3b82f6',
-                            boxShadow: formData.pickupTime === time 
-                              ? '0 12px 40px rgba(59, 130, 246, 0.4)'
-                              : '0 8px 32px rgba(59, 130, 246, 0.15)',
-                          },
-                          '&:active': {
-                            transform: 'translateY(0px)',
-                          }
-                        }}
-                      >
-                        {time}
-                      </Button>
+                            ? '0 12px 40px rgba(59, 130, 246, 0.4)'
+                            : '0 8px 32px rgba(59, 130, 246, 0.15)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0px)',
+                        }
+                      }}
+                    >
+                      {time}
+                    </Button>
                     ))
                   ) : (!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.allowedPickupTime) ? (
                     // Case 2: Whitelisted user, but no specific pickup time assigned by HR
@@ -2131,60 +2221,60 @@ const CabService = () => {
                   {(!isHrAdmin && userCabConfig.isConfigured && userCabConfig.allowedPickup) ? (
                     // Case 1: Whitelisted user with a specific pickup location
                     pickupLocations.map((location) => (
-                      <Button
-                        key={location}
-                        variant={formData.pickupLocation === location ? 'contained' : 'outlined'}
-                        onClick={() => handleInputChange('pickupLocation', location)}
+                    <Button
+                      key={location}
+                      variant={formData.pickupLocation === location ? 'contained' : 'outlined'}
+                      onClick={() => handleInputChange('pickupLocation', location)}
                         disabled={location !== userCabConfig.allowedPickup} // Disable if not the allowed location
-                        startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
-                        sx={{
-                          minWidth: 160,
-                          height: 56,
-                          borderRadius: 3,
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          textTransform: 'none',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      startIcon={<LocationIcon sx={{ fontSize: 18 }} />}
+                      sx={{
+                        minWidth: 160,
+                        height: 56,
+                        borderRadius: 3,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        background: formData.pickupLocation === location 
+                          ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                          : isDarkMode 
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'rgba(255, 255, 255, 0.9)',
+                        borderColor: formData.pickupLocation === location 
+                          ? 'transparent'
+                          : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
+                        borderWidth: 2,
+                        color: formData.pickupLocation === location 
+                          ? 'white'
+                          : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        boxShadow: formData.pickupLocation === location 
+                          ? '0 8px 32px rgba(220, 38, 38, 0.3)'
+                          : isDarkMode 
+                            ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+                            : '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
                           background: formData.pickupLocation === location 
-                            ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                            ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
                             : isDarkMode 
-                              ? 'rgba(255, 255, 255, 0.05)'
-                              : 'rgba(255, 255, 255, 0.9)',
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : 'rgba(220, 38, 38, 0.05)',
                           borderColor: formData.pickupLocation === location 
                             ? 'transparent'
-                            : isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)',
-                          borderWidth: 2,
-                          color: formData.pickupLocation === location 
-                            ? 'white'
-                            : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                            : '#dc2626',
                           boxShadow: formData.pickupLocation === location 
-                            ? '0 8px 32px rgba(220, 38, 38, 0.3)'
-                            : isDarkMode 
-                              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
-                              : '0 4px 20px rgba(0, 0, 0, 0.08)',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            background: formData.pickupLocation === location 
-                              ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)'
-                              : isDarkMode 
-                                ? 'rgba(255, 255, 255, 0.1)'
-                                : 'rgba(220, 38, 38, 0.05)',
-                            borderColor: formData.pickupLocation === location 
-                              ? 'transparent'
-                              : '#dc2626',
-                            boxShadow: formData.pickupLocation === location 
-                              ? '0 12px 40px rgba(220, 38, 38, 0.4)'
-                              : '0 8px 32px rgba(220, 38, 38, 0.15)',
-                          },
-                          '&:active': {
-                            transform: 'translateY(0px)',
-                          }
-                        }}
-                      >
-                        {location}
-                      </Button>
+                            ? '0 12px 40px rgba(220, 38, 38, 0.4)'
+                            : '0 8px 32px rgba(220, 38, 38, 0.15)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0px)',
+                        }
+                      }}
+                    >
+                      {location}
+                    </Button>
                     ))
                   ) : (!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.allowedPickup) ? (
                      // Case 2: Whitelisted user, but no specific pickup location assigned by HR
@@ -2341,9 +2431,9 @@ const CabService = () => {
                     ) : (
                        // Case 3: HR Admin or non-whitelisted/non-configured user (all options available)
                        dropoffLocations.map((location) => (
-                        <MenuItem key={location} value={location}>
-                          {location}
-                        </MenuItem>
+                      <MenuItem key={location} value={location}>
+                        {location}
+                      </MenuItem>
                       ))
                     )}
                   </Select>
