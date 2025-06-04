@@ -764,6 +764,19 @@ export default function KanbanBoard() {
     fetchTickets();
   }, [filters]);
 
+  // Subscribe to ticket insert events to auto-refresh board
+  useEffect(() => {
+    const subscription = supabase
+      .channel('public:tickets:kanban-board')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tickets' }, () => {
+        fetchTickets();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));

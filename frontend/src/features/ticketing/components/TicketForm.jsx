@@ -17,7 +17,7 @@ import { useTheme } from '@mui/material/styles'; // Added useTheme import
 const CLIENT_OPTIONS = ["IQVIA", "GBT", "Presidio", "Othain"];
 const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com'];
 
-export default function TicketForm() {
+export default function TicketForm({ onTicketCreated }) {
   const theme = useTheme(); // Get the theme object
   const isDarkMode = theme.palette.mode === 'dark'; // Determine if dark mode is active
 
@@ -240,6 +240,10 @@ export default function TicketForm() {
         setCategorySelected(false); // Go back to category selection
         setSelectedCategoryName('');
         setSelectedOnBehalfOfUserId(''); // Reset on behalf of user selection
+        // Notify parent to reload ticket list or board
+        if (onTicketCreated) {
+          await onTicketCreated();
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');

@@ -45,6 +45,23 @@ export default function TicketingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Function to load tickets from the view
+  const loadTickets = async () => {
+    setError(null);
+    setIsLoading(true);
+    const { data: ticketData, error: fetchError } = await supabase
+      .from('v_ticket_board')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (fetchError) {
+      setError(`Failed to load tickets: ${fetchError.message}`);
+      setAllTickets([]);
+    } else {
+      setAllTickets(ticketData || []);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     const fetchUserRoleAndTickets = async () => {
       setIsLoading(true);
@@ -76,16 +93,8 @@ export default function TicketingPage() {
           setViewMode('kanban');
         }
 
-        let query = supabase.from('v_ticket_board').select('*');
-        const { data: ticketData, error: fetchError } = await query.order('created_at', { ascending: false });
-
-        if (fetchError) {
-          setError(`Failed to load tickets: ${fetchError.message}`);
-          setAllTickets([]);
-        } else {
-          setAllTickets(ticketData || []);
-        }
-        setIsLoading(false);
+        // Load tickets
+        await loadTickets();
       } else {
         setCurrentUserRole(null);
         setCurrentUserEmail(null);
@@ -128,18 +137,8 @@ export default function TicketingPage() {
     const ticketsSubscription = supabase
       .channel('public:tickets:list-view')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
-        const fetchUpdatedTickets = async () => {
-          setIsLoading(true);
-          let query = supabase.from('v_ticket_board').select('*');
-          const { data: ticketData, error: fetchError } = await query.order('created_at', { ascending: false });
-          if (fetchError) {
-            setError(`Failed to reload tickets: ${fetchError.message}`);
-          } else {
-            setAllTickets(ticketData || []);
-          }
-          setIsLoading(false);
-        };
-        fetchUpdatedTickets();
+        // Reload tickets on any change
+        loadTickets();
       })
       .subscribe();
 
@@ -622,7 +621,7 @@ export default function TicketingPage() {
           </TabPanel>
           
           <TabPanel value={tabValue} index={1}>
-              <TicketForm />
+              <TicketForm onTicketCreated={loadTickets} />
           </TabPanel>
         </Box>
       </Box>

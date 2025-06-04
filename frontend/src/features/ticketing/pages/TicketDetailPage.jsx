@@ -26,6 +26,7 @@ const TicketDetailPage = () => {
   const [internalNote, setInternalNote] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -176,33 +177,35 @@ const TicketDetailPage = () => {
     }
   }, [ticketId]);
 
+  // Load current user on mount
   useEffect(() => {
-    
     const getCurrentUser = async () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) {
         setError('Could not fetch user details.');
-        setCurrentUser(null);
-        setIsLoading(false);
-        return;
+        setIsAuthLoading(false);
+      } else {
+        setCurrentUser(user);
+        setIsAuthLoading(false);
       }
-      setCurrentUser(user);
     };
-
     getCurrentUser();
+  }, []);
 
-    if (ticketId) {
-      if (!currentUser) {
-        setError('You must be logged in to view ticket details.');
-        setIsLoading(false);
-        return;
-      }
-      fetchTicketData(); 
-    } else {
-      
+  // Fetch ticket data once auth is known and ticketId changes
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!ticketId) {
       setIsLoading(false);
+      return;
     }
-  }, [ticketId, fetchTicketData, currentUser]);
+    if (!currentUser) {
+      setError('You must be logged in to view ticket details.');
+      setIsLoading(false);
+      return;
+    }
+    fetchTicketData();
+  }, [ticketId, currentUser, fetchTicketData, isAuthLoading]);
 
   useEffect(() => {
     if (!ticketId) return;

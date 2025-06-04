@@ -6,7 +6,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Paper, FormControl, InputLabel, Select, MenuItem, Box, Typography,
   Chip, Grid, IconButton, TextField, InputAdornment, Tooltip, Divider,
-  useTheme, Button, Card, CardContent, Fade, Slide, Avatar
+  useTheme, Button, Card, CardContent, Fade, Slide, Avatar, CircularProgress
 } from '@mui/material';
 import { 
   FilterAlt as FilterIcon,
@@ -51,16 +51,20 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   
   // Fetch assignees from Supabase ticket_assignees table
   const [assignOptions, setAssignOptions] = useState([]);
+  const [isAssignOptionsLoading, setIsAssignOptionsLoading] = useState(true);
   useEffect(() => {
     const fetchAssignees = async () => {
+      setIsAssignOptionsLoading(true);
       // Ensure user is authenticated before querying
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         setAssignOptions([]);
+        setIsAssignOptionsLoading(false);
         return;
       }
       if (!currentUserRole) {
         setAssignOptions([]);
+        setIsAssignOptionsLoading(false);
         return;
       }
       // Only super-admin ('admin') sees all; others see only their own role
@@ -74,6 +78,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       } else {
         setAssignOptions([]);
       }
+      setIsAssignOptionsLoading(false);
     };
     fetchAssignees();
   }, [currentUserRole]);
@@ -877,32 +882,34 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                 </Box>
                               ) : (
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  {ticket.assignee && assignOptions.length > 0 ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
-                                  <Avatar sx={{ 
-                                    width: isMobile ? 24 : 32, 
-                                    height: isMobile ? 24 : 32, 
-                                    fontSize: isMobile ? '0.7rem' : '0.875rem',
-                                    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                                  }}>
-                                    {formatNameFromEmail(ticket.assignee_email).charAt(0)}
-                                  </Avatar>
-                                  {!isMobile && (
-                                    <Typography variant="body2" sx={{ 
-                                      fontWeight: 500, 
-                                      color: isDarkMode ? '#d1d5db' : '#4b5563',
-                                      fontSize: '0.8rem'
-                                    }}>
-                                      {formatNameFromEmail(ticket.assignee_email)}
-                                    </Typography>
-                                  )}
-                                </div>
+                                  {isAssignOptionsLoading ? (
+                                    <CircularProgress size={16} />
+                                  ) : ticket.assignee && assignOptions.length > 0 ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '0.5rem' }}>
+                                      <Avatar sx={{ 
+                                        width: isMobile ? 24 : 32, 
+                                        height: isMobile ? 24 : 32, 
+                                        fontSize: isMobile ? '0.7rem' : '0.875rem',
+                                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                      }}>
+                                        {formatNameFromEmail(ticket.assignee_email).charAt(0)}
+                                      </Avatar>
+                                      {!isMobile && (
+                                        <Typography variant="body2" sx={{ 
+                                          fontWeight: 500, 
+                                          color: isDarkMode ? '#d1d5db' : '#4b5563',
+                                          fontSize: '0.8rem'
+                                        }}>
+                                          {formatNameFromEmail(ticket.assignee_email)}
+                                        </Typography>
+                                      )}
+                                    </div>
                                   ) : (
                                     <Typography variant="body2" sx={{ fontStyle: 'italic', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
                                       Unassigned
                                     </Typography>
                                   )}
-                                  {isAdmin && assignOptions.length > 0 && (
+                                  {isAdmin && !isAssignOptionsLoading && assignOptions.length > 0 && (
                                     <IconButton 
                                       onClick={() => handleEditAssigneeClick(ticket.id, ticket.assignee || null)} 
                                       size="small"
