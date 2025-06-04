@@ -86,6 +86,17 @@ const CabService = () => {
     return iso;
   };
 
+  // Add helper to extract a display name from an email address
+  const formatNameFromEmail = (email) => {
+    if (!email) return '';
+    const local = email.split('@')[0];
+    const parts = local.split('.');
+    if (parts.length >= 2) {
+      return `${capitalizeFirstLetter(parts[0])} ${capitalizeFirstLetter(parts[1])}`;
+    }
+    return capitalizeFirstLetter(parts[0]);
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     pickupTime: '',
@@ -297,8 +308,14 @@ const CabService = () => {
   // Load admin report data
   const loadAdminReport = async () => {
     if (!isAdmin) return;
-    
     setLoadingBookings(true);
+    // Ensure user is authenticated before querying report view
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      setSnackbarWithLogging({ open: true, message: 'Please log in to view admin report.', severity: 'error' });
+      setLoadingBookings(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('v_cab_bookings_report')
@@ -508,8 +525,12 @@ const CabService = () => {
     // Prepare data for Excel
     const excelData = bookings.map(booking => ({
       'Date': new Date(booking.booking_date).toLocaleDateString(),
-      'First Name': capitalizeFirstLetter(booking.first_name) || '',
-      'Last Name': capitalizeFirstLetter(booking.last_name) || '',
+      'First Name': booking.first_name
+        ? capitalizeFirstLetter(booking.first_name)
+        : formatNameFromEmail(booking.user_email).split(' ')[0],
+      'Last Name': booking.last_name
+        ? capitalizeFirstLetter(booking.last_name)
+        : (formatNameFromEmail(booking.user_email).split(' ')[1] || ''),
       'Email': booking.user_email || '',
       'Pickup Time': booking.pickup_time,
       'Pickup Location': booking.pickup_location,
@@ -1607,8 +1628,7 @@ const CabService = () => {
                             <TableCell>
                               {booking.first_name && booking.last_name 
                                 ? `${capitalizeFirstLetter(booking.first_name)} ${capitalizeFirstLetter(booking.last_name)}`
-                                : 'N/A'
-                              }
+                                : (booking.user_email ? formatNameFromEmail(booking.user_email) : 'N/A')}
                             </TableCell>
                             <TableCell>{booking.user_email}</TableCell>
                           </>

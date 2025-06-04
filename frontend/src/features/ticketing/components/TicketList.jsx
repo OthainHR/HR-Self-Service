@@ -53,6 +53,12 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   const [assignOptions, setAssignOptions] = useState([]);
   useEffect(() => {
     const fetchAssignees = async () => {
+      // Ensure user is authenticated before querying
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        setAssignOptions([]);
+        return;
+      }
       if (!currentUserRole) {
         setAssignOptions([]);
         return;

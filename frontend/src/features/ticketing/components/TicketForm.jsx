@@ -84,18 +84,17 @@ export default function TicketForm() {
       const fetchAllUsers = async () => {
         setIsLoadingUsers(true);
         setError(null);
+        // Ensure user is authenticated before querying
+        const { data: users, error: usersError } = await supabase
+          .rpc('get_all_user_emails');
+        if (usersError || !users) {
+          setError('You must be logged in to load users.');
+          setAllUsers([]);
+          setIsLoadingUsers(false);
+          return;
+        }
         try {
-          const { data: users, error: usersError } = await supabase
-            .from('v_user_emails') // Assuming this view contains user id and email/name
-            .select('id, email') // Adjust if you have a name column or prefer to show email
-            .order('email'); // Or order by name if available
-
-          if (usersError) {
-            setError('Failed to load users for selection.');
-            setAllUsers([]);
-          } else {
-            setAllUsers(users || []);
-          }
+          setAllUsers(users.sort((a,b) => a.email.localeCompare(b.email)));
         } catch (err) {
           setError('An unexpected error occurred while loading users.');
           setAllUsers([]);

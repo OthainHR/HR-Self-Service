@@ -192,12 +192,17 @@ const TicketDetailPage = () => {
     getCurrentUser();
 
     if (ticketId) {
+      if (!currentUser) {
+        setError('You must be logged in to view ticket details.');
+        setIsLoading(false);
+        return;
+      }
       fetchTicketData(); 
     } else {
       
       setIsLoading(false);
     }
-  }, [ticketId, fetchTicketData]);
+  }, [ticketId, fetchTicketData, currentUser]);
 
   useEffect(() => {
     if (!ticketId) return;
