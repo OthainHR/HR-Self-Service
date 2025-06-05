@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
-import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide } from '@mui/material';
+import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide, LinearProgress } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon } from '@mui/icons-material';
 import '../styles/TicketDetailPage.css';
 import Snackbar from '@mui/material/Snackbar';
@@ -34,6 +34,11 @@ const TicketDetailPage = () => {
   const [attachments, setAttachments] = useState([]);
   const [isAttachmentsLoading, setIsAttachmentsLoading] = useState(false);
   const [attachmentsError, setAttachmentsError] = useState(null);
+  const [replyAttachments, setReplyAttachments] = useState([]);
+  const [adminReplyAttachments, setAdminReplyAttachments] = useState([]);
+  const [uploadingReply, setUploadingReply] = useState(false);
+  const [uploadingAdminReply, setUploadingAdminReply] = useState(false);
+  const [commentAttachmentMap, setCommentAttachmentMap] = useState({}); // { [commentId]: [fileObj, ...] }
 
   // Helper to format a display name from an email in the form firstname.lastname@domain
   const formatNameFromEmail = (email) => {
@@ -252,20 +257,80 @@ const TicketDetailPage = () => {
     fetchAttachments();
   }, [ticket]);
 
+  // Helper to fetch attachments for a comment
+  const fetchCommentAttachments = async (commentId) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('ticket-attachments')
+        .list(`${ticket.id}/comment-attachments/${commentId}/`, { limit: 20 });
+      if (error) return [];
+      return data || [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Fetch attachments for all comments after communications load
+  useEffect(() => {
+    if (!ticket || !communications.length) return;
+    (async () => {
+      const map = {};
+      for (const comm of communications) {
+        if (comm.id) {
+          map[comm.id] = await fetchCommentAttachments(comm.id);
+        }
+      }
+      setCommentAttachmentMap(map);
+    })();
+  }, [ticket, communications]);
+
+  const handleReplyAttachmentChange = (e, isAdmin) => {
+    const files = Array.from(e.target.files);
+    if (isAdmin) setAdminReplyAttachments(files);
+    else setReplyAttachments(files);
+  };
+
   const handleSubmitCommunication = async (message, type) => {
     if (!message.trim() || !currentUser) return;
     setIsSubmitting(true);
     try {
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('ticket_communications')
         .insert([{ 
           ticket_id: ticketId, 
           user_id: currentUser.id,
           message: message, 
           type: type 
-        }]);
-      
+        }])
+        .select();
       if (insertError) throw insertError;
+      const newComm = insertData && insertData[0];
+      // Upload attachments if any
+      let uploadError = null;
+      if (type === 'admin_reply' && adminReplyAttachments.length > 0 && newComm) {
+        setUploadingAdminReply(true);
+        for (const file of adminReplyAttachments) {
+          const filePath = `${ticket.id}/comment-attachments/${newComm.id}/${file.name}`;
+          const { error } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(filePath, file, { cacheControl: '3600', upsert: false });
+          if (error) uploadError = error;
+        }
+        setAdminReplyAttachments([]);
+        setUploadingAdminReply(false);
+      } else if (type === 'customer_reply' && replyAttachments.length > 0 && newComm) {
+        setUploadingReply(true);
+        for (const file of replyAttachments) {
+          const filePath = `${ticket.id}/comment-attachments/${newComm.id}/${file.name}`;
+          const { error } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(filePath, file, { cacheControl: '3600', upsert: false });
+          if (error) uploadError = error;
+        }
+        setReplyAttachments([]);
+        setUploadingReply(false);
+      }
+      if (uploadError) throw uploadError;
 
       // Show confirmation overlay
       let confirmationText = '';
@@ -1010,6 +1075,36 @@ const TicketDetailPage = () => {
                       </>
                     }
                   />
+                  {/* Attachments for this comment */}
+                  {commentAttachmentMap[comm.id] && commentAttachmentMap[comm.id].length > 0 && (
+                    <Box sx={{ mt: 1, ml: 7 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: isDarkMode ? '#a5b4fc' : '#6366f1', mb: 0.5 }}>
+                        Attachments:
+                      </Typography>
+                      <List dense>
+                        {commentAttachmentMap[comm.id].map((file) => (
+                          <ListItem key={file.name} sx={{ pl: 0 }}>
+                            <InsertDriveFileIcon sx={{ color: isDarkMode ? '#a5b4fc' : '#6366f1', mr: 1 }} />
+                            <ListItemText
+                              primary={<a
+                                href={supabase.storage.from('ticket-attachments').getPublicUrl(`${ticket.id}/comment-attachments/${comm.id}/${file.name}`).data.publicUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: isDarkMode ? '#a5b4fc' : '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
+                              >
+                                {file.name}
+                              </a>}
+                              secondary={`${(file.metadata?.size ? file.metadata.size : file.size || 0) / 1024 < 1024
+                                ? `${((file.metadata?.size ? file.metadata.size : file.size || 0) / 1024).toFixed(1)} KB`
+                                : `${((file.metadata?.size ? file.metadata.size : file.size || 0) / 1024 / 1024).toFixed(2)} MB`
+                              }`}
+                              sx={{ ml: 1 }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  )}
                 </ListItem>
               </Fade>
             ))}
@@ -1185,6 +1280,76 @@ const TicketDetailPage = () => {
                   }}
                   disabled={isSubmitting}
                 />
+                {/* Attachments for User/Admin Reply */}
+                {isAdmin ? (
+                  <Box sx={{ mt: 2, mb: 2 }}>
+                    <input
+                      id="admin-reply-attachment-input"
+                      type="file"
+                      multiple
+                      onChange={e => handleReplyAttachmentChange(e, true)}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="admin-reply-attachment-input">
+                      <Button
+                        variant="contained"
+                        component="span"
+                        sx={{
+                          borderRadius: '10px',
+                          fontWeight: 600,
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #eab308 100%)',
+                          color: 'white',
+                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                          mr: 2,
+                          mb: 2
+                        }}
+                        disabled={uploadingAdminReply}
+                      >
+                        Choose Files
+                      </Button>
+                    </label>
+                    {adminReplyAttachments.length > 0 && (
+                      <Typography variant="body2" sx={{ display: 'inline', ml: 1 }}>
+                        {adminReplyAttachments.length} file(s) selected
+                      </Typography>
+                    )}
+                    {uploadingAdminReply && <LinearProgress sx={{ mt: 1, mb: 1 }} />}
+                  </Box>
+                ) : (
+                  <Box sx={{ mt: 2, mb: 2 }}>
+                    <input
+                      id="user-reply-attachment-input"
+                      type="file"
+                      multiple
+                      onChange={e => handleReplyAttachmentChange(e, false)}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="user-reply-attachment-input">
+                      <Button
+                        variant="contained"
+                        component="span"
+                        sx={{
+                          borderRadius: '10px',
+                          fontWeight: 600,
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                          color: 'white',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                          mr: 2,
+                          mb: 2
+                        }}
+                        disabled={uploadingReply}
+                      >
+                        Choose Files
+                      </Button>
+                    </label>
+                    {replyAttachments.length > 0 && (
+                      <Typography variant="body2" sx={{ display: 'inline', ml: 1 }}>
+                        {replyAttachments.length} file(s) selected
+                      </Typography>
+                    )}
+                    {uploadingReply && <LinearProgress sx={{ mt: 1, mb: 1 }} />}
+                  </Box>
+                )}
                 <Button
                   variant="contained"
                   onClick={() => handleSubmitCommunication(replyMessage, isAdmin ? 'admin_reply' : 'customer_reply')}
