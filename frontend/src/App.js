@@ -30,6 +30,7 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const Ticketing = lazy(() => import('./pages/Ticketing'));
 const TicketDetailPage = lazy(() => import('./features/ticketing/pages/TicketDetailPage'));
 const CabService = lazy(() => import('./pages/CabService'));
+const TicketDashboard = lazy(() => import('./pages/TicketDashboard'));
 
 // --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
@@ -252,6 +253,18 @@ const AppContent = () => {
   const { user } = useAuth(); // Get user to pass to NavBar if needed
   const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);
 
+  useEffect(() => {
+    // Check for auth token in localStorage on initial load
+    const token = localStorage.getItem('authToken');
+    if (!token && user) {
+      // If no token in localStorage but user context exists (e.g. from previous session memory)
+      // it might be stale, so clear auth flags to prompt login if necessary.
+      // This handles cases where localStorage might be cleared but context persists temporarily.
+      // Consider if this logic is appropriate for your auth flow, especially with remember-me features.
+      // clearAuthFlags(); // Example: uncomment if you want to force re-auth if localStorage token is missing
+    }
+  }, [user]); // Add clearAuthFlags to dependency array
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -274,6 +287,8 @@ const AppContent = () => {
                 <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
                 <Route path="/ticket/:ticketId" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
                 <Route path="/cab-service" element={<ProtectedRoute><CabService /></ProtectedRoute>} />
+                <Route path="/admin-report" element={<AdminRoute><AdminReport /></AdminRoute>} />
+                <Route path="/ticket-dashboard" element={<ProtectedRoute><TicketDashboard /></ProtectedRoute>} />
 
                 {/* Fallback route - redirect to home or login based on auth */}
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />
