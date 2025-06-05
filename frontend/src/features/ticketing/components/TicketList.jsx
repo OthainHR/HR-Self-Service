@@ -6,7 +6,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Paper, FormControl, InputLabel, Select, MenuItem, Box, Typography,
   Chip, Grid, IconButton, TextField, InputAdornment, Tooltip, Divider,
-  useTheme, Button, Card, CardContent, Fade, Slide, Avatar, CircularProgress
+  useTheme, Button, Card, CardContent, Fade, Slide, Avatar, CircularProgress, Pagination
 } from '@mui/material';
 import { 
   FilterAlt as FilterIcon,
@@ -223,6 +223,21 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       t.id?.toString().includes(searchTerm) ||
       t.requester_email?.toLowerCase().includes(searchTerm.toLowerCase()))
   ), [tickets, selectedCategory, selectedSubCategory, selectedStatus, searchTerm]);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 10;
+
+  // Reset to first page if filters change or filteredTickets shrinks
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory, selectedSubCategory, selectedStatus, searchTerm, filteredTickets.length]);
+
+  // Paginated tickets
+  const paginatedTickets = useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    return filteredTickets.slice(start, start + rowsPerPage);
+  }, [filteredTickets, page]);
 
   const handleExportToExcel = () => {
     const dataToExport = filteredTickets.map(ticket => ({
@@ -780,7 +795,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredTickets.map((ticket, index) => {
+                    {paginatedTickets.map((ticket, index) => {
                       const statusColors = getStatusColor(ticket.status);
                       const priorityColors = getPriorityColor(ticket.priority);
                       const dueDateUrgency = getDueDateUrgency(ticket.due_at, ticket.status);
@@ -1172,6 +1187,38 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                 </Table>
               )}
             </div>
+            {/* Pagination Controls */}
+            {filteredTickets.length > rowsPerPage && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 3 }}>
+                <Pagination
+                  count={Math.ceil(filteredTickets.length / rowsPerPage)}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color={isDarkMode ? 'primary' : 'standard'}
+                  variant="outlined"
+                  shape="rounded"
+                  sx={{
+                    '& .MuiPaginationItem-root': {
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      background: isDarkMode
+                        ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+                        : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                      border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s',
+                      '&.Mui-selected': {
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        color: 'white',
+                        border: 'none',
+                        boxShadow: '0 4px 16px rgba(99,102,241,0.12)'
+                      }
+                    }
+                  }}
+                />
+              </Box>
+            )}
           </div>
         </Card>
       </Fade>
