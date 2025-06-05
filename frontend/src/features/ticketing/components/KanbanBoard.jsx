@@ -15,6 +15,7 @@ import {
   Select, MenuItem, FormControl, InputLabel, Chip, 
   Box, Typography, useTheme, Fade, Slide
 } from '@mui/material';
+import AdminCommentModal from './AdminCommentModal';
 
 const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
@@ -124,7 +125,7 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, assignOptions }) => {
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, assignOptions }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -546,7 +547,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleUpd
                         >
                           <Select
                             value={ticket.status}
-                            onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value)}
+                            onChange={(e) => handleAdminStatusChange(ticket.id, e.target.value)}
                             displayEmpty
                             renderValue={(selected) => {
                               const selectedColors = getStatusColors(selected);
@@ -658,6 +659,7 @@ export default function KanbanBoard() {
   const [tickets, setTickets] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [assignOptions, setAssignOptions] = useState([]);
+  const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
   useEffect(() => {
     const fetchAssignees = async () => {
       if (!currentUserRole) {
@@ -782,26 +784,21 @@ export default function KanbanBoard() {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
-    setTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
-      )
-    );
-
-    try {
-      const { error: updateError } = await supabase
-        .from('tickets')
-        .update({ status: newStatus })
-        .eq('id', ticketId);
-
-      if (updateError) {
-        setError(`Failed to update ticket: ${updateError.message}`);
+  const handleAdminStatusChange = async (ticketId, newStatus) => {
+    if (["RESOLVED", "CLOSED"].includes(newStatus)) {
+      setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
+    } else {
+      // Directly update status for other transitions
+      try {
+        const { error } = await supabase
+          .from('tickets')
+          .update({ status: newStatus })
+          .eq('id', ticketId);
+        if (error) throw error;
         await fetchTickets();
+      } catch (err) {
+        alert('Failed to update ticket: ' + (err.message || err));
       }
-    } catch (err) {
-      setError('An unexpected error occurred while updating the ticket.');
-      await fetchTickets();
     }
   };
 
@@ -827,6 +824,26 @@ export default function KanbanBoard() {
     acc[status] = tickets.filter(ticket => ticket.status === status);
     return acc;
   }, {});
+
+  // Modal submit handler
+  const handleAdminCommentSubmit = async (comment) => {
+    setAdminCommentModal(modal => ({ ...modal, loading: true }));
+    const { ticketId, newStatus } = adminCommentModal;
+    try {
+      // Update both status and admin_comment
+      const { error } = await supabase
+        .from('tickets')
+        .update({ status: newStatus, admin_comment: comment })
+        .eq('id', ticketId);
+      if (error) throw error;
+      // Refresh tickets after update
+      await fetchTickets();
+      setAdminCommentModal({ open: false, ticketId: null, newStatus: '', loading: false });
+    } catch (err) {
+      setAdminCommentModal(modal => ({ ...modal, loading: false }));
+      alert('Failed to update ticket: ' + (err.message || err));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -1182,12 +1199,19 @@ export default function KanbanBoard() {
             status={statusKey}
             currentUserRole={currentUserRole}
             statusOrder={statusOrder}
-            handleUpdateTicketStatus={handleUpdateTicketStatus}
+            handleAdminStatusChange={handleAdminStatusChange}
             handleUpdateTicketAssignee={handleUpdateTicketAssignee}
             assignOptions={assignOptions}
           />
         ))}
       </div>
+
+      <AdminCommentModal
+        open={adminCommentModal.open}
+        onClose={() => setAdminCommentModal({ open: false, ticketId: null, newStatus: '', loading: false })}
+        onSubmit={handleAdminCommentSubmit}
+        loading={adminCommentModal.loading}
+      />
 
       {/* Add animations CSS */}
       <style jsx>{`

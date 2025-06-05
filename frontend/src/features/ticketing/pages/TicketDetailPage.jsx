@@ -781,23 +781,23 @@ const TicketDetailPage = () => {
               <Card sx={{ 
                 mb: 3,
                 borderRadius: '16px',
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)'
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.10)'
               }}>
                 <CardHeader 
                   title={
                     <Typography variant="h6" sx={{ 
                       fontWeight: 700, 
-                      color: '#92400e',
+                      color: '#047857',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
                       fontSize: '1rem'
                     }}>
                       <NoteAddIcon />
-                      Admin Note
+                      Resolution Reason
                     </Typography>
                   }
                 />
@@ -806,9 +806,9 @@ const TicketDetailPage = () => {
                     variant="body1" 
                     sx={{
                       whiteSpace: 'pre-wrap', 
-                      color: '#78350f',
+                      color: '#065f46',
                       lineHeight: 1.6,
-                      fontSize: '0.875rem'
+                      fontSize: '0.95rem'
                     }}
                   >
                     {ticket.admin_comment}

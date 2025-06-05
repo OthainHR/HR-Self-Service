@@ -30,6 +30,7 @@ import {
   faFilter, faDownload, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx'; // Import the xlsx library
+import AdminCommentModal from './AdminCommentModal';
 
 const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole }) => {
   const navigate = useNavigate();
@@ -296,6 +297,39 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   const handleCancelAssigneeChange = () => {
     setEditingAssignee(null);
+  };
+
+  // Add state for admin comment modal
+  const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
+  const [pendingStatusChange, setPendingStatusChange] = useState(null); // { ticketId, newStatus }
+
+  // Replace handleUpdateTicketStatus for admins:
+  const handleAdminStatusChange = (ticketId, newStatus) => {
+    if (["RESOLVED", "CLOSED"].includes(newStatus)) {
+      setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
+    } else {
+      handleUpdateTicketStatus(ticketId, newStatus);
+    }
+  };
+
+  // Modal submit handler
+  const handleAdminCommentSubmit = async (comment) => {
+    setAdminCommentModal(modal => ({ ...modal, loading: true }));
+    const { ticketId, newStatus } = adminCommentModal;
+    try {
+      // Update both status and admin_comment
+      const { error } = await supabase
+        .from('tickets')
+        .update({ status: newStatus, admin_comment: comment })
+        .eq('id', ticketId);
+      if (error) throw error;
+      // Update local state
+      handleUpdateTicketStatus(ticketId, newStatus);
+      setAdminCommentModal({ open: false, ticketId: null, newStatus: '', loading: false });
+    } catch (err) {
+      setAdminCommentModal(modal => ({ ...modal, loading: false }));
+      alert('Failed to update ticket: ' + (err.message || err));
+    }
   };
 
   if (!tickets || tickets.length === 0) {
@@ -929,7 +963,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                 <FormControl size="small">
                                   <Select
                                     value={ticket.status}
-                                    onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value)}
+                                    onChange={(e) => handleAdminStatusChange(ticket.id, e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                     sx={{
                                       minWidth: isMobile ? 100 : 150,
@@ -1141,6 +1175,13 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
           </div>
         </Card>
       </Fade>
+
+      <AdminCommentModal
+        open={adminCommentModal.open}
+        onClose={() => setAdminCommentModal({ open: false, ticketId: null, newStatus: '', loading: false })}
+        onSubmit={handleAdminCommentSubmit}
+        loading={adminCommentModal.loading}
+      />
 
       <style jsx>{`
         @keyframes pulse {
