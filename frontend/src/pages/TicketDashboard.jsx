@@ -33,6 +33,7 @@ import {
   AccessTime as AccessTimeIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 //------------------------------------------------------------------
 // Constants
@@ -93,6 +94,7 @@ const FloatingParticle = ({ delay = 0 }) => (
 //------------------------------------------------------------------
 const RoundedLegend = (props) => {
   const { payload } = props;
+  const { isDarkMode } = useDarkMode();
   return (
     <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 16, margin: 0, padding: 0, listStyle: 'none' }}>
       {payload.map((entry, index) => (
@@ -100,7 +102,7 @@ const RoundedLegend = (props) => {
           <svg width="32" height="24" style={{ display: 'block' }}>
             <rect x="0" y="4" width="32" height="16" rx="8" ry="8" fill={entry.color} stroke="none" />
           </svg>
-          <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{entry.value}</span>
+          <span style={{ fontSize: 13, color: isDarkMode ? '#f1f5f9' : '#374151', fontWeight: 500 }}>{entry.value}</span>
         </li>
       ))}
     </ul>
@@ -117,6 +119,7 @@ const TicketDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, isLoading: authLoading } = useAuth();
+  const { isDarkMode } = useDarkMode();
 
   //----------------------------------------------------------------
   // Local state
@@ -351,14 +354,20 @@ const TicketDashboard = () => {
       sx={{
         height: CHART_CARD_HEIGHT,
         borderRadius: 3,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%)',
+        background: isDarkMode
+          ? 'linear-gradient(135deg, rgba(30,41,59,0.92) 0%, rgba(51,65,85,0.92) 100%)'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%)',
         backdropFilter: 'blur(20px)',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-        borderRadius: 3
+        boxShadow: isDarkMode
+          ? '0 10px 30px rgba(30,41,59,0.18)'
+          : '0 10px 30px rgba(0,0,0,0.08)',
+        border: isDarkMode
+          ? '1px solid rgba(55,65,81,0.5)'
+          : '1px solid rgba(226,232,240,0.5)'
       }}
     >
       <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: isDarkMode ? '#f1f5f9' : '#1e293b' }}>
           {title}
         </Typography>
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>{children}</Box>
@@ -375,7 +384,9 @@ const TicketDashboard = () => {
         position: 'relative',
         minHeight: '100vh',
         p: { xs: 2, sm: 3, md: 4 },
-        background: 'linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)',
+        background: isDarkMode
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+          : 'linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)',
         overflow: 'hidden'
       }}
     >
@@ -391,9 +402,16 @@ const TicketDashboard = () => {
             sx={{
               mb: 4,
               borderRadius: 3,
-              background: 'linear-gradient(135deg,rgba(255,255,255,0.9) 0%,rgba(248,250,252,0.9) 100%)',
+              background: isDarkMode
+                ? 'linear-gradient(135deg, rgba(55,65,81,0.92) 0%, rgba(75,85,99,0.92) 100%)'
+                : 'linear-gradient(135deg,rgba(255,255,255,0.9) 0%,rgba(248,250,252,0.9) 100%)',
               backdropFilter: 'blur(20px)',
-              boxShadow: '0 25px 50px rgba(0,0,0,0.1)'
+              boxShadow: isDarkMode
+                ? '0 25px 50px rgba(30,41,59,0.18)'
+                : '0 25px 50px rgba(0,0,0,0.1)',
+              border: isDarkMode
+                ? '1px solid rgba(55,65,81,0.5)'
+                : '1px solid rgba(226,232,240,0.5)'
             }}
           >
             <CardContent sx={{ p: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -409,11 +427,11 @@ const TicketDashboard = () => {
               <Box>
                 <Typography
                   variant={isMobile ? 'h5' : 'h4'}
-                  sx={{ fontWeight: 800, color: '#1e293b' }}
+                  sx={{ fontWeight: 800, color: isDarkMode ? '#f1f5f9' : '#1e293b' }}
                 >
                   Ticket Analytics Dashboard
                 </Typography>
-                <Typography sx={{ color: '#64748b' }}>
+                <Typography sx={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>
                   Insights into support ticket performance
                 </Typography>
               </Box>
@@ -434,9 +452,16 @@ const TicketDashboard = () => {
                   <Card
                     sx={{
                       borderRadius: 3,
-                      background: 'linear-gradient(135deg,rgba(255,255,255,0.9) 0%,rgba(248,250,252,0.9) 100%)',
+                      background: isDarkMode
+                        ? 'linear-gradient(135deg, rgba(30,41,59,0.92) 0%, rgba(51,65,85,0.92) 100%)'
+                        : 'linear-gradient(135deg,rgba(255,255,255,0.9) 0%,rgba(248,250,252,0.9) 100%)',
                       backdropFilter: 'blur(20px)',
-                      boxShadow: `0 10px 30px ${c.shadow}`
+                      boxShadow: isDarkMode
+                        ? `0 10px 30px rgba(30,41,59,0.18)`
+                        : `0 10px 30px ${c.shadow}`,
+                      border: isDarkMode
+                        ? '1px solid rgba(55,65,81,0.5)'
+                        : '1px solid rgba(226,232,240,0.5)'
                     }}
                   >
                     <CardContent sx={{ textAlign: 'center', p: 3 }}>
@@ -467,7 +492,7 @@ const TicketDashboard = () => {
                       >
                         {c.value}
                       </Typography>
-                      <Typography sx={{ color: '#64748b', fontWeight: 600 }}>
+                      <Typography sx={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
                         {c.label}
                       </Typography>
                     </CardContent>
@@ -487,7 +512,11 @@ const TicketDashboard = () => {
                 {ticketsByType.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={ticketsByType} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={isMobile ? 80 : 100} label>
+                      <Pie data={ticketsByType} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={isMobile ? 80 : 100} label={{
+                        fill: isDarkMode ? '#f1f5f9' : '#374151',
+                        fontWeight: 600,
+                        fontSize: isMobile ? 11 : 13
+                      }}>
                         {ticketsByType.map((entry, index) => {
                           const color = CHART_COLORS[index % CHART_COLORS.length];
                           const hex = color.replace('#', '');
@@ -500,7 +529,17 @@ const TicketDashboard = () => {
                           );
                         })}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 12,
+                          background: isDarkMode ? 'rgba(30,41,59,0.95)' : '#fff',
+                          color: isDarkMode ? '#f1f5f9' : '#374151',
+                          border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}
+                        labelStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151', fontWeight: 700 }}
+                        itemStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151' }}
+                      />
                       <Legend content={RoundedLegend} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -516,9 +555,19 @@ const TicketDashboard = () => {
                 {ticketsByStatus.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={ticketsByStatus} layout="vertical">
-                      <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={90} />
-                      <Tooltip contentStyle={{ borderRadius: '12px 12px 12px 12px' }} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }} width={90} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 12,
+                          background: isDarkMode ? 'rgba(30,41,59,0.95)' : '#fff',
+                          color: isDarkMode ? '#f1f5f9' : '#374151',
+                          border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}
+                        labelStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151', fontWeight: 700 }}
+                        itemStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151' }}
+                      />
                       <Bar dataKey="value" radius={[0, 12, 12, 0]} activeBar={{ radius: [0, 12, 12, 0] }}>
                         {ticketsByStatus.map((e, i) => {
                           const color = CHART_COLORS[i % CHART_COLORS.length];
@@ -547,9 +596,19 @@ const TicketDashboard = () => {
                 {resolutionTimeData.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={resolutionTimeData} margin={{ bottom: 40 }}>
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip contentStyle={{ borderRadius: '12px 12px 12px 12px' }} />
+                      <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }} />
+                      <YAxis tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 12,
+                          background: isDarkMode ? 'rgba(30,41,59,0.95)' : '#fff',
+                          color: isDarkMode ? '#f1f5f9' : '#374151',
+                          border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}
+                        labelStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151', fontWeight: 700 }}
+                        itemStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151' }}
+                      />
                       <Bar dataKey="value" radius={[12, 12, 0, 0]} activeBar={{ radius: [12, 12, 0, 0] }}>
                         {resolutionTimeData.map((e, i) => {
                           const color = CHART_COLORS[i % CHART_COLORS.length];
@@ -584,10 +643,20 @@ const TicketDashboard = () => {
                         textAnchor="end"
                         interval={Math.floor(ticketVolumeData.length / 10) || 0}
                         tickFormatter={d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        tick={{ fontSize: 10 }}
+                        tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }}
                       />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
+                      <YAxis tick={{ fontSize: 10, fill: isDarkMode ? '#f1f5f9' : '#374151' }} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 12,
+                          background: isDarkMode ? 'rgba(30,41,59,0.95)' : '#fff',
+                          color: isDarkMode ? '#f1f5f9' : '#374151',
+                          border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                        }}
+                        labelStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151', fontWeight: 700 }}
+                        itemStyle={{ color: isDarkMode ? '#f1f5f9' : '#374151' }}
+                      />
                       <Line type="monotone" dataKey="count" stroke={CHART_COLORS[0]} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} />
                       <Legend content={RoundedLegend} />
                     </LineChart>
