@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
 import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon } from '@mui/icons-material';
 import '../styles/TicketDetailPage.css';
 import Snackbar from '@mui/material/Snackbar';
 import Container from '@mui/material/Container';
@@ -31,6 +31,9 @@ const TicketDetailPage = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [attachments, setAttachments] = useState([]);
+  const [isAttachmentsLoading, setIsAttachmentsLoading] = useState(false);
+  const [attachmentsError, setAttachmentsError] = useState(null);
 
   // Helper to format a display name from an email in the form firstname.lastname@domain
   const formatNameFromEmail = (email) => {
@@ -226,6 +229,28 @@ const TicketDetailPage = () => {
       supabase.removeChannel(channel);
     };
   }, [ticketId, fetchTicketData]);
+
+  // Fetch ticket attachments from Supabase Storage
+  useEffect(() => {
+    if (!ticket || !ticket.id) return;
+    setIsAttachmentsLoading(true);
+    setAttachmentsError(null);
+    async function fetchAttachments() {
+      try {
+        const { data, error } = await supabase.storage
+          .from('ticket-attachments')
+          .list(`${ticket.id}/`, { limit: 100 });
+        if (error) throw error;
+        setAttachments(data || []);
+      } catch (err) {
+        setAttachmentsError('Failed to load attachments.');
+        setAttachments([]);
+      } finally {
+        setIsAttachmentsLoading(false);
+      }
+    }
+    fetchAttachments();
+  }, [ticket]);
 
   const handleSubmitCommunication = async (message, type) => {
     if (!message.trim() || !currentUser) return;
@@ -772,6 +797,79 @@ const TicketDetailPage = () => {
               >
                 {ticket.description || 'No description provided.'}
               </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Attachments Card */}
+          <Card sx={{
+            mb: 3,
+            borderRadius: '16px',
+            background: isDarkMode
+              ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+          }}>
+            <CardHeader
+              title={
+                <Typography variant="h6" sx={{
+                  fontWeight: 700,
+                  color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <InsertDriveFileIcon sx={{ mr: 1, color: isDarkMode ? '#a5b4fc' : '#6366f1' }} />
+                  Attachments
+                </Typography>
+              }
+            />
+            <CardContent>
+              {isAttachmentsLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <CircularProgress size={24} />
+                  <Typography variant="body2">Loading attachments...</Typography>
+                </Box>
+              ) : attachmentsError ? (
+                <Alert severity="error">{attachmentsError}</Alert>
+              ) : attachments.length === 0 ? (
+                <Typography variant="body2" sx={{ color: isDarkMode ? '#9ca3af' : '#64748b' }}>
+                  No attachments for this ticket.
+                </Typography>
+              ) : (
+                <List dense>
+                  {attachments.map((file) => (
+                    <ListItem key={file.name} sx={{
+                      borderRadius: '10px',
+                      background: isDarkMode
+                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.7) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                      border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.2)' : '1px solid rgba(226, 232, 240, 0.2)',
+                      mb: 1,
+                      px: 2
+                    }}>
+                      <InsertDriveFileIcon sx={{ color: isDarkMode ? '#a5b4fc' : '#6366f1', mr: 1 }} />
+                      <ListItemText
+                        primary={<a
+                          href={supabase.storage.from('ticket-attachments').getPublicUrl(`${ticket.id}/${file.name}`).data.publicUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: isDarkMode ? '#a5b4fc' : '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
+                        >
+                          {file.name}
+                        </a>}
+                        secondary={`${(file.metadata?.size ? file.metadata.size : file.size || 0) / 1024 < 1024
+                          ? `${((file.metadata?.size ? file.metadata.size : file.size || 0) / 1024).toFixed(1)} KB`
+                          : `${((file.metadata?.size ? file.metadata.size : file.size || 0) / 1024 / 1024).toFixed(2)} MB`
+                        }`}
+                        sx={{ ml: 1 }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
             </CardContent>
           </Card>
 

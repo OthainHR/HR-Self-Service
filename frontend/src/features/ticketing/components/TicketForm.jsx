@@ -13,6 +13,8 @@ import {
   faUsers // Added for 'on behalf of' user selection
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles'; // Added useTheme import
+import { Box, Typography, List, ListItem, ListItemText, IconButton, Button } from '@mui/material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 
 const CLIENT_OPTIONS = ["IQVIA", "GBT", "Presidio", "Othain"];
 const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com'];
@@ -46,6 +48,9 @@ export default function TicketForm({ onTicketCreated }) {
   const [allUsers, setAllUsers] = useState([]);
   const [selectedOnBehalfOfUserId, setSelectedOnBehalfOfUserId] = useState(''); // Store ID of user
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // New state for attachments
+  const [attachments, setAttachments] = useState([]);
 
   // Handle responsive design
   useEffect(() => {
@@ -219,14 +224,37 @@ export default function TicketForm({ onTicketCreated }) {
       };
 
       if (assigneeId) ticketToInsert.assignee = assigneeId;
-      // Insert ticket
-      const { error: insertError } = await supabase.from('tickets').insert([
-        ticketToInsert
-      ]);
+      // Insert ticket and get new ID
+      const { data: insertedTickets, error: insertError } = await supabase
+        .from('tickets')
+        .insert([ ticketToInsert ])
+        .select('id');
 
       if (insertError) {
         setError(`Failed to create ticket: ${insertError.message}`);
       } else {
+        const newTicketId = insertedTickets[0].id;
+        // Upload attachments (await all, check for errors)
+        let uploadError = null;
+        if (attachments.length > 0) {
+          const uploadResults = await Promise.all(
+            attachments.map(async (file) => {
+              const filePath = `${newTicketId}/${file.name}`;
+              const { error } = await supabase.storage
+                .from('ticket-attachments')
+                .upload(filePath, file, { cacheControl: '3600', upsert: false });
+              return error;
+            })
+          );
+          uploadError = uploadResults.find(e => e);
+        }
+        if (uploadError) {
+          setError(`Ticket created, but failed to upload one or more attachments: ${uploadError.message || uploadError}`);
+          setIsLoading(false);
+          return;
+        }
+        // Clear attachments after upload
+        setAttachments([]);
         setSuccessMessage('Ticket created successfully!');
         setForm({
           title: '',
@@ -287,6 +315,17 @@ export default function TicketForm({ onTicketCreated }) {
   const handleSubCategoryChange = (e) => {
     const subCategoryId = e.target.value ? Number(e.target.value) : null;
     setForm(prevForm => ({ ...prevForm, sub_category_id: subCategoryId }));
+  };
+
+  // Handler to add attachments
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  // Handler to remove single attachment
+  const handleRemoveAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   if (isLoadingCategories) {
@@ -1019,6 +1058,68 @@ export default function TicketForm({ onTicketCreated }) {
                   </select>
                 </div>
               </div>
+
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>Attachments</Typography>
+                <input
+                  id="ticket-attachment-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.xls,.xlsx,.csv"
+                  onChange={handleAttachmentChange}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="ticket-attachment-input">
+                  <Button
+                    variant="contained"
+                    component="span"
+                    sx={{
+                      background: isDarkMode
+                        ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                        : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                      color: 'white',
+                      fontWeight: 700,
+                      borderRadius: '10px',
+                      boxShadow: '0 4px 16px rgba(99, 102, 241, 0.15)',
+                      px: 2.5,
+                      py: 1.25,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      mb: 1,
+                      '&:hover': {
+                        background: isDarkMode
+                          ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'
+                          : 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
+                        boxShadow: '0 8px 24px rgba(99, 102, 241, 0.22)'
+                      }
+                    }}
+                    startIcon={<FontAwesomeIcon icon={faPaperPlane} style={{ color: 'white' }} />}
+                  >
+                    Choose Files
+                  </Button>
+                </label>
+                {attachments.length > 0 && (
+                  <Typography variant="body2" sx={{ color: isDarkMode ? '#a5b4fc' : '#6366f1', fontWeight: 500, mt: 0.5, mb: 1 }}>
+                    {attachments.length} file{attachments.length > 1 ? 's' : ''} selected
+                  </Typography>
+                )}
+                {attachments.length > 0 && (
+                  <List dense>
+                    {attachments.map((file, idx) => (
+                      <ListItem
+                        key={idx}
+                        secondaryAction={
+                          <IconButton edge="end" aria-label="remove" onClick={() => handleRemoveAttachment(idx)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                      >
+                        <ListItemText primary={file.name} secondary={`${(file.size/1024).toFixed(1)} KB`} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </Box>
 
               <button 
                 type="submit" 
