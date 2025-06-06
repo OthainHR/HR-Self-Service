@@ -246,7 +246,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         let prefix = 'OTH';
         if (category.includes('it') || category.includes('technical')) prefix = 'OTH-IT';
         else if (category.includes('hr') || category.includes('human')) prefix = 'OTH-HR';
-        else if (category.includes('acc') || category.includes('account') || category.includes('finance') || category.includes('payroll')) prefix = 'OTH-ACC';
+        else if (category.includes('expense')) prefix = 'OTH-EXP';
+        else if (category.includes('account') || category.includes('payroll')) prefix = 'OTH-ACC';
         else if (category.includes('op') || category.includes('operation')) prefix = 'OTH-OPS';
         return `${prefix}${ticket.id.slice(0, 8)}`;
       })(),
@@ -846,7 +847,9 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                     prefix = 'OTH-IT';
                                   } else if (category.includes('hr') || category.includes('human')) {
                                     prefix = 'OTH-HR';
-                                  } else if (category.includes('acc') || category.includes('account') || category.includes('finance') || category.includes('payroll')) {
+                                  } else if (category.includes('expense')) {
+                                    prefix = 'OTH-EXP';
+                                  } else if (category.includes('account') || category.includes('payroll')) {
                                     prefix = 'OTH-ACC';
                                   } else if (category.includes('op') || category.includes('operation')) {
                                     prefix = 'OTH-OPS';

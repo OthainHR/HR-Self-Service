@@ -789,14 +789,14 @@ export default function KanbanBoard() {
       setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
     } else {
       // Directly update status for other transitions
-      try {
+    try {
         const { error } = await supabase
-          .from('tickets')
-          .update({ status: newStatus })
-          .eq('id', ticketId);
+        .from('tickets')
+        .update({ status: newStatus })
+        .eq('id', ticketId);
         if (error) throw error;
         await fetchTickets();
-      } catch (err) {
+    } catch (err) {
         alert('Failed to update ticket: ' + (err.message || err));
       }
     }
