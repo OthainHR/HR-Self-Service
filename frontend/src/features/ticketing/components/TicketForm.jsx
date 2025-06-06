@@ -198,9 +198,7 @@ export default function TicketForm({ onTicketCreated }) {
           defaultAssigneeEmail = 'it@othainsoft.com';
         } else if (name.includes('hr')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
-        } else if (name.includes('expense')) {
-          defaultAssigneeEmail = 'accounts@othainsoft.com';
-        } else if (name.includes('payroll')) {
+        } else if (name.includes('payroll') || name.includes('expense') || name.includes('account')) {
           // Payroll tickets also go to accounts team
           defaultAssigneeEmail = 'accounts@othainsoft.com';
         }
@@ -1060,7 +1058,7 @@ export default function TicketForm({ onTicketCreated }) {
               </div>
 
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>Attachments</Typography>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>Attachments (Invoices, Receipts, Screenshots, PDFs, Excel Sheets, etc.)</Typography>
                 <input
                   id="ticket-attachment-input"
                   type="file"
