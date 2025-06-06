@@ -146,7 +146,7 @@ const OnboardingPage = () => {
               },
               {
                 id: 'q2', 
-                text: 'Q3. If you take three consecutive sick-leave days, what must you provide?',
+                text: 'Q3. If you take two or more consecutive sick-leave days, what must you provide?',
                 options: ["A. No documentation is required", "B. An email notification only", "C. A doctor's medical certificate and prescription", "D. Your manager's verbal approval"],
                 correctAnswer: "C. A doctor's medical certificate and prescription"
               },
