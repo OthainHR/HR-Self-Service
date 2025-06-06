@@ -198,7 +198,7 @@ export default function TicketForm({ onTicketCreated }) {
           defaultAssigneeEmail = 'it@othainsoft.com';
         } else if (name.includes('hr')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
-        } else if (name.includes('accounts')) {
+        } else if (name.includes('expense')) {
           defaultAssigneeEmail = 'accounts@othainsoft.com';
         } else if (name.includes('payroll')) {
           // Payroll tickets also go to accounts team
@@ -528,8 +528,8 @@ export default function TicketForm({ onTicketCreated }) {
                 let gradientColors = '';
                 
                 switch (category.name) {
-                  case 'Accounts':
-                    subheading = 'Billing, invoices & payments';
+                  case 'Expense Management':
+                    subheading = 'Reimbursement, invoices & payments';
                     icon = faFileInvoiceDollar;
                     gradientColors = 'linear-gradient(135deg, #059669 0%, #10b981 100%)';
                     break;
