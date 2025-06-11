@@ -12,6 +12,7 @@ import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import AdminReport from './pages/AdminReport';
+import ExpenseDashboard from './pages/ExpenseDashboard';
 
 // Components
 import NavBar from './components/NavBar';
@@ -19,7 +20,7 @@ import NavBar from './components/NavBar';
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DarkModeProvider, useDarkMode } from './contexts/DarkModeContext';
-
+import { useTicketAssigneeRole } from './utils/useTicketAssigneeRole';
 // --- LAZY LOAD PAGES --- 
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -185,7 +186,7 @@ class ErrorBoundary extends Component {
 }
 
 // Protected route component
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isLoading } = useAuth();
   const isAuthenticated = !!user;
 
@@ -196,6 +197,13 @@ const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated) {
     // Flags are cleared by AuthContext on SIGNED_OUT or by main App useEffect on token check
     return <Navigate to="/login" replace />;
+  }
+
+  const userRoles = user?.roles || [];
+  const hasRequiredRole = allowedRoles.every(role => userRoles.includes(role));
+
+  if (!hasRequiredRole) {
+    return <Navigate to="/chat" replace />;
   }
 
   return children; // Render children directly, no disclaimer overlay here
@@ -252,6 +260,7 @@ const AppContent = () => {
   const { isDarkMode } = useDarkMode();
   const { user } = useAuth(); // Get user to pass to NavBar if needed
   const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);
+  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
 
   useEffect(() => {
     // Check for auth token in localStorage on initial load
@@ -264,6 +273,8 @@ const AppContent = () => {
       // clearAuthFlags(); // Example: uncomment if you want to force re-auth if localStorage token is missing
     }
   }, [user]); // Add clearAuthFlags to dependency array
+
+  
 
   return (
     <ThemeProvider theme={theme}>
@@ -289,6 +300,16 @@ const AppContent = () => {
                 <Route path="/cab-service" element={<ProtectedRoute><CabService /></ProtectedRoute>} />
                 <Route path="/admin-report" element={<AdminRoute><AdminReport /></AdminRoute>} />
                 <Route path="/ticket-dashboard" element={<ProtectedRoute><TicketDashboard /></ProtectedRoute>} />
+                <Route
+                  path="/expense-dashboard"
+                  element={
+                    !roleLoading && ['payroll_admin', 'reporting_manager', 'accounts_manager', 'cfo'].includes(role) ? (
+                      <ExpenseDashboard />
+                    ) : (
+                      <Navigate to="/chat" />
+                    )
+                  }
+                />
 
                 {/* Fallback route - redirect to home or login based on auth */}
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />

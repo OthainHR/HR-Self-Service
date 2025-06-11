@@ -58,6 +58,8 @@ const formatNameFromEmail = (email = '') => {
   if (lower === 'hr@othainsoft.com') return 'HR Admin';
   if (lower === 'it@othainsoft.com') return 'IT Admin';
   if (lower === 'accounts@othainsoft.com') return 'Accounts Admin';
+  if (lower === 'operations@othainsoft.com') return 'Operations Admin';
+  if (lower === 'ai@othainsoft.com') return 'AI Admin';
 
   const [local] = lower.split('@');
   const parts = local.split('.');

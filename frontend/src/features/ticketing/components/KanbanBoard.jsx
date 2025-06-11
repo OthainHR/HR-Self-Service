@@ -104,7 +104,7 @@ const getCategoryIcon = (categoryName) => {
   const name = categoryName.toLowerCase();
   if (name.includes('it')) return faLaptopCode;
   if (name.includes('hr')) return faUserTie;
-  if (name.includes('accounts')) return faFileInvoiceDollar;
+  if (name.includes('expense')) return faFileInvoiceDollar;
   if (name.includes('operations')) return faTools;
   if (name.includes('payroll')) return faMoneyCheckAlt;
   if (name.includes('ai')) return faRobot;
@@ -116,6 +116,8 @@ const formatNameFromEmail = (email) => {
   if (email.toLowerCase() === 'hr@othainsoft.com') return 'HR Admin';
   if (email.toLowerCase() === 'it@othainsoft.com') return 'IT Admin';
   if (email.toLowerCase() === 'accounts@othainsoft.com') return 'Accounts Admin';
+  if (email.toLowerCase() === 'operations@othainsoft.com') return 'Operations Admin';
+  if (email.toLowerCase() === 'ai@othainsoft.com') return 'AI Admin';
   const local = email.split('@')[0];
   const parts = local.split('.');
   const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -146,7 +148,9 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
   const assigneeLabelMap = {
     it_admin: 'IT Admin',
     hr_admin: 'HR Admin',
-    payroll_admin: 'Accounts Admin'
+    payroll_admin: 'Accounts Admin',
+    operations_admin: 'Operations Admin',
+    ai_admin: 'AI Admin'
   };
   const assigneeLabel = assigneeLabelMap[currentUserRole] || 'Assignee';
 
@@ -444,7 +448,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                     </div>
 
                     {/* Requester info for admins */}
-                    {(currentUserRole === 'admin' || currentUserRole === 'it_admin' || currentUserRole === 'hr_admin' || currentUserRole === 'payroll_admin') && ticket.requester_email && (
+                    {(currentUserRole === 'admin' || currentUserRole === 'it_admin' || currentUserRole === 'hr_admin' || currentUserRole === 'payroll_admin' || currentUserRole === 'operations_admin' || currentUserRole === 'ai_admin') && ticket.requester_email && (
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -484,7 +488,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                     )}
 
                     {/* Admin Actions */}
-                    {(currentUserRole === 'admin' || currentUserRole === 'it_admin' || currentUserRole === 'hr_admin' || currentUserRole === 'payroll_admin') && (
+                    {(currentUserRole === 'admin' || currentUserRole === 'it_admin' || currentUserRole === 'hr_admin' || currentUserRole === 'payroll_admin' || currentUserRole === 'operations_admin' || currentUserRole === 'ai_admin') && (
                       <div style={{
                         padding: '0.75rem',
                         background: isDarkMode 
@@ -666,7 +670,7 @@ export default function KanbanBoard() {
         setAssignOptions([]);
         return;
       }
-      const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
+      const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
       let query = supabase.from('ticket_assignees').select('user_id, name, role');
       if (!adminRoles.includes(currentUserRole)) {
         query = query.eq('role', currentUserRole);

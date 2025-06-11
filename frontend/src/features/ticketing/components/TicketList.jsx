@@ -31,6 +31,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx'; // Import the xlsx library
 import AdminCommentModal from './AdminCommentModal';
+import { useAuth } from '../../../contexts/AuthContext';
+
 
 const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole }) => {
   const navigate = useNavigate();
@@ -110,6 +112,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     if (email?.toLowerCase() === 'it@othainsoft.com') return 'IT Admin';
     // Special case: Accounts admin email
     if (email?.toLowerCase() === 'accounts@othainsoft.com') return 'Accounts Admin';
+    if (email?.toLowerCase() === 'operations@othainsoft.com') return 'Operations Admin';
+    if (email?.toLowerCase() === 'ai@othainsoft.com') return 'AI Admin';
     const local = email.split('@')[0];
     const parts = local.split('.');
     const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -159,6 +163,11 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     
     switch(status) {
       case 'WAITING FOR SUPPORT': return { 
+        bg: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)', 
+        shadow: 'rgba(37, 99, 235, 0.3)',
+        text: 'white'
+      };
+      case 'WAITING FOR APPROVAL': return { 
         bg: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)', 
         shadow: 'rgba(37, 99, 235, 0.3)',
         text: 'white'
@@ -280,13 +289,15 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     navigate(`/ticket/${ticketId}`);
   };
 
-  const isAdmin = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'].includes(currentUserRole);
+  const isAdmin = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'].includes(currentUserRole);
 
   // Dynamic assignee placeholder based on role
   const assigneeLabelMap = {
     it_admin: 'IT Admin',
     hr_admin: 'HR Admin',
-    payroll_admin: 'Accounts Admin'
+    payroll_admin: 'Accounts Admin',
+    operations_admin: 'Operations Admin',
+    ai_admin: 'AI Admin'
   };
   const assigneeLabel = assigneeLabelMap[currentUserRole] || 'Assignee';
 
@@ -348,7 +359,16 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     }
   };
 
-  if (!tickets || tickets.length === 0) {
+  // After fetching tickets and getting user/role
+  const { user } = useAuth();
+  
+
+  let visibleTickets = tickets;
+
+  // For manager, accounts_manager, cfo: exclude Expense Management tickets
+  
+
+  if (!visibleTickets || visibleTickets.length === 0) {
     return (
       <Fade in={true} timeout={600}>
         <Card sx={{ 

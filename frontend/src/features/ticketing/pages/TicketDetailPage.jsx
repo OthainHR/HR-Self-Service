@@ -7,6 +7,8 @@ import '../styles/TicketDetailPage.css';
 import Snackbar from '@mui/material/Snackbar';
 import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useTicketAssigneeRole } from '../../../utils/useTicketAssigneeRole';
 
 /* --- Log after all imports --- */
 
@@ -40,6 +42,9 @@ const TicketDetailPage = () => {
   const [uploadingAdminReply, setUploadingAdminReply] = useState(false);
   const [commentAttachmentMap, setCommentAttachmentMap] = useState({}); // { [commentId]: [fileObj, ...] }
 
+  const { user } = useAuth();
+  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
+
   // Helper to format a display name from an email in the form firstname.lastname@domain
   const formatNameFromEmail = (email) => {
     if (!email) return 'User';
@@ -49,6 +54,8 @@ const TicketDetailPage = () => {
     if (email.toLowerCase() === 'it@othainsoft.com') return 'IT Admin';
     // Special case: Accounts admin email
     if (email.toLowerCase() === 'accounts@othainsoft.com') return 'Accounts Admin';
+    if (email.toLowerCase() === 'operations@othainsoft.com') return 'Operations Admin';
+    if (email.toLowerCase() === 'ai@othainsoft.com') return 'AI Admin';
     const local = email.split('@')[0];
     const parts = local.split('.');
     const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -126,7 +133,7 @@ const TicketDetailPage = () => {
         role = 'admin';
       }
       setIsAdmin(
-        role === 'admin' || role === 'it_admin' || role === 'hr_admin' || role === 'payroll_admin'
+        role === 'admin' || role === 'it_admin' || role === 'hr_admin' || role === 'payroll_admin' || role === 'operations_admin' || role === 'ai_admin'
       );
     } else {
       setIsAdmin(false);
@@ -354,6 +361,75 @@ const TicketDetailPage = () => {
     }
   };
   
+  // Add expense approval handlers
+  const handleApprove = async () => {
+    // Capture previous phase
+    const oldPhase = ticket.approval_phase;
+    // Build update payload: include status for all tickets
+    let updates = {};
+    if (ticket.category_name === 'Expense Management') {
+      // Expense workflow: advance phases
+      if (ticket.approval_phase === 'manager') {
+        updates.approval_phase = 'account_manager';
+      } else if (ticket.approval_phase === 'account_manager') {
+        updates.approval_phase = 'cfo';
+      } else if (ticket.approval_phase === 'cfo') {
+        updates.approval_phase = null;
+      }
+      // lookup next assignee if needed
+      if (updates.approval_phase === 'account_manager') {
+        const { data: acctRow } = await supabase.from('ticket_assignees').select('user_id').eq('role', 'accounts_manager').single();
+        if (acctRow?.user_id) updates.assignee = acctRow.user_id;
+      } else if (updates.approval_phase === 'cfo') {
+        const { data: cfoRow } = await supabase.from('ticket_assignees').select('user_id').eq('role', 'cfo').single();
+        if (cfoRow?.user_id) updates.assignee = cfoRow.user_id;
+      } else if (updates.approval_phase === null) {
+        updates.assignee = null;
+      }
+      // Set status for expense approvals
+      updates.status = ticket.approval_phase === 'cfo' ? 'RESOLVED' : 'IN_PROGRESS';
+    } else {
+      // Generic ticket: always move to In Progress
+      updates.status = 'IN_PROGRESS';
+    }
+    // Perform update and return new phase
+    const { data: updatedRows, error: updError } = await supabase
+      .from('tickets')
+      .update(updates)
+      .eq('id', ticket.id)
+      .select('approval_phase');
+    if (updError) return alert(updError.message);
+    const newPhase = updatedRows?.[0]?.approval_phase;
+    if (newPhase === oldPhase) {
+      console.error(`Approval phase did not change. Old and new phase: ${oldPhase}`);
+      return alert('Approval phase did not change. Please try again.');
+    }
+    // Log audit trail
+    await supabase.from('ticket_communications').insert([{  
+      ticket_id: ticket.id,
+      user_id: currentUser.id,
+      message: `Approved at phase ${ticket.approval_phase}`,
+      type: 'approval'
+    }]);
+    fetchTicketData();
+    navigate('/expense-dashboard');
+  };
+
+  const handleReject = async () => {
+    // Reject back to employee
+    const { error: rejError } = await supabase
+      .from('tickets')
+      .update({ status: 'WAITING_FOR_SUPPORT', approval_phase: null, assignee: ticket.requested_by })
+      .eq('id', ticket.id);
+    if (rejError) return alert(rejError.message);
+    await supabase.from('ticket_communications').insert([{ 
+      ticket_id: ticket.id,
+      user_id: currentUser.id,
+      message: `Rejected by ${ticket.approval_phase}`,
+      type: 'approval'
+    }]);
+    fetchTicketData();
+  };
 
   if (isLoading) { 
     
@@ -605,6 +681,7 @@ const TicketDetailPage = () => {
             </Box>
           </Box>
 
+          {/* Insert Approve/Reject buttons after error banner and before content */}
           {error && (
             <Slide direction="down" in={!!error} mountOnEnter unmountOnExit>
               <Alert 
@@ -622,6 +699,28 @@ const TicketDetailPage = () => {
               </Alert>
             </Slide>
           )}
+
+          {/* Debug log for approval buttons */}
+          
+          {/* Only show Approve/Reject when user's workflow role matches the phase and they are the assignee */}
+          {!roleLoading
+            && ticket.assignee === user.id
+            && (
+              (role === 'reporting_manager' && ticket.approval_phase === 'manager')
+              || (role === 'accounts_manager'  && ticket.approval_phase === 'account_manager')
+              || (role === 'cfo'               && ticket.approval_phase === 'cfo')
+            )
+            && (
+              <Box sx={{ mb: 2.5, display: 'flex', gap: 2 }}>
+                <Button variant="contained" color="primary" onClick={handleApprove}>
+                  Approve
+                </Button>
+                <Button variant="outlined" color="error" onClick={handleReject}>
+                  Reject
+                </Button>
+              </Box>
+            )
+          }
         
           {/* Ticket Information Cards */}
           <Grid container spacing={2.5} sx={{ mb: 3 }}>

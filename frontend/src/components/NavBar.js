@@ -26,12 +26,14 @@ import {
   Logout, 
   Home,
   ConfirmationNumber,
-  DirectionsCar
+  DirectionsCar,
+  Receipt
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import DarkModeSwitch from './DarkModeSwitch';
 import { supabase } from '../services/supabase';
+import { useTicketAssigneeRole } from '../utils/useTicketAssigneeRole';
 
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
@@ -44,6 +46,8 @@ const NavBar = () => {
   const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
+
+  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
 
   useEffect(() => {
     const checkWhitelist = async () => {
@@ -368,6 +372,31 @@ const NavBar = () => {
               primary="Ticket Dashboard" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/ticket-dashboard') ? 700 : 500,
+                color: isDarkMode ? '#8b5cf6' : '#6366f1'
+              }}
+            />
+          </ListItem>
+        )}
+        {/* Expense Dashboard button for approvers */}
+        {!roleLoading && ['payroll_admin','reporting_manager','accounts_manager','cfo'].includes(role) && (
+          <ListItem
+            component={RouterLink}
+            to="/expense-dashboard"
+            button
+            selected={isActive('/expense-dashboard')}
+            sx={{
+              my: 0.5,
+              borderRadius: 1,
+              mx: 1,
+              backgroundColor: isActive('/expense-dashboard') ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+              '&:hover': { background: 'rgba(99, 102, 241, 0.08)' }
+            }}
+          >
+            <ListItemIcon><Receipt sx={{ color: isDarkMode ? '#8b5cf6' : '#6366f1' }} /></ListItemIcon>
+            <ListItemText
+              primary="Expense Dashboard"
+              primaryTypographyProps={{
+                fontWeight: isActive('/expense-dashboard') ? 700 : 500,
                 color: isDarkMode ? '#8b5cf6' : '#6366f1'
               }}
             />
@@ -985,6 +1014,64 @@ const NavBar = () => {
                 startIcon={<ConfirmationNumber />}
               >
                 Ticket Dashboard
+              </Button>
+            )}
+            {/* Expense Dashboard button for approvers */}
+            {!roleLoading && ['payroll_admin','reporting_manager','accounts_manager','cfo'].includes(role) && (
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/expense-dashboard"
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isActive('/expense-dashboard')
+                    ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                    : isDarkMode
+                      ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
+                      : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                  color: isActive('/expense-dashboard') ? 'white' : (isDarkMode ? '#8b5cf6' : '#6366f1'),
+                  border: isActive('/expense-dashboard')
+                    ? '1px solid rgba(99, 102, 241, 0.3)'
+                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
+                  boxShadow: isActive('/expense-dashboard') ? '0 8px 25px rgba(99, 102, 241, 0.3)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    background: isActive('/expense-dashboard')
+                      ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                      : isDarkMode
+                        ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isActive('/expense-dashboard')
+                      ? '0 12px 35px rgba(99, 102, 241, 0.4)'
+                      : '0 8px 25px rgba(0, 0, 0, 0.1)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'rotate(45deg)',
+                    transition: 'all 0.6s ease',
+                    opacity: 0
+                  },
+                  '&:hover::before': {
+                    opacity: 1,
+                    transform: 'translateX(100%) translateY(100%) rotate(45deg)'
+                  }
+                }}
+                startIcon={<Receipt />}
+              >
+                Expense Dashboard
               </Button>
             )}
           </Box>

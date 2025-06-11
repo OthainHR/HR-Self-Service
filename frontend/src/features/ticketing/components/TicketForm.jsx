@@ -17,7 +17,7 @@ import { Box, Typography, List, ListItem, ListItemText, IconButton, Button } fro
 import { Delete as DeleteIcon } from '@mui/icons-material';
 
 const CLIENT_OPTIONS = ["IQVIA", "GBT", "Presidio", "Othain"];
-const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com'];
+const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com', 'operations@othainsoft.com', 'ai@othainsoft.com'];
 
 export default function TicketForm({ onTicketCreated }) {
   const theme = useTheme(); // Get the theme object
@@ -194,13 +194,17 @@ export default function TicketForm({ onTicketCreated }) {
       let defaultAssigneeEmail = null;
       if (categoryObj) {
         const name = categoryObj.name.toLowerCase();
-        if (name.includes('it requests') || name.includes('ai requests') || name.includes('it, ai, operations')) {
+        if (name.includes('it requests') || name.includes('it')) {
           defaultAssigneeEmail = 'it@othainsoft.com';
         } else if (name.includes('hr')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
         } else if (name.includes('payroll') || name.includes('expense') || name.includes('account')) {
           // Payroll tickets also go to accounts team
           defaultAssigneeEmail = 'accounts@othainsoft.com';
+        } else if (name.includes('operations')) {
+          defaultAssigneeEmail = 'it@othainsoft.com';
+        } else if (name.includes('ai')) {
+          defaultAssigneeEmail = 'sunhith.reddy@othainsoft.com';
         }
       }
       let assigneeId = null;
@@ -221,7 +225,21 @@ export default function TicketForm({ onTicketCreated }) {
         requested_by: selectedOnBehalfOfUserId && isAdmin ? selectedOnBehalfOfUserId : currentUser.id
       };
 
-      if (assigneeId) ticketToInsert.assignee = assigneeId;
+      // For Expense Management tickets, initialize approval workflow
+      if (categoryObj.name === 'Expense Management') {
+        ticketToInsert.approval_phase = 'manager';
+        // lookup reporting manager user_id
+        const { data: mgrRow, error: mgrErr } = await supabase
+          .from('ticket_assignees')
+          .select('user_id')
+          .eq('role', 'reporting_manager')
+          .single();
+        if (mgrRow && mgrRow.user_id) {
+          ticketToInsert.assignee = mgrRow.user_id;
+        }
+      } else if (assigneeId) {
+        ticketToInsert.assignee = assigneeId;
+      }
       // Insert ticket and get new ID
       const { data: insertedTickets, error: insertError } = await supabase
         .from('tickets')

@@ -45,7 +45,6 @@ export default function TicketingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Function to load tickets from the view
   const loadTickets = async () => {
     setError(null);
     setIsLoading(true);
@@ -61,91 +60,60 @@ export default function TicketingPage() {
     }
     setIsLoading(false);
   };
+  
+  // This function sets role and view settings based on a session
+  const processSession = (session) => {
+    let role = null;
+    let email = null;
+
+    if (session) {
+      // ✅ CORRECTED: Read role from app_metadata
+      role = session.user?.app_metadata?.role || null;
+      email = session.user?.email?.toLowerCase();
+
+      if (email === 'tickets@othainsoft.com') {
+        role = 'admin';
+      }
+    }
+    
+    setCurrentUserRole(role);
+    setCurrentUserEmail(email);
+
+    const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
+    const isAdmin = adminRolesForDefaultView.includes(role);
+
+    setTabValue(isAdmin ? 0 : 1);
+    setViewMode(isAdmin ? 'list' : 'kanban');
+  };
 
   useEffect(() => {
-    const fetchUserRoleAndTickets = async () => {
-      setIsLoading(true);
-      setError(null);
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      let role = null;
-      if (sessionError) {
-        // console.log('[TicketingPage] Session error:', sessionError); // Keep this one if desired or remove
-      }
-      if (session) {
-        // Determine role from session
-        role = session.user?.user_metadata?.role || null;
-        const email = session.user?.email?.toLowerCase();
-        setCurrentUserEmail(email);
-        // Treat the tickets account as admin
-        if (email === 'tickets@othainsoft.com') {
-          role = 'admin';
+    const fetchInitialData = async () => {
+        setIsLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        processSession(session);
+        if (session) {
+            await loadTickets();
         }
-        setCurrentUserRole(role);
-
-        // Set default tab based on admin status
-        const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
-        const currentIsAdmin = adminRolesForDefaultView.includes(role);
-        setTabValue(currentIsAdmin ? 0 : 1);
-
-        if (adminRolesForDefaultView.includes(role)) {
-          setViewMode('list');
-        } else {
-          setViewMode('kanban');
-        }
-
-        // Load tickets
-        await loadTickets();
-      } else {
-        setCurrentUserRole(null);
-        setCurrentUserEmail(null);
-        setTabValue(0); // Default to dashboard if no session
-      }
+        setIsLoading(false);
     };
 
-    fetchUserRoleAndTickets();
+    fetchInitialData();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        let role = null;
-        if (session) {
-          let role = session.user?.user_metadata?.role || null;
-          const email = session.user?.email?.toLowerCase();
-          setCurrentUserEmail(email);
-          if (email === 'tickets@othainsoft.com') {
-            role = 'admin';
-          }
-          setCurrentUserRole(role);
-
-          // Set default tab based on admin status from auth change
-          const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
-          const authChangeIsAdmin = adminRolesForDefaultView.includes(role);
-          setTabValue(authChangeIsAdmin ? 0 : 1);
-
-          if (adminRolesForDefaultView.includes(role)) {
-            setViewMode('list');
-          } else {
-            setViewMode('kanban');
-          }
-        } else {
-          setCurrentUserRole(null);
-          setCurrentUserEmail(null);
-          setTabValue(0); // Default to dashboard if session ends
-        }
+      (event, session) => {
+        processSession(session);
       }
     );
     
     const ticketsSubscription = supabase
       .channel('public:tickets:list-view')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, payload => {
-        // Reload tickets on any change
         loadTickets();
       })
       .subscribe();
 
     return () => {
-      if (authListener && typeof authListener.subscription?.unsubscribe === 'function') {
-        authListener.subscription.unsubscribe();
-      }
+      authListener.subscription.unsubscribe();
       supabase.removeChannel(ticketsSubscription);
     };
   }, []);
@@ -154,88 +122,64 @@ export default function TicketingPage() {
     setTabValue(newValue);
   };
 
-  const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin'];
+  const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
   const isAdminUser = adminRoles.includes(currentUserRole);
 
   const handleToggleViewMode = () => {
     setViewMode((prevMode) => (prevMode === 'kanban' ? 'list' : 'kanban'));
   };
 
+  // ✅ IMPROVED: More reliable update handler
   const handleUpdateTicketStatus = async (ticketId, newStatus) => {
-    setAllTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
-      )
-    );
-
-    try {
-      const { error: updateError } = await supabase
-        .from('tickets')
-        .update({ status: newStatus })
-        .eq('id', ticketId);
-
-      if (updateError) {
-        setError(`Failed to update ticket: ${updateError.message}`);
-        const { data: ticketData, error: fetchError } = await supabase.from('v_ticket_board').select('*').order('created_at', { ascending: false });
-        if (fetchError) {
-          setError(`Failed to reload tickets: ${fetchError.message}`);
-        } else {
-          setAllTickets(ticketData || []);
-        }
-      } else {
-        setError(null);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while updating the ticket.');
-      const { data: ticketData, error: fetchError } = await supabase.from('v_ticket_board').select('*').order('created_at', { ascending: false });
-      if (fetchError) {
-        setError(`Failed to reload tickets: ${fetchError.message}`);
-      } else {
-        setAllTickets(ticketData || []);
-      }
+    console.log(`Attempting to update ticket ${ticketId} to status ${newStatus}.`);
+  
+    // ✅ CHANGED: Removed .select().single()
+    const { error: updateError } = await supabase
+      .from('tickets')
+      .update({ status: newStatus })
+      .eq('id', ticketId);
+  
+    if (updateError) {
+      console.error('Supabase update error:', updateError);
+      setError(`Failed to update ticket: ${updateError.message}. Please try again.`);
+    } else {
+      console.log('Update successful.');
+      setError(null);
+      setAllTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+        )
+      );
     }
   };
+  
 
+  // ✅ IMPROVED: More reliable update handler
   const handleUpdateTicketAssignee = async (ticketId, newAssigneeId) => {
-    setAllTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId ? { ...ticket, assignee: newAssigneeId } : ticket
-      )
-    );
-    try {
-      const { error: updateError } = await supabase
-        .from('tickets')
-        .update({ assignee: newAssigneeId })
-        .eq('id', ticketId);
-
-      if (updateError) {
-        setError(`Failed to update assignee: ${updateError.message}`);
-        const { data: ticketData, error: fetchError } = await supabase
-          .from('v_ticket_board')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (fetchError) {
-          setError(`Failed to reload tickets after assignee update failure: ${fetchError.message}`);
-        } else {
-          setAllTickets(ticketData || []);
-        }
-      } else {
-        setError(null);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while updating the assignee.');
-      const { data: ticketData, error: fetchError } = await supabase
-        .from('v_ticket_board')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (fetchError) {
-        setError(`Failed to reload tickets after assignee update error: ${fetchError.message}`);
-      } else {
-        setAllTickets(ticketData || []);
-      }
+    console.log(`Assigning ticket ${ticketId} to user ${newAssigneeId}.`);
+  
+    const { data, error: updateError } = await supabase
+      .from('tickets')
+      .update({ assignee: newAssigneeId })  // ← update the assignee column
+      .eq('id', ticketId)                   // ← filter first
+      .select()                              // ← ask for the updated row back
+      .single();                             // ← unwrap exactly one
+  
+    if (updateError) {
+      console.error('Failed to update assignee:', updateError);
+      setError(`Failed to update assignee: ${updateError.message}`);
+    } else {
+      console.log('Assignee update successful:', data);
+      setError(null);
+      // now refresh your tickets so your UI shows the new assignee
+      await loadTickets();
     }
   };
+  
 
+  // ... (the rest of your component's JSX remains exactly the same) ...
+  // The provided JSX from your file is fine.
+  
   return (
     <div style={{
       minHeight: '100vh',
@@ -648,4 +592,4 @@ export default function TicketingPage() {
       `}</style> */}
     </div>
   );
-} 
+}
