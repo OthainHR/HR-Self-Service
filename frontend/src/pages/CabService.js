@@ -879,7 +879,19 @@ const CabService = () => {
     }
   };
 
-  const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin);
+  // Helper to check if current IST time is before 6:30pm
+  const isBeforeCabCutoff = () => {
+    const now = new Date();
+    // Convert to IST (UTC+5:30)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
+    const hours = ist.getHours();
+    const minutes = ist.getMinutes();
+    // 18:30 is the cutoff
+    return hours < 18 || (hours === 18 && minutes < 30);
+  };
+
+  const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isBeforeCabCutoff();
 
 
   // Effect to pre-fill form data based on userCabConfig when booking dialog opens
@@ -1187,13 +1199,14 @@ const CabService = () => {
                   borderRadius: 3,
                   overflow: 'hidden',
                   position: 'relative',
-                    cursor: canUserAccessCabService ? 'pointer' : 'not-allowed',
-                    opacity: canUserAccessCabService ? 1 : 0.5,
+                  minHeight: 340, // Ensures both cards have the same height
+                  cursor: canUserAccessCabService ? 'pointer' : 'not-allowed',
+                  opacity: canUserAccessCabService ? 1 : 0.5,
                   transition: 'all 0.3s ease',
-                    '&:hover': canUserAccessCabService ? {
+                  '&:hover': canUserAccessCabService ? {
                     transform: 'translateY(-4px)',
                     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-                    } : {}
+                  } : {}
                 }}
                   onClick={() => canUserAccessCabService && setShowBookingDialog(true)}
               >
@@ -1224,12 +1237,21 @@ const CabService = () => {
                       mb: 2
                     }}
                   >
-                      {(canUserAccessCabService)
-                        ? 'Schedule a new cab booking with your preferred pickup time and destination'
-                        : !cabServiceGlobalVisibility
-                          ? 'Cab service is temporarily unavailable.'
-                          : 'Cab booking is currently not enabled for your account. Please contact HR for assistance.'
-                      }
+                    Please book your cab before 6:30pm IST or you will not be able to book a cab.
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                      mb: 2
+                    }}
+                  >
+                    {(canUserAccessCabService)
+                      ? 'Schedule a new cab booking with your preferred pickup time and destination'
+                      : !cabServiceGlobalVisibility
+                        ? 'Cab service is temporarily unavailable.'
+                        : 'Cab booking is currently disabled as it is past 6:30pm IST. Contact HR for assistance.'
+                    }
                   </Typography>
                   <Button
                     variant="contained"
@@ -1258,10 +1280,11 @@ const CabService = () => {
                   borderRadius: 3,
                   overflow: 'hidden',
                   position: 'relative',
-                    cursor: lastBooking && canUserAccessCabService ? 'pointer' : 'not-allowed',
-                    opacity: lastBooking && canUserAccessCabService ? 1 : 0.5,
+                  minHeight: 340, // Ensures both cards have the same height
+                  cursor: lastBooking && canUserAccessCabService ? 'pointer' : 'not-allowed',
+                  opacity: lastBooking && canUserAccessCabService ? 1 : 0.5,
                   transition: 'all 0.3s ease',
-                    '&:hover': lastBooking && canUserAccessCabService ? {
+                  '&:hover': lastBooking && canUserAccessCabService ? {
                     transform: 'translateY(-4px)',
                     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
                   } : {}
@@ -1298,7 +1321,7 @@ const CabService = () => {
                       {!canUserAccessCabService
                         ? !cabServiceGlobalVisibility
                           ? 'Rebooking is currently unavailable as cab service is temporarily disabled.'
-                          : 'Rebooking is currently not enabled for your account.'
+                          : 'Rebooking is currently disabled as it is past 6:30pm IST. Contact HR for assistance.'
                         : lastBooking 
                       ? `Quickly rebook your last trip: ${lastBooking.pickup_time} to ${lastBooking.dropoff_location}`
                       : 'No previous bookings found'
