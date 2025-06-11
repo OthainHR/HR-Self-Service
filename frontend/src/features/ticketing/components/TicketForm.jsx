@@ -196,14 +196,16 @@ export default function TicketForm({ onTicketCreated }) {
         const name = categoryObj.name.toLowerCase();
         if (name.includes('it requests') || name.includes('it')) {
           defaultAssigneeEmail = 'it@othainsoft.com';
-        } else if (name.includes('hr')) {
+        } else if (name.includes('hr') || name.includes('hr requests')) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
+        } else if (name.includes('expense management') || name.includes('expense')) {
+          defaultAssigneeEmail = 'accounts@othainsoft.com';
         } else if (name.includes('payroll') || name.includes('expense') || name.includes('account')) {
           // Payroll tickets also go to accounts team
           defaultAssigneeEmail = 'accounts@othainsoft.com';
         } else if (name.includes('operations')) {
           defaultAssigneeEmail = 'it@othainsoft.com';
-        } else if (name.includes('ai')) {
+        } else if (name.includes('ai') || name.includes('ai requests')) {
           defaultAssigneeEmail = 'sunhith.reddy@othainsoft.com';
         }
       }
