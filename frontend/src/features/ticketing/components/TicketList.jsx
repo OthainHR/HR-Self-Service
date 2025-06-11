@@ -258,6 +258,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         else if (category.includes('expense')) prefix = 'OTH-EXP';
         else if (category.includes('account') || category.includes('payroll')) prefix = 'OTH-ACC';
         else if (category.includes('op') || category.includes('operation')) prefix = 'OTH-OPS';
+        else if (category.includes('ai')) prefix = 'OTH-AI';
         return `${prefix}${ticket.id.slice(0, 8)}`;
       })(),
       'Summary': ticket.title,
@@ -873,6 +874,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                     prefix = 'OTH-ACC';
                                   } else if (category.includes('op') || category.includes('operation')) {
                                     prefix = 'OTH-OPS';
+                                  } else if (category.includes('ai')) {
+                                    prefix = 'OTH-AI';
                                   }
                                   
                                   return `${prefix}${ticket.id.slice(0, 8)}`;
