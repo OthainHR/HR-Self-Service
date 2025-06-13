@@ -146,7 +146,7 @@ const TicketDetailPage = () => {
     setError(null);
     try {
       const { data: ticketData, error: ticketError } = await supabase
-        .from('v_ticket_board_ist')
+        .from('v_ticket_board')
         .select('*')
         .eq('id', ticketId)
         .single();

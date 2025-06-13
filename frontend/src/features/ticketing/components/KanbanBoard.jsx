@@ -739,7 +739,7 @@ export default function KanbanBoard() {
     setIsLoading(true);
     setError(null);
     try {
-      let query = supabase.from('v_ticket_board_ist').select('*');
+      let query = supabase.from('v_ticket_board').select('*');
       
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);

@@ -27,7 +27,7 @@
     "react-scripts": "5.0.1",
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.19.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -56,6 +56,8 @@
   "proxy": "http://localhost:8000",
   "overrides": {
     "nth-check": "^2.1.1",
-    "postcss": "^8.4.31"
+    "postcss": "^8.4.31",
+    "webpack-dev-server": "^4.15.1",
+    "brace-expansion": "^2.0.1"
   }
 }

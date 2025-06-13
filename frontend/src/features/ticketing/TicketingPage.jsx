@@ -49,7 +49,7 @@ export default function TicketingPage() {
     setError(null);
     setIsLoading(true);
     const { data: ticketData, error: fetchError } = await supabase
-      .from('v_ticket_board_ist')
+      .from('v_ticket_board')
       .select('*')
       .order('created_at', { ascending: false });
     if (fetchError) {
