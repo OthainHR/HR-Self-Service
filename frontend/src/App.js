@@ -12,7 +12,6 @@ import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import AdminReport from './pages/AdminReport';
-import ExpenseDashboard from './pages/ExpenseDashboard';
 
 // Components
 import NavBar from './components/NavBar';
@@ -32,6 +31,8 @@ const Ticketing = lazy(() => import('./pages/Ticketing'));
 const TicketDetailPage = lazy(() => import('./features/ticketing/pages/TicketDetailPage'));
 const CabService = lazy(() => import('./pages/CabService'));
 const TicketDashboard = lazy(() => import('./pages/TicketDashboard'));
+const ExpenseTicketing = lazy(() => import('./pages/ExpenseTicketing'));
+
 
 // --- THEME DEFINITION --- 
 const createAppTheme = (mode) => createTheme({
@@ -296,20 +297,11 @@ const AppContent = () => {
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
                 <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
+                <Route path="/expense-tickets" element={<ProtectedRoute><ExpenseTicketing /></ProtectedRoute>} />
                 <Route path="/ticket/:ticketId" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
                 <Route path="/cab-service" element={<ProtectedRoute><CabService /></ProtectedRoute>} />
                 <Route path="/admin-report" element={<AdminRoute><AdminReport /></AdminRoute>} />
                 <Route path="/ticket-dashboard" element={<ProtectedRoute><TicketDashboard /></ProtectedRoute>} />
-                <Route
-                  path="/expense-dashboard"
-                  element={
-                    !roleLoading && ['payroll_admin', 'reporting_manager', 'accounts_manager', 'cfo'].includes(role) ? (
-                      <ExpenseDashboard />
-                    ) : (
-                      <Navigate to="/chat" />
-                    )
-                  }
-                />
 
                 {/* Fallback route - redirect to home or login based on auth */}
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />

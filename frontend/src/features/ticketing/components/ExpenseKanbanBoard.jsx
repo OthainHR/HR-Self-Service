@@ -17,14 +17,14 @@ import {
 } from '@mui/material';
 import AdminCommentModal from './AdminCommentModal';
 
-const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED'];
 
 const getStatusIcon = (status) => {
   switch(status) {
-    case 'WAITING FOR SUPPORT': return faHeadset;
-    case 'IN_PROGRESS': return faArrowRight;
-    case 'RESOLVED': return faCheck;
-    case 'CLOSED': return faTimesCircle;
+    case 'WAITING FOR APPROVAL 1': return faHeadset;
+    case 'WAITING FOR APPROVAL 2': return faArrowRight;
+    case 'WAITING FOR APPROVAL 3': return faCheck;
+    case 'APPROVED': return faTimesCircle;
     default: return faTicketAlt;
   }
 };
@@ -41,24 +41,24 @@ const getPriorityIcon = (priority) => {
 
 const getStatusColors = (status) => {
   switch(status) {
-    case 'WAITING FOR SUPPORT': return {
-      gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-      shadow: 'rgba(37, 99, 235, 0.3)',
+    case 'WAITING FOR APPROVAL 1': return {
+      gradient: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+      shadow: 'rgba(227, 228, 230, 0.3)',
       text: 'white'
     };
-    case 'IN_PROGRESS': return {
+    case 'WAITING FOR APPROVAL 2': return {
       gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
       shadow: 'rgba(234, 88, 12, 0.3)',
       text: 'white'
     };
-    case 'RESOLVED': return {
-      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-      shadow: 'rgba(5, 150, 105, 0.3)',
+    case 'WAITING FOR APPROVAL 3': return {
+      gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+      shadow: 'rgba(12, 27, 234, 0.3)',
       text: 'white'
     };
-    case 'CLOSED': return {
-      gradient: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-      shadow: 'rgba(107, 114, 128, 0.3)',
+    case 'APPROVED': return {
+      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+      shadow: 'rgba(107, 128, 113, 0.3)',
       text: 'white'
     };
     default: return {
@@ -657,10 +657,40 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
   );
 };
 
-export default function KanbanBoard() {
+export default function ExpenseKanbanBoard(props) {
+  const [tickets, setTickets] = useState([]);
+  const [isLoading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchTickets = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('v_ticket_board')
+      .select('*')
+      .eq('category_id', 5)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      setError(error.message);
+      setTickets([]);
+    } else {
+      setTickets(data.map(t => ({ ...t, status: t.expense_status })));
+      setError(null);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTickets();
+    const chan = supabase
+      .channel('public:tickets:expense-view')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, fetchTickets)
+      .subscribe();
+    return () => supabase.removeChannel(chan);
+  }, []);
+
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [tickets, setTickets] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [assignOptions, setAssignOptions] = useState([]);
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
@@ -687,8 +717,6 @@ export default function KanbanBoard() {
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [filters, setFilters] = useState({ search: '', category: '', sub_category: '', status: '' });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -734,57 +762,6 @@ export default function KanbanBoard() {
     fetchCategories();
     fetchSubCategories();
   }, [filters.category]);
-
-  const fetchTickets = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let query = supabase
-        .from('v_ticket_board')
-        .select('*')
-        .neq('category_id', 5);          // ← exclude Expense Mgmt
-
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-      if (filters.category) {
-        query = query.eq('category_id', filters.category);
-      }
-      if (filters.sub_category) {
-        query = query.eq('sub_category_id', filters.sub_category);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
-      
-      if (fetchError) throw fetchError;
-      setTickets(data || []);
-    } catch (fetchError) {
-      setError(`Failed to load tickets: ${fetchError.message}`);
-      setTickets([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTickets();
-  }, [filters]);
-
-  // Subscribe to ticket insert events to auto-refresh board
-  useEffect(() => {
-    const subscription = supabase
-      .channel('public:tickets:kanban-board')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tickets' }, () => {
-        fetchTickets();
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;

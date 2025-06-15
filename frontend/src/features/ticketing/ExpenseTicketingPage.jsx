@@ -5,9 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTicketAlt, faList, faPlus, faColumns, faThList, faSpinner, faChartLine, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
 
 
-import KanbanBoard from './components/KanbanBoard';
-import TicketForm from './components/TicketForm';
-import TicketList from './components/TicketList';
+import ExpenseKanbanBoard from './components/ExpenseKanbanBoard';
+import ExpenseTicketList from './components/ExpenseTicketList';
 import './styles/ticketing.css';
 import { useTheme } from '@mui/material/styles';
 import { supabase } from '../../services/supabase';
@@ -35,7 +34,7 @@ function TabPanel(props) {
   );
 }
 
-const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED'];
 
 /*  ───────────── e-mails allowed to open Expense Portal ───────────── */
 const EXPENSE_APPROVER_EMAILS = [
@@ -44,9 +43,9 @@ const EXPENSE_APPROVER_EMAILS = [
   'ps@jerseytechpartners.com'
 ].map(e => e.toLowerCase());
 
-export default function TicketingPage() {
+export default function ExpenseTicketingPage() {
   const [tabValue, setTabValue] = useState(0);
-  const [viewMode, setViewMode] = useState('kanban');
+  const [viewMode, setViewMode] = useState('list');
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -60,16 +59,16 @@ export default function TicketingPage() {
   const loadTickets = async () => {
     setError(null);
     setIsLoading(true);
-    const { data: ticketData, error: fetchError } = await supabase
-      .from('v_ticket_board')
-      .select('*')
-      .neq('category_id', 5)          // keep Expense tickets out of normal view
+    const { data, error: fetchError } = await supabase
+      .from('v_ticket_board')                // expense-only view
+      .select('*')                          
+      .eq('category_id', 5)                 
       .order('created_at', { ascending: false });
     if (fetchError) {
       setError(`Failed to load tickets: ${fetchError.message}`);
       setAllTickets([]);
     } else {
-      setAllTickets(ticketData || []);
+      setAllTickets(data.map(t => ({ ...t, status: t.expense_status })));  // map expense_status → status
     }
     setIsLoading(false);
   };
@@ -97,8 +96,8 @@ export default function TicketingPage() {
     setIsExpenseApprover(EXPENSE_APPROVER_EMAILS.includes(email));
     
 
-    setTabValue(isAdmin ? 0 : 1);
-    setViewMode(isAdmin ? 'list' : 'kanban');
+    setTabValue(isAdmin ? 1 : 0);
+    setViewMode(isAdmin ? 'kanban' : 'list');
   };
 
   useEffect(() => {
@@ -141,17 +140,17 @@ export default function TicketingPage() {
   const isAdminUser = adminRoles.includes(currentUserRole);
 
   const handleToggleViewMode = () => {
-    setViewMode((prevMode) => (prevMode === 'kanban' ? 'list' : 'kanban'));
+    setViewMode((prevMode) => (prevMode === 'list' ? 'kanban' : 'list'));
   };
 
   // ✅ IMPROVED: More reliable update handler
   const handleUpdateTicketStatus = async (ticketId, newStatus) => {
-    console.log(`Attempting to update ticket ${ticketId} to status ${newStatus}.`);
+    
   
     // ✅ CHANGED: Removed .select().single()
     const { error: updateError } = await supabase
       .from('tickets')
-      .update({ status: newStatus })
+      .update({ expense_status: newStatus })
       .eq('id', ticketId);
   
     if (updateError) {
@@ -315,7 +314,7 @@ export default function TicketingPage() {
                       )
                     }}
                   >
-                    Othain Ticketing System
+                    Expense Ticketing System
                   </Typography>
                   <Typography 
                     variant="body2" 
@@ -326,7 +325,7 @@ export default function TicketingPage() {
                       fontSize: '0.8rem'
                     }}
                   >
-                    Enterprise Support Management
+                    Enterprise Expense Management
                   </Typography>
                 </div>
               </div>
@@ -426,21 +425,16 @@ export default function TicketingPage() {
                   }
                 }}
               >
+                {isExpenseApprover && (
                 <Tab 
                   icon={<FontAwesomeIcon icon={faChartLine} style={{ fontSize: '0.875rem' }} />} 
                   iconPosition="start" 
-                  label="Ticket Dashboard" 
+                  label="Expense Tickets" 
                   id="ticketing-tab-0" 
                   aria-controls="ticketing-tabpanel-0" 
                 />
-                <Tab 
-                  icon={<FontAwesomeIcon icon={faPlus} style={{ fontSize: '0.875rem' }} />} 
-                  iconPosition="start" 
-                  label={isAdminUser ? "Create Ticket for User" : "Create New Ticket"} 
-                  id="ticketing-tab-1" 
-                  aria-controls="ticketing-tabpanel-1" 
-                />
-
+                
+              )}
 
 
               </Tabs>
@@ -569,21 +563,16 @@ export default function TicketingPage() {
                   {error}
                 </Typography>
               </Box>
-            ) : viewMode === 'kanban' ? (
-              <KanbanBoard />
-            ) : (
-              <TicketList
-                tickets={allTickets}
-                statusOrder={statusOrder}
-                handleUpdateTicketStatus={handleUpdateTicketStatus}
-                handleUpdateTicketAssignee={handleUpdateTicketAssignee}
-                currentUserRole={currentUserRole}
-              />
+            ) : viewMode === 'kanban'
+              ? <ExpenseKanbanBoard tickets={allTickets} />
+              : (
+                <ExpenseTicketList
+                  tickets={allTickets}
+                  handleUpdateTicketStatus={handleUpdateTicketStatus}
+                  handleUpdateTicketAssignee={handleUpdateTicketAssignee}
+                />
+
             )}
-          </TabPanel>
-          
-          <TabPanel value={tabValue} index={1}>
-              <TicketForm onTicketCreated={loadTickets} />
           </TabPanel>
 
         </Box>
