@@ -227,19 +227,8 @@ export default function TicketForm({ onTicketCreated }) {
         requested_by: selectedOnBehalfOfUserId && isAdmin ? selectedOnBehalfOfUserId : currentUser.id
       };
 
-      // For Expense Management tickets, initialize approval workflow
-      if (categoryObj.name === 'Expense Management') {
-        ticketToInsert.approval_phase = 'manager';
-        // lookup reporting manager user_id
-        const { data: mgrRow, error: mgrErr } = await supabase
-          .from('ticket_assignees')
-          .select('user_id')
-          .eq('role', 'reporting_manager')
-          .single();
-        if (mgrRow && mgrRow.user_id) {
-          ticketToInsert.assignee = mgrRow.user_id;
-        }
-      } else if (assigneeId) {
+      
+      if (assigneeId) {
         ticketToInsert.assignee = assigneeId;
       }
       // Insert ticket and get new ID
