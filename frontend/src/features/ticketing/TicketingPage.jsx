@@ -80,8 +80,8 @@ export default function TicketingPage() {
     let email = null;
 
     if (session) {
-      // ✅ CORRECTED: Read role from app_metadata
-      role = session.user?.app_metadata?.role || null;
+      // ✅ CORRECTED: Read role from user_metadata
+      role = session.user?.user_metadata?.role || null;
       email = session.user?.email?.toLowerCase();
 
       if (email === 'tickets@othainsoft.com') {
