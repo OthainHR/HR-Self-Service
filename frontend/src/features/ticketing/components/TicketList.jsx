@@ -58,33 +58,37 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   useEffect(() => {
     const fetchAssignees = async () => {
       setIsAssignOptionsLoading(true);
-      // Ensure user is authenticated before querying
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+      /* ——— 1. ensure user is authenticated ——— */
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession();
+  
       if (sessionError || !session) {
         setAssignOptions([]);
         setIsAssignOptionsLoading(false);
         return;
       }
-      if (!currentUserRole) {
-        setAssignOptions([]);
-        setIsAssignOptionsLoading(false);
-        return;
-      }
-      // Only super-admin ('admin') sees all; others see only their own role
-      let query = supabase.from('ticket_assignees').select('user_id, name, role');
-      if (currentUserRole !== 'admin') {
-        query = query.eq('role', currentUserRole);
-      }
-      const { data, error } = await query;
+  
+      /* ——— 2. fetch ALL rows from ticket_assignees (no role filter) ——— */
+      const { data, error } = await supabase
+        .from('ticket_assignees')
+        .select('user_id, name');   // no need to select role
+  
+      /* ——— 3. populate state ——— */
       if (!error && data) {
-        setAssignOptions(data.map(row => ({ id: row.user_id, name: row.name })));
+        setAssignOptions(
+          data.map(row => ({ id: row.user_id, name: row.name }))
+        );
       } else {
         setAssignOptions([]);
       }
+  
       setIsAssignOptionsLoading(false);
     };
+  
     fetchAssignees();
-  }, [currentUserRole]);
+  }, []);   // dependency array empty: runs once on mount
+  
   
   // Handle responsive design
   useEffect(() => {
@@ -366,8 +370,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   let visibleTickets = tickets;
 
-  // For manager, accounts_manager, cfo: exclude Expense Management tickets
-  
+
 
   if (!visibleTickets || visibleTickets.length === 0) {
     return (

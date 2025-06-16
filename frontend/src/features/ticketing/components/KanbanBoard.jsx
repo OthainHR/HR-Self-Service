@@ -742,7 +742,7 @@ export default function KanbanBoard() {
       let query = supabase
         .from('v_ticket_board')
         .select('*')
-        .neq('category_id', 5);          // ← exclude Expense Mgmt
+        .in('category_id', [1,2,3,4,5,6]);          // ← exclude Expense Mgmt
 
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
