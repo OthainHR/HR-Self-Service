@@ -331,6 +331,76 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     setEditingAssignee(null);
   };
 
+  // Priority adjustment functions
+  const handlePriorityAdjustment = async (ticketId, newPriority, adjustment) => {
+    try {
+      // Calculate new due date based on priority and adjustment
+      const currentTicket = tickets.find(t => t.id === ticketId);
+      if (!currentTicket) return;
+
+      let dueDateAdjustment = 0;
+      
+      // Base adjustments in hours based on priority
+      const priorityAdjustments = {
+        'Low': adjustment === 'increase' ? 24 : -12,     // +24h or -12h
+        'Medium': adjustment === 'increase' ? 12 : -6,   // +12h or -6h  
+        'High': adjustment === 'increase' ? 6 : -3,      // +6h or -3h
+        'Urgent': adjustment === 'increase' ? 2 : -1     // +2h or -1h
+      };
+
+      dueDateAdjustment = priorityAdjustments[newPriority] || 0;
+
+      // Calculate new due date
+      let newDueDate = null;
+      if (currentTicket.due_at) {
+        const currentDue = new Date(currentTicket.due_at);
+        currentDue.setHours(currentDue.getHours() + dueDateAdjustment);
+        newDueDate = currentDue.toISOString();
+      } else {
+        // If no due date exists, create one based on priority
+        const now = new Date();
+        const hoursToAdd = {
+          'Urgent': 4,
+          'High': 24,
+          'Medium': 72,
+          'Low': 168
+        }[newPriority] || 72;
+        
+        now.setHours(now.getHours() + hoursToAdd + dueDateAdjustment);
+        newDueDate = now.toISOString();
+      }
+
+      // Update both priority and due date
+      const { error } = await supabase
+        .from('tickets')
+        .update({ 
+          priority: newPriority,
+          due_at: newDueDate
+        })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      // Update local state
+      const updatedTickets = tickets.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, priority: newPriority, due_at: newDueDate }
+          : ticket
+      );
+      
+      // If this component receives tickets as props, we might need to call a parent update function
+      // For now, we'll trigger a re-fetch by calling the parent's update function if available
+      if (handleUpdateTicketStatus) {
+        // Trigger a refresh by calling the status update with current status
+        handleUpdateTicketStatus(ticketId, currentTicket.status);
+      }
+
+    } catch (error) {
+      console.error('Error adjusting priority and due date:', error);
+      alert('Failed to adjust priority and due date: ' + error.message);
+    }
+  };
+
   // Add state for admin comment modal
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
   const [pendingStatusChange, setPendingStatusChange] = useState(null); // { ticketId, newStatus }
@@ -811,6 +881,9 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                       <TableCell>Reporter</TableCell>
                       <TableCell>Assignee</TableCell>
                       <TableCell>Status</TableCell>
+                      {isAdmin && (
+                        <TableCell>Severity</TableCell>
+                      )}
                       <TableCell sx={{ 
                         display: { xs: 'none', md: 'table-cell' } // Hide on mobile using MUI responsive display
                       }}>
@@ -1076,6 +1149,119 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                 </div>
                               )}
                             </TableCell>
+
+                            {/* Severity Column - Admin Only */}
+                            {isAdmin && (
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '0.5rem',
+                                  alignItems: 'center',
+                                  minWidth: '120px'
+                                }}>
+                                  {/* Current Priority Display */}
+                                  <div style={{
+                                    background: priorityColors.bg,
+                                    color: priorityColors.text,
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    textAlign: 'center',
+                                    boxShadow: `0 2px 8px ${priorityColors.shadow}`,
+                                    minWidth: '60px'
+                                  }}>
+                                    {ticket.priority}
+                                  </div>
+                                  
+                                  {/* Priority Adjustment Controls */}
+                                  <div style={{
+                                    display: 'flex',
+                                    gap: '0.25rem',
+                                    flexWrap: 'wrap',
+                                    justifyContent: 'center'
+                                  }}>
+                                    {['Low', 'Medium', 'High', 'Urgent'].map(priority => {
+                                      const isCurrentPriority = ticket.priority === priority;
+                                      const priorityColor = getPriorityColor(priority);
+                                      
+                                      return (
+                                        <div key={priority} style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.125rem',
+                                          background: isDarkMode 
+                                            ? 'rgba(55, 65, 81, 0.8)' 
+                                            : 'rgba(255, 255, 255, 0.9)',
+                                          borderRadius: '4px',
+                                          padding: '0.125rem',
+                                          border: isCurrentPriority 
+                                            ? `1px solid ${priorityColor.bg.split(' ')[1].split(',')[0]}`
+                                            : isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)'
+                                        }}>
+                                          <button
+                                            onClick={() => handlePriorityAdjustment(ticket.id, priority, 'decrease')}
+                                            disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              color: isDarkMode ? '#f87171' : '#dc2626',
+                                              fontSize: '0.6rem',
+                                              cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
+                                              padding: '0.125rem',
+                                              borderRadius: '2px',
+                                              opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
+                                              minWidth: '12px',
+                                              height: '16px',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center'
+                                            }}
+                                            title={`Decrease ${priority} priority (extends due date)`}
+                                          >
+                                            −
+                                          </button>
+                                          <span style={{
+                                            fontSize: '0.6rem',
+                                            fontWeight: isCurrentPriority ? 700 : 500,
+                                            color: isCurrentPriority 
+                                              ? (isDarkMode ? '#f3f4f6' : '#1f2937')
+                                              : (isDarkMode ? '#9ca3af' : '#6b7280'),
+                                            minWidth: '20px',
+                                            textAlign: 'center'
+                                          }}>
+                                            {priority.charAt(0)}
+                                          </span>
+                                          <button
+                                            onClick={() => handlePriorityAdjustment(ticket.id, priority, 'increase')}
+                                            disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              color: isDarkMode ? '#34d399' : '#059669',
+                                              fontSize: '0.6rem',
+                                              cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
+                                              padding: '0.125rem',
+                                              borderRadius: '2px',
+                                              opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
+                                              minWidth: '12px',
+                                              height: '16px',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center'
+                                            }}
+                                            title={`Increase ${priority} priority (shortens due date)`}
+                                          >
+                                            +
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </TableCell>
+                            )}
 
                             {/* Created Date - Hidden on mobile */}
                             <TableCell sx={{ 
