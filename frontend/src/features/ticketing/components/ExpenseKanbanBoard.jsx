@@ -18,7 +18,7 @@ import {
 import AdminCommentModal from './AdminCommentModal';
 import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
 
-const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED'];
+const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED', 'REJECTED'];
 
 const getStatusIcon = (status) => {
   switch(status) {
@@ -26,6 +26,7 @@ const getStatusIcon = (status) => {
     case 'WAITING FOR APPROVAL 2': return faArrowRight;
     case 'WAITING FOR APPROVAL 3': return faCheck;
     case 'APPROVED': return faTimesCircle;
+    case 'REJECTED': return faTimesCircle;
     default: return faTicketAlt;
   }
 };
@@ -60,6 +61,11 @@ const getStatusColors = (status) => {
     case 'APPROVED': return {
       gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
       shadow: 'rgba(107, 128, 113, 0.3)',
+      text: 'white'
+    };
+    case 'REJECTED': return {
+      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+      shadow: 'rgba(220, 38, 38, 0.3)',
       text: 'white'
     };
     default: return {
@@ -128,7 +134,41 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, assignOptions, allTickets }) => {
+// Add approval workflow logic
+const getApprovalWorkflow = (currentStatus, userEmail) => {
+  const workflows = {
+    'WAITING FOR APPROVAL 1': {
+      approver: 'accounts@othainsoft.com',
+      nextStatus: 'WAITING FOR APPROVAL 2'
+    },
+    'WAITING FOR APPROVAL': {
+      approver: 'accounts@othainsoft.com',
+      nextStatus: 'WAITING FOR APPROVAL 2'
+    },
+    'WAITING FOR APPROVAL 2': {
+      approver: 'praveen.omprakash@othainsoft.com',
+      nextStatus: 'WAITING FOR APPROVAL 3'
+    },
+    'WAITING FOR APPROVAL 3': {
+      approver: 'ps@jerseytechpartners.com',
+      nextStatus: 'APPROVED'
+    }
+  };
+
+  const workflow = workflows[currentStatus];
+  if (!workflow) return { canApprove: false, canReject: false, nextStatus: null };
+
+  const canApprove = workflow.approver === userEmail;
+  const canReject = workflow.approver === userEmail;
+
+  return {
+    canApprove,
+    canReject,
+    nextStatus: workflow.nextStatus
+  };
+};
+
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, assignOptions, allTickets, userEmail }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -525,116 +565,140 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                             ))}
                           </Select>
                         </FormControl>
-                        <FormControl
-                          size="small"
-                          fullWidth
-                          onClick={(e) => e.stopPropagation()}
-                          sx={{
-                            '.MuiOutlinedInput-root': {
-                              borderRadius: '8px',
-                              background: isDarkMode 
-                                ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
-                                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                              backdropFilter: 'blur(10px)',
-                              border: 'none',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                background: isDarkMode 
-                                  ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.9) 0%, rgba(107, 114, 128, 0.9) 100%)'
-                                  : 'linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%)',
-                                transform: 'translateY(-1px)',
-                                boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)'
-                              },
-                            },
-                            '.MuiSelect-select': {
-                              padding: '0.5rem 0.75rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                            },
-                            '.MuiOutlinedInput-notchedOutline': { 
-                              border: 'none',
-                            },
-                          }}
-                        >
-                          <Select
-                            value={ticket.status}
-                            onChange={(e) => handleAdminStatusChange(ticket.id, e.target.value)}
-                            displayEmpty
-                            renderValue={(selected) => {
-                              const selectedColors = getStatusColors(selected);
-                              return (
-                                <Chip 
-                                  label={selected.replace('_', ' ').replace('WAITING FOR SUPPORT', 'Waiting for Support')}
-                                  sx={{ 
-                                    height: '24px',
-                                    fontSize: '0.7rem',
-                                    background: selectedColors.gradient,
-                                    color: selectedColors.text,
-                                    fontWeight: 700,
-                                    borderRadius: '6px',
-                                    boxShadow: `0 3px 10px ${selectedColors.shadow}`,
-                                    border: 'none',
-                                    '.MuiChip-label': {
-                                      padding: '0 8px',
-                                    },
-                                    '&:hover': {
-                                      transform: 'translateY(-1px)',
-                                      boxShadow: `0 5px 12px ${selectedColors.shadow}`
+                        
+                        {/* Replace Status Dropdown with Approve/Reject Buttons */}
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem',
+                          marginTop: '0.5rem'
+                        }}>
+                          {(() => {
+                            const workflow = getApprovalWorkflow(ticket.status, userEmail);
+                            
+                            return (
+                              <>
+                                {/* Approve Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (workflow.canApprove) {
+                                      handleAdminStatusChange(ticket.id, workflow.nextStatus);
                                     }
                                   }}
-                                />
-                              );
-                            }}
-                            MenuProps={{
-                              PaperProps: {
-                                sx: {
-                                  borderRadius: '12px',
-                                  boxShadow: '0 15px 45px rgba(0, 0, 0, 0.15)',
-                                  border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                                  background: isDarkMode 
-                                    ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
-                                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
-                                  backdropFilter: 'blur(20px)',
-                                  '.MuiMenuItem-root': {
+                                  disabled={!workflow.canApprove || ticket.status === 'APPROVED' || ticket.status === 'REJECTED'}
+                                  style={{
+                                    background: workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                      : (ticket.status === 'APPROVED' 
+                                        ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                        : (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 231, 235, 0.8)')),
+                                    color: workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? 'white'
+                                      : (ticket.status === 'APPROVED'
+                                        ? 'white'
+                                        : (isDarkMode ? '#9ca3af' : '#6b7280')),
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '0.5rem 1rem',
                                     fontSize: '0.75rem',
-                                    padding: '6px 12px',
-                                    borderRadius: '6px',
-                                    margin: '3px 6px',
-                                    '&:hover': {
-                                      background: isDarkMode 
-                                        ? 'rgba(55, 65, 81, 0.8)'
-                                        : 'rgba(241, 245, 249, 0.8)'
-                                    }
+                                    fontWeight: 600,
+                                    cursor: workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED' ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? '0 4px 12px rgba(5, 150, 105, 0.3)'
+                                      : (ticket.status === 'APPROVED' ? '0 4px 12px rgba(5, 150, 105, 0.3)' : 'none'),
+                                    opacity: workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED' ? 1 : 0.6,
+                                    width: '100%',
+                                    textAlign: 'center'
+                                  }}
+                                  title={
+                                    ticket.status === 'APPROVED' 
+                                      ? 'Already Approved'
+                                      : ticket.status === 'REJECTED'
+                                        ? 'Cannot approve rejected ticket'
+                                        : workflow.canApprove 
+                                          ? `Approve and move to ${workflow.nextStatus}` 
+                                          : 'You cannot approve this ticket'
                                   }
-                                }
-                              }
-                            }}
-                          >
-                            {statusOrder.map(statusOption => {
-                              const optionColors = getStatusColors(statusOption);
-                              return (
-                                <MenuItem key={statusOption} value={statusOption}>
-                                  <Chip 
-                                    label={statusOption.replace('_', ' ').replace('WAITING FOR SUPPORT', 'Waiting for Support')}
-                                    size="small"
-                                    sx={{ 
-                                      height: '20px',
-                                      fontSize: '0.65rem',
-                                      background: optionColors.gradient,
-                                      color: optionColors.text,
-                                      fontWeight: 700,
-                                      borderRadius: '6px',
-                                      boxShadow: `0 2px 6px ${optionColors.shadow}`,
-                                      '.MuiChip-label': {
-                                        padding: '0 6px',
-                                      }
-                                    }}
-                                  />
-                                </MenuItem>
-                              );
-                            })}
-                          </Select>
-                        </FormControl>
+                                  onMouseEnter={(e) => {
+                                    if (workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED') {
+                                      e.target.style.transform = 'translateY(-1px)';
+                                      e.target.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (workflow.canApprove && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED') {
+                                      e.target.style.transform = 'translateY(0)';
+                                      e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                                    }
+                                  }}
+                                >
+                                  {ticket.status === 'APPROVED' ? 'APPROVED' : 'Approve'}
+                                </button>
+
+                                {/* Reject Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (workflow.canReject) {
+                                      handleAdminStatusChange(ticket.id, 'REJECTED');
+                                    }
+                                  }}
+                                  disabled={!workflow.canReject || ticket.status === 'APPROVED' || ticket.status === 'REJECTED'}
+                                  style={{
+                                    background: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                                      : (ticket.status === 'REJECTED'
+                                        ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                                        : (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 231, 235, 0.8)')),
+                                    color: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? 'white'
+                                      : (ticket.status === 'REJECTED'
+                                        ? 'white'
+                                        : (isDarkMode ? '#9ca3af' : '#6b7280')),
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    cursor: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED' ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED'
+                                      ? '0 4px 12px rgba(220, 38, 38, 0.3)'
+                                      : (ticket.status === 'REJECTED' ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none'),
+                                    opacity: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED' ? 1 : (ticket.status === 'REJECTED' ? 1 : 0.4),
+                                    width: '100%',
+                                    textAlign: 'center'
+                                  }}
+                                  title={
+                                    ticket.status === 'APPROVED' 
+                                      ? 'Cannot reject approved ticket'
+                                      : ticket.status === 'REJECTED'
+                                        ? 'Already Rejected'
+                                        : workflow.canReject 
+                                          ? 'Reject this expense request' 
+                                          : 'You cannot reject this ticket'
+                                  }
+                                  onMouseEnter={(e) => {
+                                    if (workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED') {
+                                      e.target.style.transform = 'translateY(-1px)';
+                                      e.target.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED') {
+                                      e.target.style.transform = 'translateY(0)';
+                                      e.target.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                                    }
+                                  }}
+                                >
+                                  {ticket.status === 'REJECTED' ? 'REJECTED' : 'Reject'}
+                                </button>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -668,6 +732,8 @@ export default function ExpenseKanbanBoard(props) {
   const [tickets, setTickets] = useState([]);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -698,7 +764,6 @@ export default function ExpenseKanbanBoard(props) {
 
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [currentUserRole, setCurrentUserRole] = useState(null);
   const [assignOptions, setAssignOptions] = useState([]);
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
   useEffect(() => {
@@ -738,6 +803,7 @@ export default function ExpenseKanbanBoard(props) {
           role = 'admin';
         }
         setCurrentUserRole(role);
+        setUserEmail(email);
       }
     };
 
@@ -779,15 +845,15 @@ export default function ExpenseKanbanBoard(props) {
     if (["RESOLVED", "CLOSED"].includes(newStatus)) {
       setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
     } else {
-      // Directly update status for other transitions
-    try {
+      // Update expense_status for expense tickets
+      try {
         const { error } = await supabase
-        .from('tickets')
-        .update({ status: newStatus })
-        .eq('id', ticketId);
+          .from('tickets')
+          .update({ expense_status: newStatus })
+          .eq('id', ticketId);
         if (error) throw error;
         await fetchTickets();
-    } catch (err) {
+      } catch (err) {
         alert('Failed to update ticket: ' + (err.message || err));
       }
     }
@@ -812,7 +878,14 @@ export default function ExpenseKanbanBoard(props) {
 
   // Group tickets by status
   const board = statusOrder.reduce((acc, status) => {
-    acc[status] = tickets.filter(ticket => ticket.status === status);
+    if (status === 'WAITING FOR APPROVAL 1') {
+      // Include both 'WAITING FOR APPROVAL 1' and 'WAITING FOR APPROVAL' tickets in this column
+      acc[status] = tickets.filter(ticket => 
+        ticket.status === 'WAITING FOR APPROVAL 1' || ticket.status === 'WAITING FOR APPROVAL'
+      );
+    } else {
+      acc[status] = tickets.filter(ticket => ticket.status === status);
+    }
     return acc;
   }, {});
 
@@ -1206,6 +1279,7 @@ export default function ExpenseKanbanBoard(props) {
             handleUpdateTicketAssignee={handleUpdateTicketAssignee}
             assignOptions={assignOptions}
             allTickets={tickets}
+            userEmail={userEmail}
           />
         ))}
       </div>
