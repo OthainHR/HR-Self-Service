@@ -197,10 +197,8 @@ export default function TicketForm({ onTicketCreated }) {
       }
     };
     
-    // Only fetch if categories haven't been loaded yet
-    if (cats.length === 0 && !isLoadingCategories) {
-      fetchCategories();
-    }
+    // Always fetch categories on component mount
+    fetchCategories();
   }, []); // Remove any dependencies that might cause re-runs
 
   // 2. Load sub-cats on category change
