@@ -75,7 +75,7 @@ export default function TicketingPage() {
   };
   
   // This function sets role and view settings based on a session
-  const processSession = (session) => {
+  const processSession = (session, isInitialLoad = false) => {
     let role = null;
     let email = null;
 
@@ -96,16 +96,18 @@ export default function TicketingPage() {
     const isAdmin = adminRolesForDefaultView.includes(role);
     setIsExpenseApprover(EXPENSE_APPROVER_EMAILS.includes(email));
     
-
-    setTabValue(isAdmin ? 0 : 1);
-    setViewMode(isAdmin ? 'list' : 'kanban');
+    // Only set default tab value on initial load, not on subsequent session updates
+    if (isInitialLoad) {
+      setTabValue(isAdmin ? 1 : 0);
+      setViewMode(isAdmin ? 'list' : 'kanban');
+    }
   };
 
   useEffect(() => {
     const fetchInitialData = async () => {
         setIsLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        processSession(session);
+        processSession(session, true); // Pass true for initial load
         if (session) {
             await loadTickets();
         }
@@ -116,7 +118,7 @@ export default function TicketingPage() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        processSession(session);
+        processSession(session, false); // Pass false for subsequent updates
       }
     );
     
