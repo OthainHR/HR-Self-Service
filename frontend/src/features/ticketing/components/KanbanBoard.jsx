@@ -16,6 +16,7 @@ import {
   Box, Typography, useTheme, Fade, Slide
 } from '@mui/material';
 import AdminCommentModal from './AdminCommentModal';
+import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
 
 const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
@@ -127,12 +128,18 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityChange, assignOptions }) => {
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityChange, assignOptions, allTickets }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const statusColors = getStatusColors(status);
+  
+  // Create ticket number mapping for proper sequential numbering
+  const ticketNumberMap = React.useMemo(() => {
+    if (!allTickets || allTickets.length === 0) return {};
+    return createTicketNumberMap(allTickets);
+  }, [allTickets]);
   
   const handleTicketClick = (ticketId, e) => {
     if (
@@ -365,7 +372,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                           borderRadius: '4px',
                           backdropFilter: 'blur(5px)'
                         }}>
-                          #OTH-{ticket.id.slice(0,8)}
+                          #{ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, allTickets)}
                         </span>
                       </div>
                     </div>
@@ -997,10 +1004,22 @@ export default function KanbanBoard() {
     setAdminCommentModal(modal => ({ ...modal, loading: true }));
     const { ticketId, newStatus } = adminCommentModal;
     try {
-      // Update both status and admin_comment
+      // Prepare update object
+      const updateData = { 
+        status: newStatus, 
+        admin_comment: comment,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Add resolved_at timestamp if status is RESOLVED
+      if (newStatus === 'RESOLVED') {
+        updateData.resolved_at = new Date().toISOString();
+      }
+      
+      // Update status, admin_comment, and timestamps
       const { error } = await supabase
         .from('tickets')
-        .update({ status: newStatus, admin_comment: comment })
+        .update(updateData)
         .eq('id', ticketId);
       if (error) throw error;
       // Refresh tickets after update
@@ -1370,6 +1389,7 @@ export default function KanbanBoard() {
             handleUpdateTicketAssignee={handleUpdateTicketAssignee}
             handlePriorityChange={handlePriorityChange}
             assignOptions={assignOptions}
+            allTickets={tickets}
           />
         ))}
       </div>

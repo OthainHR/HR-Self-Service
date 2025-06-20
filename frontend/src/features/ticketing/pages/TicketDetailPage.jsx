@@ -9,6 +9,7 @@ import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTicketAssigneeRole } from '../../../utils/useTicketAssigneeRole';
+import { generateTicketNumber } from '../../../utils/ticketUtils';
 
 /* --- Log after all imports --- */
 
@@ -41,9 +42,16 @@ const TicketDetailPage = () => {
   const [uploadingReply, setUploadingReply] = useState(false);
   const [uploadingAdminReply, setUploadingAdminReply] = useState(false);
   const [commentAttachmentMap, setCommentAttachmentMap] = useState({}); // { [commentId]: [fileObj, ...] }
+  const [allTickets, setAllTickets] = useState([]); // For ticket number generation
 
   const { user } = useAuth();
   const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
+
+  // Generate the proper ticket number
+  const getTicketNumber = useCallback(() => {
+    if (!ticket || !allTickets.length) return `#${ticket?.id || ''}`;
+    return generateTicketNumber(ticket.id, ticket.category_id, allTickets);
+  }, [ticket, allTickets]);
 
   // Helper to format a display name from an email in the form firstname.lastname@domain
   const formatNameFromEmail = (email) => {
@@ -145,15 +153,27 @@ const TicketDetailPage = () => {
     setIsLoading(true);
     setError(null);
     try {
+      // Fetch the specific ticket
       const { data: ticketData, error: ticketError } = await supabase
         .from('v_ticket_board')
         .select('*')
         .eq('id', ticketId)
         .single();
       
-      
       if (ticketError) throw ticketError;
       setTicket(ticketData);
+
+      // Fetch all tickets for proper numbering (only basic fields needed)
+      const { data: allTicketsData, error: allTicketsError } = await supabase
+        .from('tickets')
+        .select('id, category_id, created_at')
+        .order('created_at', { ascending: true });
+      
+      if (allTicketsError) {
+        console.error('Failed to fetch all tickets for numbering:', allTicketsError);
+      } else {
+        setAllTickets(allTicketsData || []);
+      }
 
       const { data: commsDataBasic, error: commsBasicError } = await supabase
         .from('ticket_communications')
@@ -361,8 +381,7 @@ const TicketDetailPage = () => {
     }
   };
   
-  // Add expense approval handlers
-  
+
 
   if (isLoading) { 
     
@@ -564,7 +583,7 @@ const TicketDetailPage = () => {
                   fontSize: '0.875rem'
                 }}>
                   <TimelineIcon fontSize="small" />
-                  Ticket #{ticket.id}
+                  Ticket {getTicketNumber()}
                 </Typography>
               </Box>
               
@@ -657,8 +676,8 @@ const TicketDetailPage = () => {
                           : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
                         border: isDarkMode ? '1px solid rgba(107, 114, 128, 0.3)' : '1px solid rgba(203, 213, 225, 0.5)'
                       }}>
-                        <Typography variant="caption" sx={{ color: isDarkMode ? '#9ca3af' : '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>ID</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: isDarkMode ? '#f3f4f6' : '#1f2937', fontSize: '1rem' }}>{ticket.id}</Typography>
+                        <Typography variant="caption" sx={{ color: isDarkMode ? '#9ca3af' : '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>Ticket Number</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: isDarkMode ? '#f3f4f6' : '#1f2937', fontSize: '1rem', fontFamily: 'monospace' }}>{getTicketNumber()}</Typography>
                       </Box>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>

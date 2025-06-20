@@ -32,12 +32,19 @@ import {
 import * as XLSX from 'xlsx'; // Import the xlsx library
 import AdminCommentModal from './AdminCommentModal';
 import { useAuth } from '../../../contexts/AuthContext';
+import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
 
 
 const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole, onDataRefresh }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+
+  // Create ticket number mapping for proper sequential numbering
+  const ticketNumberMap = useMemo(() => {
+    if (!tickets || tickets.length === 0) return {};
+    return createTicketNumberMap(tickets);
+  }, [tickets]);
 
   // State for assignee editing
   const [editingAssignee, setEditingAssignee] = useState(null); // { ticketId: string, tempAssigneeId: string | null }
@@ -254,17 +261,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   const handleExportToExcel = () => {
     const dataToExport = filteredTickets.map(ticket => ({
-      'Ticket ID': (() => {
-        const category = ticket.category_name?.toLowerCase() || '';
-        let prefix = 'OTH';
-        if (category.includes('it') || category.includes('technical')) prefix = 'OTH-IT';
-        else if (category.includes('hr') || category.includes('human')) prefix = 'OTH-HR';
-        else if (category.includes('expense')) prefix = 'OTH-EXP';
-        else if (category.includes('account') || category.includes('payroll')) prefix = 'OTH-ACC';
-        else if (category.includes('op') || category.includes('operation')) prefix = 'OTH-OPS';
-        else if (category.includes('ai')) prefix = 'OTH-AI';
-        return `${prefix}${ticket.id.slice(0, 8)}`;
-      })(),
+      'Ticket ID': ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets),
       'Summary': ticket.title,
       'Reporter': formatNameFromEmail(ticket.requester_email),
       'Assignee': formatNameFromEmail(ticket.assignee_email),
@@ -436,10 +433,22 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     setAdminCommentModal(modal => ({ ...modal, loading: true }));
     const { ticketId, newStatus } = adminCommentModal;
     try {
-      // Update both status and admin_comment
+      // Prepare update object
+      const updateData = { 
+        status: newStatus, 
+        admin_comment: comment,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Add resolved_at timestamp if status is RESOLVED
+      if (newStatus === 'RESOLVED') {
+        updateData.resolved_at = new Date().toISOString();
+      }
+      
+      // Update status, admin_comment, and timestamps
       const { error } = await supabase
         .from('tickets')
-        .update({ status: newStatus, admin_comment: comment })
+        .update(updateData)
         .eq('id', ticketId);
       if (error) throw error;
       // Update local state
@@ -953,26 +962,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                 boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
                                 fontFamily: 'monospace'
                               }}>
-                                {(() => {
-                                  const category = ticket.category_name?.toLowerCase() || '';
-                                  let prefix = 'OTH';
-                                  
-                                  if (category.includes('it') || category.includes('technical')) {
-                                    prefix = 'OTH-IT';
-                                  } else if (category.includes('hr') || category.includes('human')) {
-                                    prefix = 'OTH-HR';
-                                  } else if (category.includes('expense')) {
-                                    prefix = 'OTH-EXP';
-                                  } else if (category.includes('account') || category.includes('payroll')) {
-                                    prefix = 'OTH-ACC';
-                                  } else if (category.includes('op') || category.includes('operation')) {
-                                    prefix = 'OTH-OPS';
-                                  } else if (category.includes('ai')) {
-                                    prefix = 'OTH-AI';
-                                  }
-                                  
-                                  return `${prefix}${ticket.id.slice(0, 8)}`;
-                                })()}
+                                {ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets)}
                               </div>
                             </TableCell>
 
