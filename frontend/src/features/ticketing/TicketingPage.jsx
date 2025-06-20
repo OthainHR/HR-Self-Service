@@ -580,6 +580,7 @@ export default function TicketingPage() {
                 handleUpdateTicketStatus={handleUpdateTicketStatus}
                 handleUpdateTicketAssignee={handleUpdateTicketAssignee}
                 currentUserRole={currentUserRole}
+                onDataRefresh={loadTickets}
               />
             )}
           </TabPanel>

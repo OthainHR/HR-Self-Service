@@ -34,7 +34,7 @@ import AdminCommentModal from './AdminCommentModal';
 import { useAuth } from '../../../contexts/AuthContext';
 
 
-const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole }) => {
+const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole, onDataRefresh }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -407,8 +407,10 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       // Show success message
       alert(`Priority updated to ${newPriority} and due date adjusted successfully!`);
 
-      // Force a page refresh to show the changes
-      window.location.reload();
+      // Refresh the data without reloading the page
+      if (onDataRefresh) {
+        await onDataRefresh();
+      }
 
     } catch (error) {
       console.error('Error changing priority and due date:', error);
