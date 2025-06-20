@@ -96,8 +96,8 @@ export default function ExpenseTicketingPage() {
     setIsExpenseApprover(EXPENSE_APPROVER_EMAILS.includes(email));
     
 
-    setTabValue(isAdmin ? 1 : 0);
-    setViewMode(isAdmin ? 'kanban' : 'list');
+    setTabValue(isAdmin ? 0 : 0);
+    setViewMode(isAdmin ? 'list' : 'list');
   };
 
   useEffect(() => {
