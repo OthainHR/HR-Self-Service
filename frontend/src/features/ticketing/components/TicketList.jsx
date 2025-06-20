@@ -331,31 +331,46 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     setEditingAssignee(null);
   };
 
-  // Priority adjustment functions
-  const handlePriorityAdjustment = async (ticketId, newPriority, adjustment) => {
+  // Priority change function - simplified
+  const handlePriorityChange = async (ticketId, newPriority) => {
+    console.log('Priority change called:', { ticketId, newPriority });
+    
     try {
-      // Calculate new due date based on priority and adjustment
+      // Find the current ticket
       const currentTicket = tickets.find(t => t.id === ticketId);
-      if (!currentTicket) return;
+      if (!currentTicket) {
+        console.error('Ticket not found:', ticketId);
+        alert('Ticket not found');
+        return;
+      }
 
-      let dueDateAdjustment = 0;
-      
-      // Base adjustments in hours based on priority
-      const priorityAdjustments = {
-        'Low': adjustment === 'increase' ? 24 : -12,     // +24h or -12h
-        'Medium': adjustment === 'increase' ? 12 : -6,   // +12h or -6h  
-        'High': adjustment === 'increase' ? 6 : -3,      // +6h or -3h
-        'Urgent': adjustment === 'increase' ? 2 : -1     // +2h or -1h
-      };
+      // Skip if same priority
+      if (currentTicket.priority === newPriority) {
+        return;
+      }
 
-      dueDateAdjustment = priorityAdjustments[newPriority] || 0;
+      console.log('Current ticket:', currentTicket);
 
-      // Calculate new due date
+      // Calculate new due date based on priority
       let newDueDate = null;
       if (currentTicket.due_at) {
+        // Adjust existing due date based on priority change
         const currentDue = new Date(currentTicket.due_at);
-        currentDue.setHours(currentDue.getHours() + dueDateAdjustment);
-        newDueDate = currentDue.toISOString();
+        const now = new Date();
+        const timeDiff = currentDue.getTime() - now.getTime();
+        
+        // Base hours for each priority from now
+        const priorityHours = {
+          'Urgent': 4,
+          'High': 24,
+          'Medium': 72,
+          'Low': 168
+        };
+        
+        // Set new due date based on new priority
+        const newDueTime = new Date();
+        newDueTime.setHours(newDueTime.getHours() + priorityHours[newPriority]);
+        newDueDate = newDueTime.toISOString();
       } else {
         // If no due date exists, create one based on priority
         const now = new Date();
@@ -366,38 +381,38 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
           'Low': 168
         }[newPriority] || 72;
         
-        now.setHours(now.getHours() + hoursToAdd + dueDateAdjustment);
+        now.setHours(now.getHours() + hoursToAdd);
         newDueDate = now.toISOString();
       }
 
+      console.log('Updating ticket with:', { priority: newPriority, due_at: newDueDate });
+
       // Update both priority and due date
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tickets')
         .update({ 
           priority: newPriority,
           due_at: newDueDate
         })
-        .eq('id', ticketId);
+        .eq('id', ticketId)
+        .select();
 
-      if (error) throw error;
-
-      // Update local state
-      const updatedTickets = tickets.map(ticket => 
-        ticket.id === ticketId 
-          ? { ...ticket, priority: newPriority, due_at: newDueDate }
-          : ticket
-      );
-      
-      // If this component receives tickets as props, we might need to call a parent update function
-      // For now, we'll trigger a re-fetch by calling the parent's update function if available
-      if (handleUpdateTicketStatus) {
-        // Trigger a refresh by calling the status update with current status
-        handleUpdateTicketStatus(ticketId, currentTicket.status);
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
       }
 
+      console.log('Update successful:', data);
+
+      // Show success message
+      alert(`Priority updated to ${newPriority} and due date adjusted successfully!`);
+
+      // Force a page refresh to show the changes
+      window.location.reload();
+
     } catch (error) {
-      console.error('Error adjusting priority and due date:', error);
-      alert('Failed to adjust priority and due date: ' + error.message);
+      console.error('Error changing priority and due date:', error);
+      alert('Failed to change priority and due date: ' + error.message);
     }
   };
 
@@ -1175,7 +1190,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                     {ticket.priority}
                                   </div>
                                   
-                                  {/* Priority Adjustment Controls */}
+                                  {/* Priority Selection Controls */}
                                   <div style={{
                                     display: 'flex',
                                     gap: '0.25rem',
@@ -1187,75 +1202,57 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                       const priorityColor = getPriorityColor(priority);
                                       
                                       return (
-                                        <div key={priority} style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '0.125rem',
-                                          background: isDarkMode 
-                                            ? 'rgba(55, 65, 81, 0.8)' 
-                                            : 'rgba(255, 255, 255, 0.9)',
-                                          borderRadius: '4px',
-                                          padding: '0.125rem',
-                                          border: isCurrentPriority 
-                                            ? `1px solid ${priorityColor.bg.split(' ')[1].split(',')[0]}`
-                                            : isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)'
-                                        }}>
-                                          <button
-                                            onClick={() => handlePriorityAdjustment(ticket.id, priority, 'decrease')}
-                                            disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              color: isDarkMode ? '#f87171' : '#dc2626',
-                                              fontSize: '0.6rem',
-                                              cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
-                                              padding: '0.125rem',
-                                              borderRadius: '2px',
-                                              opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
-                                              minWidth: '12px',
-                                              height: '16px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                            title={`Decrease ${priority} priority (extends due date)`}
-                                          >
-                                            −
-                                          </button>
-                                          <span style={{
-                                            fontSize: '0.6rem',
-                                            fontWeight: isCurrentPriority ? 700 : 500,
+                                        <button
+                                          key={priority}
+                                          onClick={() => handlePriorityChange(ticket.id, priority)}
+                                          disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' || isCurrentPriority}
+                                          style={{
+                                            background: isCurrentPriority 
+                                              ? priorityColor.bg 
+                                              : (isDarkMode 
+                                                ? 'rgba(55, 65, 81, 0.8)' 
+                                                : 'rgba(255, 255, 255, 0.9)'),
                                             color: isCurrentPriority 
-                                              ? (isDarkMode ? '#f3f4f6' : '#1f2937')
-                                              : (isDarkMode ? '#9ca3af' : '#6b7280'),
-                                            minWidth: '20px',
-                                            textAlign: 'center'
-                                          }}>
-                                            {priority.charAt(0)}
-                                          </span>
-                                          <button
-                                            onClick={() => handlePriorityAdjustment(ticket.id, priority, 'increase')}
-                                            disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              color: isDarkMode ? '#34d399' : '#059669',
-                                              fontSize: '0.6rem',
-                                              cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
-                                              padding: '0.125rem',
-                                              borderRadius: '2px',
-                                              opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
-                                              minWidth: '12px',
-                                              height: '16px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                            title={`Increase ${priority} priority (shortens due date)`}
-                                          >
-                                            +
-                                          </button>
-                                        </div>
+                                              ? priorityColor.text 
+                                              : (isDarkMode ? '#d1d5db' : '#4b5563'),
+                                            border: isCurrentPriority 
+                                              ? 'none'
+                                              : (isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)'),
+                                            borderRadius: '6px',
+                                            padding: '0.375rem 0.5rem',
+                                            fontSize: '0.65rem',
+                                            fontWeight: isCurrentPriority ? 700 : 500,
+                                            cursor: (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' || isCurrentPriority) ? 'not-allowed' : 'pointer',
+                                            opacity: (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') ? 0.5 : 1,
+                                            minWidth: '45px',
+                                            textAlign: 'center',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: isCurrentPriority ? `0 2px 8px ${priorityColor.shadow}` : 'none'
+                                          }}
+                                          title={isCurrentPriority 
+                                            ? `Current priority: ${priority}` 
+                                            : `Change priority to ${priority}`}
+                                          onMouseEnter={(e) => {
+                                            if (!isCurrentPriority && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED') {
+                                              e.target.style.background = priorityColor.bg;
+                                              e.target.style.color = priorityColor.text;
+                                              e.target.style.transform = 'translateY(-1px)';
+                                              e.target.style.boxShadow = `0 3px 10px ${priorityColor.shadow}`;
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            if (!isCurrentPriority && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED') {
+                                              e.target.style.background = isDarkMode 
+                                                ? 'rgba(55, 65, 81, 0.8)' 
+                                                : 'rgba(255, 255, 255, 0.9)';
+                                              e.target.style.color = isDarkMode ? '#d1d5db' : '#4b5563';
+                                              e.target.style.transform = 'translateY(0)';
+                                              e.target.style.boxShadow = 'none';
+                                            }
+                                          }}
+                                        >
+                                          {priority}
+                                        </button>
                                       );
                                     })}
                                   </div>

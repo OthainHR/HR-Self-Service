@@ -127,7 +127,7 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityAdjustment, assignOptions }) => {
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityChange, assignOptions }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -660,85 +660,61 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                               const priorityColor = getPriorityColors(priority);
                               
                               return (
-                                <div key={priority} style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  gap: '0.125rem',
-                                  background: isDarkMode 
-                                    ? 'rgba(30, 41, 59, 0.8)' 
-                                    : 'rgba(255, 255, 255, 0.9)',
-                                  borderRadius: '6px',
-                                  padding: '0.25rem',
-                                  border: isCurrentPriority 
-                                    ? `2px solid ${priorityColor.gradient.split(' ')[1].split(',')[0]}`
-                                    : isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                                  minWidth: '50px'
-                                }}>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handlePriorityAdjustment(ticket.id, priority, 'increase');
-                                    }}
-                                    disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: isDarkMode ? '#34d399' : '#059669',
-                                      fontSize: '0.7rem',
-                                      cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
-                                      padding: '0.125rem',
-                                      borderRadius: '3px',
-                                      opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
-                                      width: '20px',
-                                      height: '16px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center'
-                                    }}
-                                    title={`Increase ${priority} priority (shortens due date)`}
-                                  >
-                                    +
-                                  </button>
-                                  
-                                  <span style={{
+                                <button
+                                  key={priority}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePriorityChange(ticket.id, priority);
+                                  }}
+                                  disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' || isCurrentPriority}
+                                  style={{
+                                    background: isCurrentPriority 
+                                      ? priorityColor.gradient 
+                                      : (isDarkMode 
+                                        ? 'rgba(30, 41, 59, 0.8)' 
+                                        : 'rgba(255, 255, 255, 0.9)'),
+                                    color: isCurrentPriority 
+                                      ? priorityColor.text 
+                                      : (isDarkMode ? '#d1d5db' : '#4b5563'),
+                                    border: isCurrentPriority 
+                                      ? 'none'
+                                      : (isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)'),
+                                    borderRadius: '6px',
+                                    padding: '0.375rem 0.5rem',
                                     fontSize: '0.65rem',
                                     fontWeight: isCurrentPriority ? 700 : 500,
-                                    color: isCurrentPriority 
-                                      ? (isDarkMode ? '#f3f4f6' : '#1f2937')
-                                      : (isDarkMode ? '#9ca3af' : '#6b7280'),
+                                    cursor: (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' || isCurrentPriority) ? 'not-allowed' : 'pointer',
+                                    opacity: (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') ? 0.5 : 1,
+                                    minWidth: '50px',
                                     textAlign: 'center',
-                                    lineHeight: 1
-                                  }}>
-                                    {priority}
-                                  </span>
-                                  
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handlePriorityAdjustment(ticket.id, priority, 'decrease');
-                                    }}
-                                    disabled={ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: isDarkMode ? '#f87171' : '#dc2626',
-                                      fontSize: '0.7rem',
-                                      cursor: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'not-allowed' : 'pointer',
-                                      padding: '0.125rem',
-                                      borderRadius: '3px',
-                                      opacity: ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 0.5 : 1,
-                                      width: '20px',
-                                      height: '16px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center'
-                                    }}
-                                    title={`Decrease ${priority} priority (extends due date)`}
-                                  >
-                                    −
-                                  </button>
-                                </div>
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isCurrentPriority ? `0 2px 8px ${priorityColor.shadow}` : 'none',
+                                    margin: '0.125rem'
+                                  }}
+                                  title={isCurrentPriority 
+                                    ? `Current priority: ${priority}` 
+                                    : `Change priority to ${priority}`}
+                                  onMouseEnter={(e) => {
+                                    if (!isCurrentPriority && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED') {
+                                      e.target.style.background = priorityColor.gradient;
+                                      e.target.style.color = priorityColor.text;
+                                      e.target.style.transform = 'translateY(-1px)';
+                                      e.target.style.boxShadow = `0 3px 10px ${priorityColor.shadow}`;
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isCurrentPriority && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED') {
+                                      e.target.style.background = isDarkMode 
+                                        ? 'rgba(30, 41, 59, 0.8)' 
+                                        : 'rgba(255, 255, 255, 0.9)';
+                                      e.target.style.color = isDarkMode ? '#d1d5db' : '#4b5563';
+                                      e.target.style.transform = 'translateY(0)';
+                                      e.target.style.boxShadow = 'none';
+                                    }
+                                  }}
+                                >
+                                  {priority}
+                                </button>
                               );
                             })}
                           </div>
@@ -941,31 +917,38 @@ export default function KanbanBoard() {
     }
   };
 
-  // Priority adjustment functions for Kanban
-  const handlePriorityAdjustment = async (ticketId, newPriority, adjustment) => {
+  // Priority change function for Kanban - simplified
+  const handlePriorityChange = async (ticketId, newPriority) => {
     try {
-      // Calculate new due date based on priority and adjustment
+      // Find the current ticket
       const currentTicket = tickets.find(t => t.id === ticketId);
       if (!currentTicket) return;
 
-      let dueDateAdjustment = 0;
-      
-      // Base adjustments in hours based on priority
-      const priorityAdjustments = {
-        'Low': adjustment === 'increase' ? 24 : -12,     // +24h or -12h
-        'Medium': adjustment === 'increase' ? 12 : -6,   // +12h or -6h  
-        'High': adjustment === 'increase' ? 6 : -3,      // +6h or -3h
-        'Urgent': adjustment === 'increase' ? 2 : -1     // +2h or -1h
-      };
+      // Skip if same priority
+      if (currentTicket.priority === newPriority) {
+        return;
+      }
 
-      dueDateAdjustment = priorityAdjustments[newPriority] || 0;
-
-      // Calculate new due date
+      // Calculate new due date based on priority
       let newDueDate = null;
       if (currentTicket.due_at) {
+        // Adjust existing due date based on priority change
         const currentDue = new Date(currentTicket.due_at);
-        currentDue.setHours(currentDue.getHours() + dueDateAdjustment);
-        newDueDate = currentDue.toISOString();
+        const now = new Date();
+        const timeDiff = currentDue.getTime() - now.getTime();
+        
+        // Base hours for each priority from now
+        const priorityHours = {
+          'Urgent': 4,
+          'High': 24,
+          'Medium': 72,
+          'Low': 168
+        };
+        
+        // Set new due date based on new priority
+        const newDueTime = new Date();
+        newDueTime.setHours(newDueTime.getHours() + priorityHours[newPriority]);
+        newDueDate = newDueTime.toISOString();
       } else {
         // If no due date exists, create one based on priority
         const now = new Date();
@@ -976,7 +959,7 @@ export default function KanbanBoard() {
           'Low': 168
         }[newPriority] || 72;
         
-        now.setHours(now.getHours() + hoursToAdd + dueDateAdjustment);
+        now.setHours(now.getHours() + hoursToAdd);
         newDueDate = now.toISOString();
       }
 
@@ -991,12 +974,15 @@ export default function KanbanBoard() {
 
       if (error) throw error;
 
+      // Show success message
+      alert(`Priority updated to ${newPriority} and due date adjusted successfully!`);
+
       // Refresh tickets after update
       await fetchTickets();
 
     } catch (error) {
-      console.error('Error adjusting priority and due date:', error);
-      alert('Failed to adjust priority and due date: ' + error.message);
+      console.error('Error changing priority and due date:', error);
+      alert('Failed to change priority and due date: ' + error.message);
     }
   };
 
@@ -1382,7 +1368,7 @@ export default function KanbanBoard() {
             statusOrder={statusOrder}
             handleAdminStatusChange={handleAdminStatusChange}
             handleUpdateTicketAssignee={handleUpdateTicketAssignee}
-            handlePriorityAdjustment={handlePriorityAdjustment}
+            handlePriorityChange={handlePriorityChange}
             assignOptions={assignOptions}
           />
         ))}
