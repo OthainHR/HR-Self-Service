@@ -25,21 +25,56 @@ export default function TicketForm({ onTicketCreated }) {
 
   const [cats, setCats] = useState([]);
   const [subs, setSubs] = useState([]);
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category_id: null,
-    sub_category_id: null,
-    priority: 'Medium',
-    client: ''
+  
+  // Initialize form state from localStorage if available
+  const [form, setForm] = useState(() => {
+    try {
+      const savedForm = localStorage.getItem('ticketForm');
+      return savedForm ? JSON.parse(savedForm) : {
+        title: '',
+        description: '',
+        category_id: null,
+        sub_category_id: null,
+        priority: 'Medium',
+        client: ''
+      };
+    } catch {
+      return {
+        title: '',
+        description: '',
+        category_id: null,
+        sub_category_id: null,
+        priority: 'Medium',
+        client: ''
+      };
+    }
   });
+  
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false); // This is for sub-categories and submit
   const [isLoadingCategories, setIsLoadingCategories] = useState(true); // New state for initial category loading
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [categorySelected, setCategorySelected] = useState(false); // New state
-  const [selectedCategoryName, setSelectedCategoryName] = useState(''); // To display selected category name
+  
+  // Initialize category selection state from localStorage if available
+  const [categorySelected, setCategorySelected] = useState(() => {
+    try {
+      const savedCategorySelected = localStorage.getItem('ticketFormCategorySelected');
+      return savedCategorySelected ? JSON.parse(savedCategorySelected) : false;
+    } catch {
+      return false;
+    }
+  });
+  
+  // Initialize selected category name from localStorage if available
+  const [selectedCategoryName, setSelectedCategoryName] = useState(() => {
+    try {
+      const savedCategoryName = localStorage.getItem('ticketFormCategoryName');
+      return savedCategoryName || '';
+    } catch {
+      return '';
+    }
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
@@ -51,6 +86,33 @@ export default function TicketForm({ onTicketCreated }) {
 
   // New state for attachments
   const [attachments, setAttachments] = useState([]);
+
+  // Save form state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('ticketForm', JSON.stringify(form));
+    } catch (error) {
+      console.warn('Failed to save form to localStorage:', error);
+    }
+  }, [form]);
+
+  // Save category selection state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ticketFormCategorySelected', JSON.stringify(categorySelected));
+    } catch (error) {
+      console.warn('Failed to save category selection to localStorage:', error);
+    }
+  }, [categorySelected]);
+
+  // Save category name to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ticketFormCategoryName', selectedCategoryName);
+    } catch (error) {
+      console.warn('Failed to save category name to localStorage:', error);
+    }
+  }, [selectedCategoryName]);
 
   // Handle responsive design
   useEffect(() => {
@@ -134,8 +196,12 @@ export default function TicketForm({ onTicketCreated }) {
         setIsLoadingCategories(false); // Set loading false after fetch attempt
       }
     };
-    fetchCategories();
-  }, []);
+    
+    // Only fetch if categories haven't been loaded yet
+    if (cats.length === 0 && !isLoadingCategories) {
+      fetchCategories();
+    }
+  }, []); // Remove any dependencies that might cause re-runs
 
   // 2. Load sub-cats on category change
   useEffect(() => {
@@ -163,6 +229,17 @@ export default function TicketForm({ onTicketCreated }) {
     };
     fetchSubCategories();
   }, [form.category_id]);
+
+  // Restore category name when form.category_id is loaded from localStorage
+  useEffect(() => {
+    if (form.category_id && cats.length > 0 && !selectedCategoryName) {
+      const category = cats.find(cat => cat.id === form.category_id);
+      if (category) {
+        setSelectedCategoryName(category.name);
+        setCategorySelected(true);
+      }
+    }
+  }, [form.category_id, cats, selectedCategoryName]);
 
   // 3. Handle submit
   async function handleSubmit(e) {
@@ -263,18 +340,30 @@ export default function TicketForm({ onTicketCreated }) {
         // Clear attachments after upload
         setAttachments([]);
         setSuccessMessage('Ticket created successfully!');
-        setForm({
+        
+        // Reset form state
+        const resetForm = {
           title: '',
           description: '',
           category_id: null, // Reset category_id
           sub_category_id: null,
           priority: 'Medium',
           client: ''
-        });
+        };
+        setForm(resetForm);
         setSubs([]);
         setCategorySelected(false); // Go back to category selection
         setSelectedCategoryName('');
         setSelectedOnBehalfOfUserId(''); // Reset on behalf of user selection
+        
+        // Clear localStorage
+        try {
+          localStorage.removeItem('ticketForm');
+          localStorage.removeItem('ticketFormCategorySelected');
+          localStorage.removeItem('ticketFormCategoryName');
+        } catch (error) {
+          console.warn('Failed to clear form localStorage:', error);
+        }
         // Notify parent to reload ticket list or board
         if (onTicketCreated) {
           await onTicketCreated();
@@ -317,6 +406,14 @@ export default function TicketForm({ onTicketCreated }) {
     setSubs([]);
     setError(null);
     setSuccessMessage('');
+    
+    // Clear category-related localStorage
+    try {
+      localStorage.removeItem('ticketFormCategorySelected');
+      localStorage.removeItem('ticketFormCategoryName');
+    } catch (error) {
+      console.warn('Failed to clear category localStorage:', error);
+    }
   };
 
   const handleSubCategoryChange = (e) => {
