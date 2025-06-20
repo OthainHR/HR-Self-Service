@@ -152,6 +152,13 @@ const OnboardingPage = () => {
               },
               {
                 id: 'q3', 
+                text: 'Q3. In the event of a family emergency or when a family member is unwell, which type of leave would you typically apply for?',
+                options: ['A. Sick Leave', 'B. Casual/Earned/Unpaid Leave'],
+                correctAnswer: 'B. Casual/Earned/Unpaid Leave'
+              },
+
+              {
+                id: 'q4', 
                 text: 'Q4. Under the sandwich policy, if you are absent on both Friday and Monday without planning the leave two weeks in advance, how many leave days are deducted?',
                 options: ['A. 2 days', 'B. 4 days (Friday + weekend + Monday)', 'C. 3 days', 'D. 1 day'],
                 correctAnswer: 'B. 4 days (Friday + weekend + Monday)'

@@ -63,7 +63,7 @@ export default function TicketingPage() {
     const { data: ticketData, error: fetchError } = await supabase
       .from('v_ticket_board')
       .select('*')
-      .in('category_id', [1,2,3,4,5,6])         // keep Expense tickets out of normal view
+      .in('category_id', [1,2,3,4,6])         // keep Expense tickets out of normal view
       .order('created_at', { ascending: false });
     if (fetchError) {
       setError(`Failed to load tickets: ${fetchError.message}`);
