@@ -874,7 +874,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                       }}>
                         Created
                       </TableCell>
-                      <TableCell>Due At</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1177,125 +1176,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                               }}>
                                 {new Date(ticket.created_at).toLocaleDateString()}
                               </Typography>
-                            </TableCell>
-
-                            {/* Enhanced Due Date with Urgency Indicators */}
-                            <TableCell>
-                              {(() => {
-                                // Show resolved badge for resolved/closed tickets
-                                if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') {
-                                  return (
-                                    <div style={{
-                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                                      color: 'white',
-                                      padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
-                                      borderRadius: '12px',
-                                      fontSize: isMobile ? '0.7rem' : '0.875rem',
-                                      fontWeight: 700,
-                                      textAlign: 'center',
-                                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: isMobile ? '0.25rem' : '0.5rem',
-                                      minWidth: isMobile ? '80px' : '100px'
-                                    }}>
-                                      <CheckCircleIcon fontSize={isMobile ? "small" : "small"} />
-                                      {isMobile ? 'Done' : 'Resolved'}
-                                    </div>
-                                  );
-                                }
-                                
-                                const dueAt = ticket.due_at;
-                                if (!dueAt) return (
-                                  <div style={{
-                                    background: isDarkMode 
-                                      ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, rgba(156, 163, 175, 0.3) 100%)'
-                                      : 'linear-gradient(135deg, rgba(243, 244, 246, 0.8) 0%, rgba(229, 231, 235, 0.8) 100%)',
-                                    color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                    padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
-                                    borderRadius: '12px',
-                                    fontSize: isMobile ? '0.7rem' : '0.875rem',
-                                    fontWeight: 600,
-                                    textAlign: 'center',
-                                    border: isDarkMode ? '1px solid rgba(107, 114, 128, 0.3)' : '1px solid rgba(209, 213, 219, 0.5)',
-                                    minWidth: isMobile ? '60px' : '100px'
-                                  }}>
-                                    N/A
-                                  </div>
-                                );
-                                
-                                const d = new Date(dueAt);
-                                const today = new Date();
-                                const isToday = d.toDateString() === today.toDateString();
-                                const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                const dateStr = isMobile 
-                                  ? `${d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`
-                                  : `${d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} ${timeStr}`;
-                                const displayStr = isToday 
-                                  ? (isMobile ? `Today` : `Today ${timeStr}`)
-                                  : dateStr;
-                                
-                                const urgencyConfig = {
-                                  overdue: {
-                                    bg: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-                                    text: 'white',
-                                    shadow: 'rgba(220, 38, 38, 0.3)',
-                                    icon: ErrorIcon,
-                                    pulse: true
-                                  },
-                                  urgent: {
-                                    bg: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                                    text: 'white',
-                                    shadow: 'rgba(234, 88, 12, 0.3)',
-                                    icon: WarningIcon,
-                                    pulse: true
-                                  },
-                                  soon: {
-                                    bg: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-                                    text: '#1f2937',
-                                    shadow: 'rgba(245, 158, 11, 0.3)',
-                                    icon: HourglassIcon
-                                  },
-                                  normal: {
-                                    bg: priorityColors.bg,
-                                    text: priorityColors.text,
-                                    shadow: priorityColors.shadow,
-                                    icon: ScheduleIcon
-                                  }
-                                };
-                                
-                                const config = urgencyConfig[dueDateUrgency] || urgencyConfig.normal;
-                                const IconComponent = config.icon;
-                                
-                                return (
-                                  <div style={{
-                                    background: config.bg,
-                                    color: config.text,
-                                    padding: isMobile ? '0.375rem 0.5rem' : '0.5rem 1rem',
-                                    borderRadius: '12px',
-                                    fontSize: isMobile ? '0.65rem' : '0.875rem',
-                                    fontWeight: 700,
-                                    textAlign: 'center',
-                                    boxShadow: `0 4px 12px ${config.shadow}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: isMobile ? '0.25rem' : '0.5rem',
-                                    minWidth: isMobile ? '100px' : '140px',
-                                    animation: config.pulse ? 'pulse 2s infinite' : 'none',
-                                    flexDirection: isMobile ? 'column' : 'row'
-                                  }}>
-                                    <IconComponent fontSize={isMobile ? "small" : "small"} />
-                                    <span style={{ 
-                                      lineHeight: isMobile ? '1.2' : '1',
-                                      fontSize: isMobile ? '0.65rem' : 'inherit'
-                                    }}>
-                                    {displayStr}
-                                    </span>
-                                  </div>
-                                );
-                              })()}
                             </TableCell>
                           </TableRow>
                         </Fade>
