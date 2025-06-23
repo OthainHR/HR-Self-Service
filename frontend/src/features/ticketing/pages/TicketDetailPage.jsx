@@ -85,18 +85,22 @@ const TicketDetailPage = () => {
     if (!ticketId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('ticket_additional_emails')
-        .select(`
-          id,
-          user_id,
-          v_user_emails!inner(email)
-        `)
-        .eq('ticket_id', ticketId);
+      const { data, error } = await supabase.rpc('get_ticket_additional_emails', {
+        p_ticket_id: ticketId
+      });
       
       if (error) throw error;
       
-      setAdditionalEmails(data || []);
+      // Transform the data to match the expected format
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        v_user_emails: { email: item.email },
+        added_by: item.added_by,
+        created_at: item.created_at
+      }));
+      
+      setAdditionalEmails(transformedData);
     } catch (err) {
       console.error('Error fetching additional emails:', err);
     }
@@ -565,15 +569,18 @@ const TicketDetailPage = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('ticket_additional_emails')
-        .insert([{
-          ticket_id: ticketId,
-          user_id: selectedUser.id,
-          added_by: currentUser.id
-        }]);
+      // Use the RPC function instead of direct insert to bypass RLS issues
+      const { data, error } = await supabase.rpc('add_ticket_additional_email', {
+        p_ticket_id: ticketId,
+        p_user_id: selectedUser.id
+      });
       
       if (error) throw error;
+      
+      // Check if the RPC function returned an error
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to add user');
+      }
       
       setSnackbarMessage('User added to ticket email notifications');
       setSnackbarSeverity('success');
@@ -584,7 +591,7 @@ const TicketDetailPage = () => {
       await fetchAdditionalEmails();
     } catch (err) {
       console.error('Error adding additional email:', err);
-      setSnackbarMessage('Failed to add user to ticket');
+      setSnackbarMessage(err.message || 'Failed to add user to ticket');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -595,12 +602,16 @@ const TicketDetailPage = () => {
   // Remove additional email from ticket
   const handleRemoveAdditionalEmail = async (additionalEmailId) => {
     try {
-      const { error } = await supabase
-        .from('ticket_additional_emails')
-        .delete()
-        .eq('id', additionalEmailId);
+      const { data, error } = await supabase.rpc('remove_ticket_additional_email', {
+        p_additional_email_id: additionalEmailId
+      });
       
       if (error) throw error;
+      
+      // Check if the RPC function returned an error
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to remove user');
+      }
       
       setSnackbarMessage('User removed from ticket email notifications');
       setSnackbarSeverity('success');
@@ -610,7 +621,7 @@ const TicketDetailPage = () => {
       await fetchAdditionalEmails();
     } catch (err) {
       console.error('Error removing additional email:', err);
-      setSnackbarMessage('Failed to remove user from ticket');
+      setSnackbarMessage(err.message || 'Failed to remove user from ticket');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
