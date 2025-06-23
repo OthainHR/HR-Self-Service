@@ -8,7 +8,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useTicketAssigneeRole } from '../../../utils/useTicketAssigneeRole';
+
 import { generateTicketNumber } from '../../../utils/ticketUtils';
 
 /* --- Log after all imports --- */
@@ -52,7 +52,6 @@ const TicketDetailPage = () => {
   const [isAddingEmail, setIsAddingEmail] = useState(false);
 
   const { user } = useAuth();
-  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
 
   // Generate the proper ticket number
   const getTicketNumber = useCallback(() => {

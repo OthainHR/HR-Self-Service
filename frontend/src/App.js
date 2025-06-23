@@ -19,7 +19,7 @@ import NavBar from './components/NavBar';
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DarkModeProvider, useDarkMode } from './contexts/DarkModeContext';
-import { useTicketAssigneeRole } from './utils/useTicketAssigneeRole';
+
 // --- LAZY LOAD PAGES --- 
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -261,7 +261,7 @@ const AppContent = () => {
   const { isDarkMode } = useDarkMode();
   const { user } = useAuth(); // Get user to pass to NavBar if needed
   const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);
-  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
+
 
   useEffect(() => {
     // Check for auth token in localStorage on initial load

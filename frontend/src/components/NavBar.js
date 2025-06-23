@@ -33,7 +33,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import DarkModeSwitch from './DarkModeSwitch';
 import { supabase } from '../services/supabase';
-import { useTicketAssigneeRole } from '../utils/useTicketAssigneeRole';
+
 
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
@@ -47,7 +47,7 @@ const NavBar = () => {
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
 
-  const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
+
   const EXPENSE_APPROVER_EMAILS = [
     'accounts@othainsoft.com',
     'praveen.omprakash@othainsoft.com',
