@@ -91,7 +91,7 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
             "• HR Requests  \n"
             "• Payroll Requests  \n"
             "• Operations  \n"
-            "• Accounts  \n"
+            "• Expense Management  \n"
             "• AI Requests  \n"
             "────────────────────────────────────────────────────────\n"
             "RESPONSE FORMAT (**exactly**)                          \n"
