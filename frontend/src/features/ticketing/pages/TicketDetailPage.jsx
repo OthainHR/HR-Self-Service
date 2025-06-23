@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
-import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide, LinearProgress } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon } from '@mui/icons-material';
+import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide, LinearProgress, Autocomplete } from '@mui/material';
+import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon, Email as EmailIcon, PersonAdd as PersonAddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import '../styles/TicketDetailPage.css';
 import Snackbar from '@mui/material/Snackbar';
 import Container from '@mui/material/Container';
@@ -44,6 +44,13 @@ const TicketDetailPage = () => {
   const [commentAttachmentMap, setCommentAttachmentMap] = useState({}); // { [commentId]: [fileObj, ...] }
   const [allTickets, setAllTickets] = useState([]); // For ticket number generation
 
+  // Additional email functionality
+  const [allUsers, setAllUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [additionalEmails, setAdditionalEmails] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isAddingEmail, setIsAddingEmail] = useState(false);
+
   const { user } = useAuth();
   const { role, loading: roleLoading } = useTicketAssigneeRole(user?.id);
 
@@ -52,6 +59,48 @@ const TicketDetailPage = () => {
     if (!ticket || !allTickets.length) return `#${ticket?.id || ''}`;
     return generateTicketNumber(ticket.id, ticket.category_id, allTickets);
   }, [ticket, allTickets]);
+
+  // Fetch all users for email selection
+  const fetchAllUsers = useCallback(async () => {
+    if (!isAdmin) return;
+    
+    setIsLoadingUsers(true);
+    try {
+      const { data: users, error: usersError } = await supabase.rpc('get_all_user_emails');
+      if (usersError) throw usersError;
+      
+      setAllUsers((users || []).sort((a, b) => a.email.localeCompare(b.email)));
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setSnackbarMessage('Failed to load users for email selection');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [isAdmin]);
+
+  // Fetch additional emails for the ticket
+  const fetchAdditionalEmails = useCallback(async () => {
+    if (!ticketId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('ticket_additional_emails')
+        .select(`
+          id,
+          user_id,
+          v_user_emails!inner(email)
+        `)
+        .eq('ticket_id', ticketId);
+      
+      if (error) throw error;
+      
+      setAdditionalEmails(data || []);
+    } catch (err) {
+      console.error('Error fetching additional emails:', err);
+    }
+  }, [ticketId]);
 
   // Helper to format a display name from an email in the form firstname.lastname@domain
   const formatNameFromEmail = (email) => {
@@ -241,6 +290,19 @@ const TicketDetailPage = () => {
     }
     fetchTicketData();
   }, [ticketId, currentUser, fetchTicketData, isAuthLoading]);
+
+  // Fetch users and additional emails when admin status changes
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllUsers();
+    }
+  }, [isAdmin, fetchAllUsers]);
+
+  useEffect(() => {
+    if (ticketId) {
+      fetchAdditionalEmails();
+    }
+  }, [ticketId, fetchAdditionalEmails]);
 
   useEffect(() => {
     if (!ticketId) return;
@@ -487,6 +549,72 @@ const TicketDetailPage = () => {
 
   const priorityColors = getPriorityColor(ticket.priority);
   const statusColors = getStatusColor(ticket.status);
+
+  // Add additional email to ticket
+  const handleAddAdditionalEmail = async () => {
+    if (!selectedUser || !ticketId) return;
+    
+    setIsAddingEmail(true);
+    try {
+      // Check if email is already added
+      const existingEmail = additionalEmails.find(ae => ae.user_id === selectedUser.id);
+      if (existingEmail) {
+        setSnackbarMessage('This user is already added to the ticket');
+        setSnackbarSeverity('warning');
+        setSnackbarOpen(true);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('ticket_additional_emails')
+        .insert([{
+          ticket_id: ticketId,
+          user_id: selectedUser.id,
+          added_by: currentUser.id
+        }]);
+      
+      if (error) throw error;
+      
+      setSnackbarMessage('User added to ticket email notifications');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      setSelectedUser(null);
+      
+      // Refresh the additional emails list
+      await fetchAdditionalEmails();
+    } catch (err) {
+      console.error('Error adding additional email:', err);
+      setSnackbarMessage('Failed to add user to ticket');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setIsAddingEmail(false);
+    }
+  };
+
+  // Remove additional email from ticket
+  const handleRemoveAdditionalEmail = async (additionalEmailId) => {
+    try {
+      const { error } = await supabase
+        .from('ticket_additional_emails')
+        .delete()
+        .eq('id', additionalEmailId);
+      
+      if (error) throw error;
+      
+      setSnackbarMessage('User removed from ticket email notifications');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      
+      // Refresh the additional emails list
+      await fetchAdditionalEmails();
+    } catch (err) {
+      console.error('Error removing additional email:', err);
+      setSnackbarMessage('Failed to remove user from ticket');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
 
   return (
     <Container maxWidth="xl" sx={{ 
@@ -876,6 +1004,205 @@ const TicketDetailPage = () => {
               </Typography>
             </CardContent>
           </Card>
+
+          {/* Additional Email Members Card - Admin Only */}
+          {isAdmin && (
+            <Card sx={{
+              mb: 3,
+              borderRadius: '16px',
+              background: isDarkMode
+                ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+            }}>
+              <CardHeader
+                title={
+                  <Typography variant="h6" sx={{
+                    fontWeight: 700,
+                    color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <EmailIcon sx={{ mr: 1, color: isDarkMode ? '#a5b4fc' : '#6366f1' }} />
+                    Email Notifications
+                  </Typography>
+                }
+              />
+              <CardContent>
+                <Typography variant="body2" sx={{ 
+                  color: isDarkMode ? '#9ca3af' : '#64748b', 
+                  mb: 2,
+                  fontSize: '0.875rem'
+                }}>
+                  Add team members to receive email notifications for all updates on this ticket.
+                </Typography>
+                
+                {/* Add Email Section */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  <Autocomplete
+                    options={allUsers}
+                    getOptionLabel={(option) => `${option.email}`}
+                    value={selectedUser}
+                    onChange={(event, newValue) => setSelectedUser(newValue)}
+                    loading={isLoadingUsers}
+                    disabled={isAddingEmail}
+                    sx={{ 
+                      minWidth: 300,
+                      flexGrow: 1,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+                        backdropFilter: 'blur(10px)',
+                        '& fieldset': { borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)' },
+                        '&:hover fieldset': { borderColor: '#6366f1' },
+                        '&.Mui-focused fieldset': { borderColor: '#6366f1', borderWidth: '2px' },
+                      },
+                      '& .MuiInputLabel-root': { color: isDarkMode ? '#d1d5db' : '#6b7280' }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Select User to Add"
+                        variant="outlined"
+                        size="small"
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {isLoadingUsers ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={handleAddAdditionalEmail}
+                    disabled={!selectedUser || isAddingEmail}
+                    sx={{
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.3)',
+                      px: 3,
+                      py: 1.25,
+                      fontSize: '0.875rem',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 25px rgba(99, 102, 241, 0.4)'
+                      },
+                      '&:disabled': {
+                        background: isDarkMode ? '#4b5563' : '#e5e7eb',
+                        color: isDarkMode ? '#9ca3af' : '#9ca3af'
+                      }
+                    }}
+                  >
+                    {isAddingEmail ? (
+                      <>
+                        <CircularProgress size={16} sx={{ color: 'white', mr: 1 }} />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add User'
+                    )}
+                  </Button>
+                </Box>
+
+                {/* Current Additional Emails */}
+                {additionalEmails.length > 0 ? (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ 
+                      fontWeight: 600, 
+                      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                      mb: 1.5,
+                      fontSize: '0.875rem'
+                    }}>
+                      Current Email Members ({additionalEmails.length})
+                    </Typography>
+                    <List dense>
+                      {additionalEmails.map((additionalEmail) => (
+                        <ListItem
+                          key={additionalEmail.id}
+                          sx={{
+                            borderRadius: '10px',
+                            background: isDarkMode
+                              ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.7) 100%)'
+                              : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
+                            border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.2)' : '1px solid rgba(226, 232, 240, 0.2)',
+                            mb: 1,
+                            px: 2
+                          }}
+                        >
+                          <Avatar sx={{ 
+                            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                            width: 32, 
+                            height: 32, 
+                            mr: 1.5,
+                            fontSize: '0.75rem'
+                          }}>
+                            {additionalEmail.v_user_emails.email.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <ListItemText
+                            primary={formatNameFromEmail(additionalEmail.v_user_emails.email)}
+                            secondary={additionalEmail.v_user_emails.email}
+                            sx={{
+                              '& .MuiListItemText-primary': {
+                                fontWeight: 600,
+                                color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                                fontSize: '0.875rem'
+                              },
+                              '& .MuiListItemText-secondary': {
+                                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                fontSize: '0.75rem'
+                              }
+                            }}
+                          />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleRemoveAdditionalEmail(additionalEmail.id)}
+                            sx={{
+                              borderRadius: '8px',
+                              borderColor: '#ef4444',
+                              color: '#ef4444',
+                              fontSize: '0.75rem',
+                              px: 1.5,
+                              py: 0.5,
+                              '&:hover': {
+                                borderColor: '#dc2626',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                color: '#dc2626'
+                              }
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ 
+                    color: isDarkMode ? '#9ca3af' : '#64748b',
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                    py: 2
+                  }}>
+                    No additional email members added yet.
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Attachments Card */}
           <Card sx={{
