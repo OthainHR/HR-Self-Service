@@ -568,7 +568,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                         
                         {/* Replace Status Dropdown with Approve/Reject Buttons */}
                         <div style={{
-                          display: 'flex',
+                              display: 'flex',
                           flexDirection: 'column',
                           gap: '0.5rem',
                           marginTop: '0.5rem'
@@ -576,7 +576,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                           {(() => {
                             const workflow = getApprovalWorkflow(ticket.status, userEmail);
                             
-                            return (
+                              return (
                               <>
                                 {/* Approve Button */}
                                 <button
@@ -690,13 +690,13 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                                     if (workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED') {
                                       e.target.style.transform = 'translateY(0)';
                                       e.target.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
-                                    }
-                                  }}
+                                      }
+                                    }}
                                 >
                                   {ticket.status === 'REJECTED' ? 'REJECTED' : 'Reject'}
                                 </button>
                               </>
-                            );
+                              );
                           })()}
                         </div>
                       </div>
@@ -846,14 +846,14 @@ export default function ExpenseKanbanBoard(props) {
       setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
     } else {
       // Update expense_status for expense tickets
-      try {
+    try {
         const { error } = await supabase
-          .from('tickets')
+        .from('tickets')
           .update({ expense_status: newStatus })
-          .eq('id', ticketId);
+        .eq('id', ticketId);
         if (error) throw error;
         await fetchTickets();
-      } catch (err) {
+    } catch (err) {
         alert('Failed to update ticket: ' + (err.message || err));
       }
     }
@@ -884,7 +884,7 @@ export default function ExpenseKanbanBoard(props) {
         ticket.status === 'WAITING FOR APPROVAL 1' || ticket.status === 'WAITING FOR APPROVAL'
       );
     } else {
-      acc[status] = tickets.filter(ticket => ticket.status === status);
+    acc[status] = tickets.filter(ticket => ticket.status === status);
     }
     return acc;
   }, {});
@@ -1292,7 +1292,7 @@ export default function ExpenseKanbanBoard(props) {
       />
 
       {/* Add animations CSS */}
-      <style jsx>{`
+      <style>{`
         @keyframes pulse {
           0%, 100% {
             transform: scale(1);

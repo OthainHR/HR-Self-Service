@@ -1046,7 +1046,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                 const workflow = getApprovalWorkflow(ticket.status, userEmail);
                                 
                                 return (
-                                  <div style={{
+                                      <div style={{
                                     display: 'flex',
                                     gap: '0.5rem',
                                     alignItems: 'center',
@@ -1103,7 +1103,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                           e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
                                         }
                                       }}
-                                    >
+                                  >
                                       {ticket.status === 'APPROVED' ? 'APPROVED' : 'Approve'}
                                     </button>
 
@@ -1123,9 +1123,9 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                             ? 'white'
                                             : (isDarkMode ? '#9ca3af' : '#6b7280')),
                                         border: 'none',
-                                        borderRadius: '8px',
-                                        padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
-                                        fontSize: isMobile ? '0.7rem' : '0.875rem',
+                                            borderRadius: '8px',
+                                  padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
+                                  fontSize: isMobile ? '0.7rem' : '0.875rem',
                                         fontWeight: 600,
                                         cursor: workflow.canReject && ticket.status !== 'APPROVED' && ticket.status !== 'REJECTED' ? 'pointer' : 'not-allowed',
                                         transition: 'all 0.2s ease',
@@ -1160,7 +1160,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                     >
                                       {ticket.status === 'REJECTED' ? 'REJECTED' : 'Reject'}
                                     </button>
-                                  </div>
+                                </div>
                                 );
                               })()}
                             </TableCell>
@@ -1228,7 +1228,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         loading={adminCommentModal.loading}
       />
 
-      <style jsx>{`
+      <style>{`
         @keyframes pulse {
           0%, 100% {
             transform: scale(1);

@@ -1310,7 +1310,7 @@ export default function TicketForm({ onTicketCreated }) {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           to {
             opacity: 1;

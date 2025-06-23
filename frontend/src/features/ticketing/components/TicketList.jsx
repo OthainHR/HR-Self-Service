@@ -1434,7 +1434,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         loading={adminCommentModal.loading}
       />
 
-      <style jsx>{`
+      <style>{`
         @keyframes pulse {
           0%, 100% {
             transform: scale(1);

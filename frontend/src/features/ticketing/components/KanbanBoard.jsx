@@ -1402,7 +1402,7 @@ export default function KanbanBoard() {
       />
 
       {/* Add animations CSS */}
-      <style jsx>{`
+      <style>{`
         @keyframes pulse {
           0%, 100% {
             transform: scale(1);

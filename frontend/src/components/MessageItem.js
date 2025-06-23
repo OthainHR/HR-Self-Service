@@ -830,7 +830,7 @@ function MessageItem({ message, isLast, isMobile }) {
       </Box>
 
       {/* Add custom animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% {
             transform: translateX(-100%) translateY(-100%) rotate(45deg);

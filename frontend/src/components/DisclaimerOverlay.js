@@ -122,6 +122,35 @@ const DisclaimerOverlay = ({ open, onClose }) => {
     }
   };
 
+  // Custom backdrop component to avoid ownerState prop warning
+  const CustomBackdrop = React.forwardRef((props, ref) => {
+    const { ownerState, ...otherProps } = props;
+    return (
+      <motion.div
+        ref={ref}
+        variants={backdropVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: isDarkMode 
+            ? 'rgba(0, 0, 0, 0.85)' 
+            : 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          outline: 'none',
+          border: 'none',
+          zIndex: -1
+        }}
+        {...otherProps}
+      />
+    );
+  });
+
   return (
     <AnimatePresence>
       {open && (
@@ -144,21 +173,7 @@ const DisclaimerOverlay = ({ open, onClose }) => {
               border: 'none'
             }
           }}
-          BackdropComponent={motion.div}
-          BackdropProps={{
-            variants: backdropVariants,
-            initial: "hidden",
-            animate: "visible",
-            exit: "exit",
-            style: {
-              background: isDarkMode 
-                ? 'rgba(0, 0, 0, 0.85)' 
-                : 'rgba(0, 0, 0, 0.75)',
-              backdropFilter: 'blur(8px)',
-              outline: 'none',
-              border: 'none'
-            }
-          }}
+          BackdropComponent={CustomBackdrop}
         >
           <motion.div
             variants={modalVariants}

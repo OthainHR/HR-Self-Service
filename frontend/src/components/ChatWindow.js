@@ -813,7 +813,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       </Paper>
 
       {/* Add custom animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes rotate {
           from {
             transform: rotate(0deg);

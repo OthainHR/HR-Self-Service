@@ -569,7 +569,7 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
         </motion.div>
 
         {/* Custom Animations Styles */}
-        <style jsx>{`
+        <style>{`
           @keyframes shine {
             0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
             50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
