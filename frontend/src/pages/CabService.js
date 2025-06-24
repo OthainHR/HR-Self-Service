@@ -282,7 +282,7 @@ const CabService = () => {
     try {
       const { data, error } = await supabase
         .from('cab_bookings')
-        .select('*, needs_escort')
+        .select('*, needs_escort, dropped_off')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -319,7 +319,7 @@ const CabService = () => {
     try {
       const { data, error } = await supabase
         .from('v_cab_bookings_report')
-        .select('*, needs_escort')
+        .select('*, needs_escort, dropped_off')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -421,6 +421,7 @@ const CabService = () => {
         dropoff_location: formData.dropoffLocation,
         booking_date: new Date().toISOString().split('T')[0], // Today's date
         needs_escort: false, // Explicitly set default for new bookings
+        dropped_off: false, // Explicitly set default for new bookings
       };
 
       const { error: insertError } = await supabase // Renamed to insertError
@@ -668,6 +669,67 @@ const CabService = () => {
       setSnackbarWithLogging({
         open: true,
         message: 'Failed to update escort status. Check console for details.',
+        severity: 'error'
+      });
+    }
+  };
+
+  // Handle dropped off status update (for user's own bookings)
+  const handleDroppedOffUpdate = async (bookingId, newDroppedOffStatus) => {
+    try {
+      const { data, error, count } = await supabase
+        .from('cab_bookings')
+        .update({ dropped_off: newDroppedOffStatus })
+        .eq('id', bookingId)
+        .eq('user_id', user.id) // Ensure user can only update their own bookings
+        .select();
+
+      if (error) {
+        console.error('Error updating dropped off status:', error);
+        throw error;
+      }
+
+      if (count === 0 || !data || data.length === 0) {
+        console.warn('No rows were affected when updating dropped off status. Booking ID:', bookingId);
+        setSnackbarWithLogging({
+          open: true,
+          message: 'Unable to update status. You can only update your own bookings.',
+          severity: 'warning'
+        });
+        return;
+      }
+
+      // Update local state
+      const updatedBooking = data[0];
+      const confirmedDroppedOff = updatedBooking.dropped_off;
+
+      setBookings(prevBookings => 
+        prevBookings.map(booking => 
+          booking.id === bookingId 
+            ? { ...booking, dropped_off: confirmedDroppedOff }
+            : booking
+        )
+      );
+
+      setAllBookings(prevAllBookings => 
+        prevAllBookings.map(booking => 
+          booking.id === bookingId 
+            ? { ...booking, dropped_off: confirmedDroppedOff }
+            : booking
+        )
+      );
+
+      setSnackbarWithLogging({
+        open: true,
+        message: `Drop-off status updated to ${confirmedDroppedOff ? 'Completed' : 'Pending'}`,
+        severity: 'success'
+      });
+
+    } catch (error) {
+      console.error('Failed to update dropped off status:', error);
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Failed to update drop-off status. Please try again.',
         severity: 'error'
       });
     }
@@ -1174,6 +1236,119 @@ const CabService = () => {
           </motion.div>
         )}
 
+        {/* Mobile-Friendly Quick Actions for Drop-off Status - TOP PRIORITY */}
+        {!isAdmin && isUserWhitelisted && !loadingWhitelistStatus && !loadingBookings && bookings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            style={{ marginBottom: theme.spacing(3) }}
+          >
+            <Paper sx={{ 
+              p: 3,
+              background: isDarkMode
+                ? 'linear-gradient(135deg, #134e4a 0%, #065f46 100%)'
+                : 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+              border: `2px solid ${isDarkMode ? '#059669' : '#10b981'}`,
+              borderRadius: 3,
+              boxShadow: isDarkMode 
+                ? '0 8px 32px rgba(5, 150, 105, 0.2)' 
+                : '0 8px 32px rgba(16, 185, 129, 0.15)'
+            }}>
+              <Typography variant="h5" sx={{ 
+                mb: 2, 
+                fontWeight: 700,
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                📍 Mark Drop-off Status
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {bookings
+                  .filter(booking => booking.booking_date === new Date().toISOString().split('T')[0])
+                  .map((booking) => (
+                    <Card key={`priority-${booking.id}`} sx={{ 
+                      p: 3, 
+                      background: isDarkMode 
+                        ? 'rgba(255, 255, 255, 0.08)' 
+                        : 'rgba(255, 255, 255, 0.9)',
+                      border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+                      borderRadius: 2,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: isDarkMode 
+                          ? '0 8px 25px rgba(0, 0, 0, 0.3)' 
+                          : '0 8px 25px rgba(0, 0, 0, 0.1)'
+                      }
+                    }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                        <Box sx={{ flex: '1 1 200px' }}>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 600,
+                            color: isDarkMode ? '#ffffff' : '#1f2937',
+                            mb: 0.5
+                          }}>
+                            🚗 {booking.pickup_time} → {booking.dropoff_location}
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
+                          }}>
+                            📍 From: {booking.pickup_location}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          background: booking.dropped_off 
+                            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                            : isDarkMode 
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : 'rgba(0, 0, 0, 0.05)',
+                          borderRadius: 2,
+                          p: 1.5,
+                          minWidth: 200
+                        }}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={booking.dropped_off || false}
+                                onChange={(e) => handleDroppedOffUpdate(booking.id, e.target.checked)}
+                                color="success"
+                                size="large"
+                                sx={{
+                                  '& .MuiSvgIcon-root': {
+                                    fontSize: 28
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Typography sx={{
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                color: booking.dropped_off 
+                                  ? '#ffffff'
+                                  : isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)'
+                              }}>
+                                {booking.dropped_off ? "✅ Completed!" : "📍 Mark as Dropped Off"}
+                              </Typography>
+                            }
+                            labelPlacement="end"
+                          />
+                        </Box>
+                      </Box>
+                    </Card>
+                  ))}
+              </Box>
+            </Paper>
+          </motion.div>
+        )}
 
         {/* Action Cards */}
         <motion.div
@@ -1616,6 +1791,9 @@ const CabService = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      {!isAdmin && isUserWhitelisted && (
+                        <TableCell sx={{ fontWeight: 'bold', color: '#059669' }}>Dropped Off</TableCell>
+                      )}
                       {isAdmin && (
                         <>
                           <TableCell>Employee</TableCell>
@@ -1646,6 +1824,30 @@ const CabService = () => {
                   <TableBody>
                     {sortedBookings.map((booking) => (
                       <TableRow key={booking.id}>
+                        {!isAdmin && isUserWhitelisted && (
+                          <TableCell>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={booking.dropped_off || false}
+                                  onChange={(e) => handleDroppedOffUpdate(booking.id, e.target.checked)}
+                                  color="success"
+                                  size="small"
+                                />
+                              }
+                              label={booking.dropped_off ? "Completed" : "Pending"}
+                              sx={{
+                                '& .MuiFormControlLabel-label': {
+                                  fontSize: '0.875rem',
+                                  fontWeight: booking.dropped_off ? 600 : 400,
+                                  color: booking.dropped_off 
+                                    ? '#059669' 
+                                    : isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                                }
+                              }}
+                            />
+                          </TableCell>
+                        )}
                         {isAdmin && (
                           <>
                             <TableCell>
