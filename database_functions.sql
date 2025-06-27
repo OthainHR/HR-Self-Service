@@ -255,8 +255,36 @@ CREATE TRIGGER trigger_update_ticket_additional_emails_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_ticket_additional_emails_updated_at();
 
+-- ============================================================================
+-- UPDATE TICKETS RLS POLICY TO INCLUDE ADDITIONAL EMAIL USERS
+-- ============================================================================
+
+-- Drop the existing SELECT policy for tickets
+DROP POLICY IF EXISTS "Allow users to view relevant tickets" ON tickets;
+
+-- Create updated SELECT policy that includes additional email users
+CREATE POLICY "Allow users to view relevant tickets" ON tickets
+    FOR SELECT USING (
+        -- Original conditions: admins, role-based access, and ticket requesters
+        (get_user_role() = 'admin'::text) 
+        OR (((get_user_role() = ANY (ARRAY['hr_admin'::text, 'hr_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = 'hr@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('HR Requests'::text))) 
+        OR (((get_user_role() = ANY (ARRAY['it_admin'::text, 'it_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = 'it@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('IT Requests'::text))) 
+        OR (((get_user_role() = ANY (ARRAY['payroll_admin'::text, 'payroll_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['accounts@othainsoft.com'::text, 'praveen.omprakash@othainsoft.com'::text, 'ps@jerseytechpartners.com'::text]))) AND (category_id = ANY (ARRAY[get_category_id_by_name('Payroll Requests'::text), get_category_id_by_name('Expense Management'::text)]))) 
+        OR (requested_by = auth.uid()) 
+        OR (((get_user_role() = ANY (ARRAY['ai_admin'::text])) OR ((auth.jwt() ->> 'email'::text) = 'ai@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('AI Requests'::text))) 
+        OR (((get_user_role() = ANY (ARRAY['operations_admin'::text])) OR ((auth.jwt() ->> 'email'::text) = 'operations@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('Operations'::text)))
+        -- NEW CONDITION: Users in the additional emails list for this ticket
+        OR EXISTS (
+            SELECT 1 FROM ticket_additional_emails tae 
+            WHERE tae.ticket_id = id AND tae.user_id = auth.uid()
+        )
+    );
+
 -- Grant necessary permissions
 GRANT SELECT, INSERT, DELETE ON ticket_additional_emails TO authenticated;
+
+-- Ensure proper permissions on tickets table for the updated RLS policy
+GRANT SELECT ON tickets TO authenticated;
 GRANT EXECUTE ON FUNCTION get_ticket_additional_emails(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION add_ticket_additional_email(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION remove_ticket_additional_email(UUID) TO authenticated; 

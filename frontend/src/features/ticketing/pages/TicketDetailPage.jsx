@@ -205,61 +205,14 @@ const TicketDetailPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // First, try to fetch the ticket with standard access control
-      let { data: ticketData, error: ticketError } = await supabase
+      // Fetch the specific ticket using v_ticket_board (now includes additional email access via RLS)
+      const { data: ticketData, error: ticketError } = await supabase
         .from('v_ticket_board')
         .select('*')
         .eq('id', ticketId)
         .single();
       
-      // If ticket not found with standard access, check if user has access via additional emails
-      if (ticketError && ticketError.code === 'PGRST116') { // No rows returned
-        console.log('Ticket not found via standard access, checking additional emails...');
-        
-        // Check if current user is in the additional emails for this ticket
-        const { data: hasAccessData, error: accessError } = await supabase
-          .from('ticket_additional_emails')
-          .select('id')
-          .eq('ticket_id', ticketId)
-          .eq('user_id', currentUser.id)
-          .single();
-
-        if (!accessError && hasAccessData) {
-          console.log('User has access via additional emails, fetching ticket directly...');
-          
-          // User has access via additional emails, fetch ticket directly bypassing RLS
-          const { data: directTicketData, error: directTicketError } = await supabase
-            .from('tickets')
-            .select(`
-              *,
-              ticket_categories!inner(name),
-              assignee_profile:v_user_emails!tickets_assignee_fkey(email),
-              requester_profile:v_user_emails!tickets_requested_by_fkey(email)
-            `)
-            .eq('id', ticketId)
-            .single();
-
-          if (directTicketError) {
-            console.error('Error fetching ticket directly:', directTicketError);
-            throw new Error('Ticket not found or access denied');
-          }
-
-          // Transform the data to match v_ticket_board structure
-          ticketData = {
-            ...directTicketData,
-            category_name: directTicketData.ticket_categories?.name,
-            assignee_email: directTicketData.assignee_profile?.email,
-            requester_email: directTicketData.requester_profile?.email
-          };
-        } else {
-          console.log('User does not have access via additional emails');
-          throw new Error('Ticket not found or you may not have permission to view this ticket');
-        }
-      } else if (ticketError) {
-        console.error('Error fetching from v_ticket_board:', ticketError);
-        throw ticketError;
-      }
-      
+      if (ticketError) throw ticketError;
       setTicket(ticketData);
 
       // Fetch all tickets for proper numbering (only basic fields needed)
