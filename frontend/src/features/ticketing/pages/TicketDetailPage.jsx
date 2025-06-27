@@ -205,15 +205,46 @@ const TicketDetailPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch the specific ticket
+      // First, check if user has access to this ticket using RPC function
+      const { data: hasAccess, error: accessError } = await supabase
+        .rpc('user_has_ticket_access', {
+          p_ticket_id: ticketId,
+          p_user_id: currentUser.id
+        });
+
+      if (accessError) {
+        throw new Error('Failed to check ticket access');
+      }
+
+      if (!hasAccess) {
+        throw new Error('Ticket not found or you may not have permission to view this ticket');
+      }
+
+      // User has access, fetch the ticket data directly
       const { data: ticketData, error: ticketError } = await supabase
-        .from('v_ticket_board')
-        .select('*')
+        .from('tickets')
+        .select(`
+          *,
+          ticket_categories!inner(name),
+          assignee_profile:v_user_emails!tickets_assignee_fkey(email),
+          requester_profile:v_user_emails!tickets_requested_by_fkey(email)
+        `)
         .eq('id', ticketId)
         .single();
+
+      if (ticketError) {
+        throw new Error('Failed to fetch ticket data');
+      }
+
+      // Transform the data to match expected structure
+      const transformedTicketData = {
+        ...ticketData,
+        category_name: ticketData.ticket_categories?.name,
+        assignee_email: ticketData.assignee_profile?.email,
+        requester_email: ticketData.requester_profile?.email
+      };
       
-      if (ticketError) throw ticketError;
-      setTicket(ticketData);
+      setTicket(transformedTicketData);
 
       // Fetch all tickets for proper numbering (only basic fields needed)
       const { data: allTicketsData, error: allTicketsError } = await supabase
@@ -262,7 +293,7 @@ const TicketDetailPage = () => {
       
       setIsLoading(false);
     }
-  }, [ticketId]);
+  }, [ticketId, currentUser]);
 
   // Load current user on mount
   useEffect(() => {

@@ -1,4 +1,3 @@
-// send-ticket-email-ms-graph.ts
 // Edge Function for Supabase (Deno Deploy)
 // ————————————————————————————————————————————————————————————————
 //  • Sends ticket-related e-mails via Microsoft Graph.
@@ -10,7 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const AI_HANDLER_EMAIL = 'sunhith.reddy@othainsoft.com';
 // ─── MS Graph helpers ────────────────────────────────────────────────────────
 async function getMicrosoftGraphToken(tenant, id, secret) {
-  const url = https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token;
+  const url = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
   const params = new URLSearchParams({
     client_id: id,
     scope: 'https://graph.microsoft.com/.default',
@@ -21,7 +20,7 @@ async function getMicrosoftGraphToken(tenant, id, secret) {
     method: 'POST',
     body: params
   });
-  if (!r.ok) throw new Error(Graph token error ${r.status}: ${await r.text()});
+  if (!r.ok) throw new Error(`Graph token error ${r.status}: ${await r.text()}`);
   return (await r.json()).access_token;
 }
 async function sendMicrosoftGraphEmail(token, from, to, subject, html, cc = []) {
@@ -32,10 +31,10 @@ async function sendMicrosoftGraphEmail(token, from, to, subject, html, cc = []) 
       message: 'No recipients'
     };
   }
-  const r = await fetch(https://graph.microsoft.com/v1.0/users/${from}/sendMail, {
+  const r = await fetch(`https://graph.microsoft.com/v1.0/users/${from}/sendMail`, {
     method: 'POST',
     headers: {
-      Authorization: Bearer ${token},
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -63,7 +62,7 @@ async function sendMicrosoftGraphEmail(token, from, to, subject, html, cc = []) 
     success: true,
     status: 202
   };
-  throw new Error(sendMail failed ${r.status}: ${await r.text()});
+  throw new Error(`sendMail failed ${r.status}: ${await r.text()}`);
 }
 // ─── Edge entrypoint ─────────────────────────────────────────────────────────
 serve(async (req)=>{
@@ -74,7 +73,7 @@ serve(async (req)=>{
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'), {
       global: {
         headers: {
-          Authorization: Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}
+          Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
         }
       }
     });
@@ -89,8 +88,8 @@ serve(async (req)=>{
       });
     }
     const isComm = !!raw.ticket_id && !!raw.message;
-    let ticket = isComm ? (await supabase.from('tickets').select('*').eq('id', raw.ticket_id).single()).data : raw;
-    if (!ticket) throw new Error(Could not find ticket with ID: ${isComm ? raw.ticket_id : raw.id});
+    const ticket = isComm ? (await supabase.from('tickets').select('*').eq('id', raw.ticket_id).single()).data : raw;
+    if (!ticket) throw new Error(`Could not find ticket with ID: ${isComm ? raw.ticket_id : raw.id}`);
     // — category / subcategory names —
     const categoryName = (ticket.category_id ? (await supabase.from('categories').select('name').eq('id', ticket.category_id).single()).data?.name : null) ?? null;
     const subcategoryName = (ticket.sub_category_id ? (await supabase.from('sub_categories').select('name').eq('id', ticket.sub_category_id).single()).data?.name : null) ?? null;
@@ -153,33 +152,56 @@ serve(async (req)=>{
       default:
         fromEmail = Deno.env.get('DEFAULT_SENDER_EMAIL');
     }
-    const shortId = ${prefix}${ticket.id.slice(0, 8)};
-    const link = ${Deno.env.get('APP_BASE_URL')}/ticket/${ticket.id};
+    const shortId = `${prefix}${ticket.id.slice(0, 8)}`;
+    const link = `${Deno.env.get('APP_BASE_URL')}/ticket/${ticket.id}`;
     const ccRecipients = isAiCategory ? [
       AI_HANDLER_EMAIL
     ] : [];
-    // EVENT-SPECIFIC LOGIC
+
+    // Fetch additional email members for this ticket (excluding expense tickets)
+    let additionalEmails = [];
+    if (!isExpenseCategory) {
+      try {
+        const { data: additionalEmailsData, error: additionalEmailsError } = await supabase
+          .rpc('get_ticket_additional_emails', {
+            p_ticket_id: ticket.id
+          });
+        
+        if (!additionalEmailsError && additionalEmailsData) {
+          additionalEmails = additionalEmailsData.map(ae => ae.email);
+        }
+      } catch (err) {
+        console.log('Failed to fetch additional emails for ticket:', err);
+      }
+    }
+    // ——— 1. COMMENT/COMMUNICATION ————————————————————————
     if (isComm) {
-      const requesterEmail = (ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null) ?? null;
-      const assigneeEmail = (ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null) ?? null;
-      const commAuthor = (raw.user_id ? (await supabase.from('users').select('email').eq('id', raw.user_id).single()).data?.email : null) ?? 'System';
+      const requesterEmail = ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null;
+      const assigneeEmail = ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null;
+      const commAuthor = raw.user_id ? (await supabase.from('users').select('email').eq('id', raw.user_id).single()).data?.email : 'System';
       const recipients = new Set();
       let subject = '';
       switch((raw.type ?? '').toLowerCase()){
         case 'admin_reply':
-          subject = [Admin Reply #${shortId}] ${ticket.title};
+          subject = `[Admin Reply #${shortId}] ${ticket.title}`;
           if (requesterEmail) recipients.add(requesterEmail);
+          // Add additional email members for admin replies
+          additionalEmails.forEach(email => recipients.add(email));
           break;
         case 'customer_reply':
-          subject = [Customer Reply #${shortId}] ${ticket.title};
+          subject = `[Customer Reply #${shortId}] ${ticket.title}`;
           if (assigneeEmail) recipients.add(assigneeEmail);
+          // Add additional email members for customer replies
+          additionalEmails.forEach(email => recipients.add(email));
           break;
         case 'internal_note':
-          subject = [Internal Note #${shortId}] ${ticket.title};
+          subject = `[Internal Note #${shortId}] ${ticket.title}`;
           if (assigneeEmail && commAuthor !== assigneeEmail) recipients.add(assigneeEmail);
+          // Add additional email members for internal notes
+          additionalEmails.forEach(email => recipients.add(email));
           break;
         default:
-          console.log(Unhandled comment type "${raw.type}", no email sent.);
+          console.log(`Unhandled comment type "${raw.type}", no email sent.`);
           return new Response(JSON.stringify({
             message: 'Unhandled comm type'
           }), {
@@ -188,114 +210,68 @@ serve(async (req)=>{
           });
       }
       if (recipients.size > 0) {
-        let htmlBody = <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>;
-        htmlBody += <p>A new reply has been added to ticket #${shortId}.</p><p><strong>Reply from ${commAuthor}:</strong><br/><pre>${raw.message}</pre></p><p>View: <a href="${link}">${link}</a></p>;
+        const htmlBody = `
+          <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>
+          <p>A new reply has been added to ticket #${shortId}.</p>
+          <p><strong>Reply from ${commAuthor}:</strong><br/><pre>${raw.message}</pre></p>
+          <p>View: <a href="${link}">${link}</a></p>`;
         await sendMicrosoftGraphEmail(graphToken, fromEmail, [
           ...recipients
         ], subject, htmlBody, ccRecipients);
       }
+    // ——— 2. NEW TICKET INSERT ————————————————————————————
     } else if (eventType === 'INSERT') {
-      const requesterEmail = (ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null) ?? null;
-      const assigneeEmail = (ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null) ?? null;
+      const requesterEmail = ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null;
+      const assigneeEmail = ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null;
       const recipients = new Set();
       if (requesterEmail) recipients.add(requesterEmail);
       if (assigneeEmail) recipients.add(assigneeEmail);
+      // Add additional email members for new tickets
+      additionalEmails.forEach(email => recipients.add(email));
       const displayStatus = isExpenseCategory ? ticket.expense_status ?? ticket.status : ticket.status;
-      const subject = [New Ticket #${shortId}] ${ticket.title};
-      let htmlBody = <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><p><strong>Sub-category:</strong> ${subcategoryName ?? 'N/A'}</p><hr/>;
-      htmlBody += <p>A new ticket has been created.</p><p><strong>Title:</strong> ${ticket.title}</p><p><strong>Status:</strong> ${displayStatus}</p><p><strong>Priority:</strong> ${ticket.priority}</p><p><strong>Description:</strong><br/><pre>${ticket.description ?? 'N/A'}</pre></p>${ticket.client ? <p><strong>Client:</strong> ${ticket.client}</p> : ''}${ticket.due_at ? <p><strong>Due At:</strong> ${new Date(ticket.due_at).toLocaleString()}</p> : ''}<p>View: <a href="${link}">${link}</a></p>;
+      const subject = `[New Ticket #${shortId}] ${ticket.title}`;
+      const htmlBody = `
+        <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p>
+        <p><strong>Sub-category:</strong> ${subcategoryName ?? 'N/A'}</p><hr/>
+        <p>A new ticket has been created.</p>
+        <p><strong>Title:</strong> ${ticket.title}</p>
+        <p><strong>Status:</strong> ${displayStatus}</p>
+        <p><strong>Priority:</strong> ${ticket.priority}</p>
+        <p><strong>Description:</strong><br/><pre>${ticket.description ?? 'N/A'}</pre></p>
+        ${ticket.client ? `<p><strong>Client:</strong> ${ticket.client}</p>` : ''}
+        ${ticket.due_at ? `<p><strong>Due At:</strong> ${new Date(ticket.due_at).toLocaleString()}</p>` : ''}
+        <p>View: <a href="${link}">${link}</a></p>`;
       await sendMicrosoftGraphEmail(graphToken, fromEmail, [
         ...recipients
       ], subject, htmlBody, ccRecipients);
+    // ——— 3. GENERAL UPDATE ————————————————————————————————
     } else if (eventType === 'UPDATE') {
-  // ───── only enter when the ticket is an Expense AND the new assignee is present ─────
-  if (
-    isExpenseCategory &&
-    ticket.assignee &&                    // ← ADD THIS GUARD LINE
-    oldRec.assignee !== ticket.assignee
-  ) 
-    // --- Expense-approval workflow ---
-    const assigneeEmail = (await supabase
-      .from('users')
-      .select('email')
-      .eq('id', ticket.assignee)
-      .single()).data?.email ?? null;
-
-    const oldAssigneeEmail = oldRec.assignee
-      ? (await supabase
-          .from('users')
-          .select('email')
-          .eq('id', oldRec.assignee)
-          .single()).data?.email ?? null
-      : null;
-
-    if (assigneeEmail) {
-      const subject  = [Action Required #${shortId}] Expense request needs your approval: ${ticket.title};
-      let   htmlBody = <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>;
-      htmlBody      += <p>An expense request is now assigned to you for approval.</p>;
-      htmlBody      += <p>The status is: <strong>${ticket.expense_status}</strong></p>;
-      htmlBody      += <p>Please review the details and take action.</p>;
-      htmlBody      += <p>View Ticket: <a href="${link}">${link}</a></p>;
-
-      await sendMicrosoftGraphEmail(
-        graphToken,
-        fromEmail,
-        [assigneeEmail],
-        subject,
-        htmlBody,
-        ccRecipients
-      );
-    } else {
-      console.error(
-        Could not find email for new assignee UUID: ${ticket.assignee}.  +
-        'No "Action Required" email sent.'
-      );
-    }
-    }
-    if (oldAssigneeEmail) {
-      const subject  = [Update #${shortId}] Expense request you handled has been reassigned;
-      let   htmlBody = <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>;
-      htmlBody      += <p>The expense request you recently handled has been successfully moved to the next step.</p>;
-      htmlBody      += <p>Its new status is: <strong>${ticket.expense_status}</strong></p>;
-      htmlBody      += <p>No further action is required from you on this ticket.</p>;
-      htmlBody      += <p>View Ticket: <a href="${link}">${link}</a></p>;
-
-      await sendMicrosoftGraphEmail(
-        graphToken,
-        fromEmail,
-        [oldAssigneeEmail],
-        subject,
-        htmlBody,
-        ccRecipients
-      );
-    }
-     
+      // General update only
+      const requesterEmail = ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null;
+      const assigneeEmail = ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null;
+      const oldAssigneeEmail = oldRec.assignee ? (await supabase.from('users').select('email').eq('id', oldRec.assignee).single()).data?.email : null;
+      let changes = '';
+      if (oldRec.status !== ticket.status) changes += `<li>Status: ${oldRec.status} → ${ticket.status}</li>`;
+      if (oldRec.priority !== ticket.priority) changes += `<li>Priority: ${oldRec.priority} → ${ticket.priority}</li>`;
+      if (oldRec.due_at !== ticket.due_at) changes += `<li>Due At: ${oldRec.due_at ?? 'None'} → ${ticket.due_at ?? 'None'}</li>`;
+      if (oldAssigneeEmail !== assigneeEmail) changes += `<li>Assignee: ${oldAssigneeEmail ?? 'Unassigned'} → ${assigneeEmail ?? 'Unassigned'}</li>`;
+      if (changes) {
+        const recipients = new Set();
+        if (requesterEmail) recipients.add(requesterEmail);
+        if (assigneeEmail) recipients.add(assigneeEmail);
+        // Add additional email members for ticket updates
+        additionalEmails.forEach(email => recipients.add(email));
+        const subject = `[Ticket Update #${shortId}] ${ticket.title}`;
+        const htmlBody = `
+          <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>
+          <p>Ticket <strong>#${shortId}</strong> has been updated.</p>
+          <ul>${changes}</ul>
+          <p>View: <a href="${link}">${link}</a></p>`;
+        await sendMicrosoftGraphEmail(graphToken, fromEmail, [
+          ...recipients
+        ], subject, htmlBody, ccRecipients);
       } else {
-        // --- It's a General Update (Functionality is Preserved) ---
-        const requesterEmail = (ticket.requested_by ? (await supabase.from('users').select('email').eq('id', ticket.requested_by).single()).data?.email : null) ?? null;
-        const assigneeEmail = (ticket.assignee ? (await supabase.from('users').select('email').eq('id', ticket.assignee).single()).data?.email : null) ?? null;
-        const oldAssigneeEmail = oldRec.assignee ? (await supabase.from('users').select('email').eq('id', oldRec.assignee).single()).data?.email : null;
-        let changes = '';
-        if (oldRec.status !== ticket.status) changes += <li>Status: ${oldRec.status} → ${ticket.status}</li>;
-        if (oldRec.priority !== ticket.priority) changes += <li>Priority: ${oldRec.priority} → ${ticket.priority}</li>;
-        if (oldRec.due_at !== ticket.due_at) changes += <li>Due At: ${oldRec.due_at ?? 'None'} → ${ticket.due_at ?? 'None'}</li>;
-        // This line is now correct and does NOT have the flawed "!isExpenseCategory" check.
-        if (oldAssigneeEmail !== assigneeEmail) {
-          changes += <li>Assignee: ${oldAssigneeEmail ?? 'Unassigned'} → ${assigneeEmail ?? 'Unassigned'}</li>;
-        }
-        if (changes) {
-          const recipients = new Set();
-          if (requesterEmail) recipients.add(requesterEmail);
-          if (assigneeEmail) recipients.add(assigneeEmail);
-          const subject = [Ticket Update #${shortId}] ${ticket.title};
-          let htmlBody = <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>;
-          htmlBody += <p>Ticket <strong>#${shortId}</strong> has been updated.</p><ul>${changes}</ul><p>View: <a href="${link}">${link}</a></p>;
-          await sendMicrosoftGraphEmail(graphToken, fromEmail, [
-            ...recipients
-          ], subject, htmlBody, ccRecipients);
-        } else {
-          console.log('Update occurred, but no tracked fields changed for a general notification. No email sent.');
-        }
+        console.log('Update occurred, but no tracked fields changed. No email sent.');
       }
     }
     return new Response(JSON.stringify({
@@ -314,5 +290,3 @@ serve(async (req)=>{
     });
   }
 });
-
-

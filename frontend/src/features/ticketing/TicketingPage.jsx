@@ -98,8 +98,8 @@ export default function TicketingPage() {
     
     // Only set default tab value on initial load, not on subsequent session updates
     if (isInitialLoad) {
-      setTabValue(isAdmin ? 1 : 0);
-      setViewMode(isAdmin ? 'list' : 'kanban');
+    setTabValue(isAdmin ? 1 : 0);
+    setViewMode(isAdmin ? 'list' : 'kanban');
     }
   };
 
