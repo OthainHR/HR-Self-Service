@@ -29,7 +29,8 @@ import {
   faExclamationTriangle, faInfoCircle, faCheckCircle,
   faFilter, faDownload, faSearch, faHeadset, faArrowRight, faCheck, faTimesCircle
 } from '@fortawesome/free-solid-svg-icons';
-import * as XLSX from 'xlsx'; // Import the xlsx library
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import AdminCommentModal from './AdminCommentModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
@@ -306,28 +307,70 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     return filteredTickets.slice(start, start + rowsPerPage);
   }, [filteredTickets, page]);
 
-  const handleExportToExcel = () => {
-    const dataToExport = filteredTickets.map(ticket => ({
-      'Ticket ID': ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets),
-      'Summary': ticket.title,
-      'Reporter': formatNameFromEmail(ticket.requester_email),
-      'Assignee': formatNameFromEmail(ticket.assignee_email),
-      'Status': ticket.status?.replace('_', ' '),
-      'Category': ticket.category_name || 'N/A',
-      'Sub-Category': ticket.sub_category_name || 'N/A',
-      'Client': ticket.client || 'N/A',
-      'Created At': new Date(ticket.created_at).toLocaleString(),
-      'Due At': ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'N/A',
-      'Updated At': ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : 'N/A',
-      'Resolved At': ticket.resolved_at ? new Date(ticket.resolved_at).toLocaleString() : 'N/A',
-      'Priority': ticket.priority || 'N/A',
-      'Description': ticket.description || 'N/A'
-    }));
+  const handleExportToExcel = async () => {
+    const dataToExport = filteredTickets.map(ticket => [
+      ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets),
+      ticket.title,
+      formatNameFromEmail(ticket.requester_email),
+      formatNameFromEmail(ticket.assignee_email),
+      ticket.status?.replace('_', ' '),
+      ticket.category_name || 'N/A',
+      ticket.sub_category_name || 'N/A',
+      ticket.client || 'N/A',
+      new Date(ticket.created_at).toLocaleString(),
+      ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'N/A',
+      ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : 'N/A',
+      ticket.resolved_at ? new Date(ticket.resolved_at).toLocaleString() : 'N/A',
+      ticket.priority || 'N/A',
+      ticket.description || 'N/A'
+    ]);
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Filtered Tickets");
-    XLSX.writeFile(workbook, "filtered_tickets.xlsx");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Filtered Tickets');
+
+    // Add headers
+    const headers = [
+      'Ticket ID', 'Summary', 'Reporter', 'Assignee', 'Status',
+      'Category', 'Sub-Category', 'Client', 'Created At', 'Due At',
+      'Updated At', 'Resolved At', 'Priority', 'Description'
+    ];
+    worksheet.addRow(headers);
+
+    // Add data rows
+    dataToExport.forEach(row => worksheet.addRow(row));
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 12 }, // Ticket ID
+      { width: 30 }, // Summary
+      { width: 20 }, // Reporter
+      { width: 20 }, // Assignee
+      { width: 15 }, // Status
+      { width: 15 }, // Category
+      { width: 20 }, // Sub-Category
+      { width: 15 }, // Client
+      { width: 20 }, // Created At
+      { width: 20 }, // Due At
+      { width: 20 }, // Updated At
+      { width: 20 }, // Resolved At
+      { width: 12 }, // Priority
+      { width: 40 }  // Description
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4CAF50' }
+    };
+    headerRow.alignment = { horizontal: 'center' };
+
+    // Write and download the file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'filtered_expense_tickets.xlsx');
   };
 
   const handleRowClick = (ticketId, e) => {

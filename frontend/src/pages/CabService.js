@@ -62,7 +62,8 @@ import { useDarkMode } from '../contexts/DarkModeContext';
 import { motion } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const CabService = () => {
   const { user } = useAuth();
@@ -520,60 +521,64 @@ const CabService = () => {
   };
 
   // Export to Excel (for admin)
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!isAdmin || bookings.length === 0) return;
 
     // Prepare data for Excel
-    const excelData = bookings.map(booking => ({
-      'Date': new Date(booking.booking_date).toLocaleDateString(),
-      'First Name': booking.first_name
+    const excelData = bookings.map(booking => [
+      new Date(booking.booking_date).toLocaleDateString(),
+      booking.first_name
         ? capitalizeFirstLetter(booking.first_name)
         : formatNameFromEmail(booking.user_email).split(' ')[0],
-      'Last Name': booking.last_name
+      booking.last_name
         ? capitalizeFirstLetter(booking.last_name)
         : (formatNameFromEmail(booking.user_email).split(' ')[1] || ''),
-      'Email': booking.user_email || '',
-      'Pickup Time': booking.pickup_time,
-      'Pickup Location': booking.pickup_location,
-      'Drop-off Location': booking.dropoff_location,
-      'Department': booking.department,
-      'Needs Escort': booking.needs_escort ? 'Yes' : 'No',
-      'Booking Time': new Date(booking.created_at).toLocaleString()
-    }));
+      booking.user_email || '',
+      booking.pickup_time,
+      booking.pickup_location,
+      booking.dropoff_location,
+      booking.department,
+      booking.needs_escort ? 'Yes' : 'No',
+      new Date(booking.created_at).toLocaleString()
+    ]);
 
     // Create workbook and worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Cab Bookings');
 
-    // Set column widths for better formatting
-    const columnWidths = [
-      { wch: 12 }, // Date
-      { wch: 15 }, // First Name
-      { wch: 15 }, // Last Name
-      { wch: 25 }, // Email
-      { wch: 12 }, // Pickup Time
-      { wch: 18 }, // Pickup Location
-      { wch: 20 }, // Drop-off Location
-      { wch: 12 }, // Department
-      { wch: 12 }, // Needs Escort
-      { wch: 20 }  // Booking Time
+    // Add headers
+    const headers = [
+      'Date', 'First Name', 'Last Name', 'Email', 'Pickup Time',
+      'Pickup Location', 'Drop-off Location', 'Department', 'Needs Escort', 'Booking Time'
     ];
-    worksheet['!cols'] = columnWidths;
+    worksheet.addRow(headers);
 
-    // Add header styling
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-      if (!worksheet[cellAddress]) continue;
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "4CAF50" } },
-        alignment: { horizontal: "center" }
-      };
-    }
+    // Add data rows
+    excelData.forEach(row => worksheet.addRow(row));
 
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Cab Bookings');
+    // Set column widths
+    worksheet.columns = [
+      { width: 12 }, // Date
+      { width: 15 }, // First Name
+      { width: 15 }, // Last Name
+      { width: 25 }, // Email
+      { width: 12 }, // Pickup Time
+      { width: 18 }, // Pickup Location
+      { width: 20 }, // Drop-off Location
+      { width: 12 }, // Department
+      { width: 12 }, // Needs Escort
+      { width: 20 }  // Booking Time
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4CAF50' }
+    };
+    headerRow.alignment = { horizontal: 'center' };
 
     // Generate filename with filters
     const filterSuffix = [
@@ -586,7 +591,9 @@ const CabService = () => {
       : `cab_bookings_${selectedDate}_${bookings.length}_entries.xlsx`;
 
     // Write and download the file
-    XLSX.writeFile(workbook, filename);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, filename);
 
     // Enhanced success message with filter info
     const filterInfo = [
@@ -827,7 +834,7 @@ const CabService = () => {
   };
 
   // Export whitelist to Excel
-  const exportWhitelistToExcel = () => {
+  const exportWhitelistToExcel = async () => {
     if (whitelistedEmails.length === 0) return;
     const excelData = whitelistedEmails.map(item => {
       const email = item.email;
@@ -835,39 +842,54 @@ const CabService = () => {
       const parts = prefix.split('.');
       const first = capitalizeFirstLetter(parts[0] || '');
       const last = capitalizeFirstLetter(parts[1] || '');
-      return { 
-        'First Name': first, 
-        'Last Name': last, 
-        'Email': email,
-        'Default Pickup Location': item.pick_up_location || 'N/A',
-        'Default Drop-off Location': item.drop_off_location || 'N/A',
-        'Default Pickup Time': item.pickup_time || 'N/A', // Added pickup time
-      };
+      return [
+        first, 
+        last, 
+        email,
+        item.pick_up_location || 'N/A',
+        item.drop_off_location || 'N/A',
+        item.pickup_time || 'N/A', // Added pickup time
+      ];
     });
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    // Set column widths
-    worksheet['!cols'] = [
-      { wch: 15 }, // First Name
-      { wch: 15 }, // Last Name
-      { wch: 25 },  // Email
-      { wch: 20 }, // Default Pickup Location
-      { wch: 20 },  // Default Drop-off Location
-      { wch: 15 }   // Default Pickup Time
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Whitelist');
+
+    // Add headers
+    const headers = [
+      'First Name', 'Last Name', 'Email', 'Default Pickup Location',
+      'Default Drop-off Location', 'Default Pickup Time'
     ];
-    // Header styling
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (let c = range.s.c; c <= range.e.c; c++) {
-      const cell = XLSX.utils.encode_cell({ r: 0, c });
-      if (!worksheet[cell]) continue;
-      worksheet[cell].s = {
-        font: { bold: true, color: { rgb: 'FFFFFF' } },
-        fill: { fgColor: { rgb: '4CAF50' } },
-        alignment: { horizontal: 'center' }
-      };
-    }
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Whitelist');
-    XLSX.writeFile(workbook, `cab_booking_whitelist_${whitelistedEmails.length}_entries.xlsx`);
+    worksheet.addRow(headers);
+
+    // Add data rows
+    excelData.forEach(row => worksheet.addRow(row));
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 15 }, // First Name
+      { width: 15 }, // Last Name
+      { width: 25 }, // Email
+      { width: 20 }, // Default Pickup Location
+      { width: 20 }, // Default Drop-off Location
+      { width: 15 }  // Default Pickup Time
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4CAF50' }
+    };
+    headerRow.alignment = { horizontal: 'center' };
+
+    // Write and download the file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `cab_booking_whitelist_${whitelistedEmails.length}_entries.xlsx`);
+
     setSnackbarWithLogging({ open: true, message: `Exported ${whitelistedEmails.length} users to Excel`, severity: 'success' });
   };
 
