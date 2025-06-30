@@ -317,6 +317,15 @@ export default function TicketForm({ onTicketCreated }) {
         requested_by: selectedOnBehalfOfUserId && isAdmin ? selectedOnBehalfOfUserId : currentUser.id
       };
 
+      // Only include expense fields for Expense Management tickets (category_id 5)
+      if (form.category_id !== 5) {
+        delete ticketToInsert.expense_amount;
+        delete ticketToInsert.payment_type;
+      } else {
+        // Ensure expense_amount is a number for expense tickets
+        ticketToInsert.expense_amount = parseFloat(form.expense_amount) || null;
+      }
+
       
       if (assigneeId) {
         ticketToInsert.assignee = assigneeId;
