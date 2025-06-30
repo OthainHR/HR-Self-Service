@@ -255,7 +255,14 @@ const TicketDetailPage = () => {
 
     } catch (fetchError) {
       
-      setError(`Failed to load ticket data: ${fetchError.message}`);
+      // Check if the error is related to access permissions
+      if (fetchError.message.includes('JSON object requested, multiple (or no) rows returned') || 
+          fetchError.message.includes('No rows found') ||
+          fetchError.code === 'PGRST116') {
+        setError('You do not have access to this ticket. Please contact hr@othainsoft.com to get access.');
+      } else {
+        setError(`Failed to load ticket data: ${fetchError.message}`);
+      }
       setTicket(null);
       setCommunications([]);
     } finally {
