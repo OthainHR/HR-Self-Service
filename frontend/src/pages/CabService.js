@@ -1021,9 +1021,7 @@ const CabService = () => {
         .update({
           pick_up_location: editingWhitelistEntry.pick_up_location || null,
           drop_off_location: editingWhitelistEntry.drop_off_location || null,
-          pickup_time: editingWhitelistEntry.pickup_time || null, // Added pickup_time
-          added_by: user.email, // Or a dedicated 'updated_by' field
-          updated_at: new Date().toISOString() 
+          pickup_time: editingWhitelistEntry.pickup_time || null
         })
         .eq('email', editingWhitelistEntry.email);
       
