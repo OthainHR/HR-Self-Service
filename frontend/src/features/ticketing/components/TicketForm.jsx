@@ -36,7 +36,9 @@ export default function TicketForm({ onTicketCreated }) {
         category_id: null,
         sub_category_id: null,
         priority: 'Medium',
-        client: ''
+        client: '',
+        expense_amount: '',
+        payment_type: ''
       };
     } catch {
       return {
@@ -45,7 +47,9 @@ export default function TicketForm({ onTicketCreated }) {
         category_id: null,
         sub_category_id: null,
         priority: 'Medium',
-        client: ''
+        client: '',
+        expense_amount: '',
+        payment_type: ''
       };
     }
   });
@@ -258,6 +262,17 @@ export default function TicketForm({ onTicketCreated }) {
         setError("Please select a client.");
         return;
     }
+    // Additional validation for Expense Management tickets (category_id 5)
+    if (form.category_id === 5) {
+      if (!form.expense_amount || form.expense_amount <= 0) {
+        setError("Please enter a valid expense amount.");
+        return;
+      }
+      if (!form.payment_type) {
+        setError("Please select a payment type.");
+        return;
+      }
+    }
 
     setIsLoading(true);
     setError(null);
@@ -346,7 +361,9 @@ export default function TicketForm({ onTicketCreated }) {
           category_id: null, // Reset category_id
           sub_category_id: null,
           priority: 'Medium',
-          client: ''
+          client: '',
+          expense_amount: '',
+          payment_type: ''
         };
         setForm(resetForm);
         setSubs([]);
@@ -384,7 +401,9 @@ export default function TicketForm({ onTicketCreated }) {
     setForm(prevForm => ({
       ...prevForm,
       category_id: category.id,
-      sub_category_id: null // Reset sub-category when main category changes
+      sub_category_id: null, // Reset sub-category when main category changes
+      expense_amount: category.id === 5 ? prevForm.expense_amount : '', // Keep expense amount only for Expense Management
+      payment_type: category.id === 5 ? prevForm.payment_type : '' // Keep payment type only for Expense Management
     }));
     setSelectedCategoryName(category.name);
     setCategorySelected(true);
@@ -398,7 +417,9 @@ export default function TicketForm({ onTicketCreated }) {
     setForm(prevForm => ({
       ...prevForm,
       category_id: null,
-      sub_category_id: null
+      sub_category_id: null,
+      expense_amount: '',
+      payment_type: ''
     }));
     setSelectedCategoryName('');
     setSubs([]);
@@ -1161,6 +1182,98 @@ export default function TicketForm({ onTicketCreated }) {
                 </div>
               </div>
 
+              {/* Expense Management specific fields */}
+              {form.category_id === 5 && (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1.25rem' }}>
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: isDarkMode ? '#f3f4f6' : '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <FontAwesomeIcon icon={faFileInvoiceDollar} style={{ marginRight: '0.5rem', color: '#6366f1' }} />
+                      Expense Amount (₹)*
+                    </label>
+                    <input
+                      id="expense_amount"
+                      name="expense_amount"
+                      type="number"
+                      placeholder="Enter amount in INR"
+                      min="0"
+                      step="0.01"
+                      value={form.expense_amount}
+                      onChange={handleInputChange}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem',
+                        border: isDarkMode ? '2px solid #4b5563' : '2px solid #e5e7eb',
+                        borderRadius: '10px',
+                        background: isDarkMode ? '#374151' : '#ffffff',
+                        color: isDarkMode ? '#f3f4f6' : '#374151',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#6366f1';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = isDarkMode ? '#4b5563' : '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: isDarkMode ? '#f3f4f6' : '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <FontAwesomeIcon icon={faMoneyCheckAlt} style={{ marginRight: '0.5rem', color: '#6366f1' }} />
+                      Payment Type*
+                    </label>
+                    <select
+                      id="payment_type"
+                      name="payment_type"
+                      value={form.payment_type}
+                      onChange={handleInputChange}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem',
+                        border: isDarkMode ? '2px solid #4b5563' : '2px solid #e5e7eb',
+                        borderRadius: '10px',
+                        background: isDarkMode ? '#374151' : '#ffffff',
+                        color: isDarkMode ? '#f3f4f6' : '#374151',
+                        transition: 'all 0.2s ease',
+                        cursor: 'pointer'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#6366f1';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = isDarkMode ? '#4b5563' : '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <option value="" disabled>Select Payment Type</option>
+                      <option value="Pay to Me">Pay to Me</option>
+                      <option value="Pay to Vendor">Pay to Vendor</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>Attachments (Invoices, Receipts, Screenshots, PDFs, Excel Sheets, etc.)</Typography>
                 <input
@@ -1225,40 +1338,40 @@ export default function TicketForm({ onTicketCreated }) {
 
               <button 
                 type="submit" 
-                disabled={isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId)}
+                disabled={isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId) || (form.category_id === 5 && (!form.expense_amount || !form.payment_type))}
                 style={{
-                  background: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId))
+                  background: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId) || (form.category_id === 5 && (!form.expense_amount || !form.payment_type)))
                     ? (isDarkMode ? '#4b5563' : '#e5e7eb')
                     : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                   border: 'none',
-                  color: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId))
+                  color: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId) || (form.category_id === 5 && (!form.expense_amount || !form.payment_type)))
                     ? (isDarkMode ? '#9ca3af' : '#9ca3af')
                     : 'white',
                   fontSize: '1rem',
                   fontWeight: '700',
                   padding: '1rem 1.5rem',
                   borderRadius: '12px',
-                  cursor: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId)) ? 'not-allowed' : 'pointer',
+                  cursor: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId) || (form.category_id === 5 && (!form.expense_amount || !form.payment_type))) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
                   marginTop: '0.75rem',
-                  boxShadow: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId)) 
+                  boxShadow: (isLoading || !currentUser || !form.sub_category_id || (isAdmin && !selectedOnBehalfOfUserId) || (form.category_id === 5 && (!form.expense_amount || !form.payment_type))) 
                     ? 'none' 
                     : '0 6px 20px rgba(59, 130, 246, 0.3)',
                   position: 'relative',
                   overflow: 'hidden'
                 }}
                 onMouseEnter={(e) => {
-                  if (!isLoading && currentUser && form.sub_category_id && !(isAdmin && !selectedOnBehalfOfUserId)) {
+                  if (!isLoading && currentUser && form.sub_category_id && !(isAdmin && !selectedOnBehalfOfUserId) && !(form.category_id === 5 && (!form.expense_amount || !form.payment_type))) {
                     e.target.style.transform = 'translateY(-2px)';
                     e.target.style.boxShadow = '0 8px 30px rgba(59, 130, 246, 0.4)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isLoading && currentUser && form.sub_category_id && !(isAdmin && !selectedOnBehalfOfUserId)) {
+                  if (!isLoading && currentUser && form.sub_category_id && !(isAdmin && !selectedOnBehalfOfUserId) && !(form.category_id === 5 && (!form.expense_amount || !form.payment_type))) {
                     e.target.style.transform = 'translateY(0)';
                     e.target.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.3)';
                   }

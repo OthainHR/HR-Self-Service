@@ -463,6 +463,88 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
                       {ticket.description?.substring(0, 100)}{ticket.description?.length > 100 ? '...' : ''}
                     </p>
 
+                    {/* Expense Details */}
+                    {(ticket.expense_amount || ticket.payment_type) && (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: ticket.expense_amount && ticket.payment_type ? '1fr 1fr' : '1fr',
+                        gap: '0.5rem',
+                        marginBottom: '0.75rem',
+                        padding: '0.5rem',
+                        background: isDarkMode 
+                          ? 'rgba(5, 150, 105, 0.1)' 
+                          : 'rgba(5, 150, 105, 0.05)',
+                        borderRadius: '8px',
+                        border: isDarkMode ? '1px solid rgba(5, 150, 105, 0.2)' : '1px solid rgba(5, 150, 105, 0.15)'
+                      }}>
+                        {ticket.expense_amount && (
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}>
+                            <span style={{
+                              fontSize: '0.65rem',
+                              color: isDarkMode ? '#9ca3af' : '#6b7280',
+                              fontWeight: '500',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Amount
+                            </span>
+                            <span style={{
+                              fontSize: '0.8rem',
+                              fontWeight: '700',
+                              color: isDarkMode ? '#10b981' : '#059669',
+                              fontFamily: 'monospace'
+                            }}>
+                              ₹{parseFloat(ticket.expense_amount).toLocaleString('en-IN', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        {ticket.payment_type && (
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}>
+                            <span style={{
+                              fontSize: '0.65rem',
+                              color: isDarkMode ? '#9ca3af' : '#6b7280',
+                              fontWeight: '500',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Payment
+                            </span>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              fontWeight: '600',
+                              color: ticket.payment_type === 'Pay to Me' 
+                                ? (isDarkMode ? '#60a5fa' : '#2563eb')
+                                : (isDarkMode ? '#a78bfa' : '#7c3aed'),
+                              background: ticket.payment_type === 'Pay to Me' 
+                                ? (isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)')
+                                : (isDarkMode ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)'),
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              border: ticket.payment_type === 'Pay to Me'
+                                ? (isDarkMode ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(59, 130, 246, 0.2)')
+                                : (isDarkMode ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)'),
+                              textAlign: 'center'
+                            }}>
+                              {ticket.payment_type}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Meta Information */}
                     <div style={{
                       display: 'grid',

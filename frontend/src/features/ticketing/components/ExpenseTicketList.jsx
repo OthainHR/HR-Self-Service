@@ -313,6 +313,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       ticket.title,
       formatNameFromEmail(ticket.requester_email),
       formatNameFromEmail(ticket.assignee_email),
+      ticket.expense_amount ? `₹${parseFloat(ticket.expense_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
+      ticket.payment_type || 'N/A',
       ticket.status?.replace('_', ' '),
       ticket.category_name || 'N/A',
       ticket.sub_category_name || 'N/A',
@@ -326,11 +328,11 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     ]);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Filtered Tickets');
+    const worksheet = workbook.addWorksheet('Filtered Expense Tickets');
 
     // Add headers
     const headers = [
-      'Ticket ID', 'Summary', 'Reporter', 'Assignee', 'Status',
+      'Ticket ID', 'Summary', 'Reporter', 'Assignee', 'Expense Amount (INR)', 'Payment Type', 'Status',
       'Category', 'Sub-Category', 'Client', 'Created At', 'Due At',
       'Updated At', 'Resolved At', 'Priority', 'Description'
     ];
@@ -345,6 +347,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       { width: 30 }, // Summary
       { width: 20 }, // Reporter
       { width: 20 }, // Assignee
+      { width: 18 }, // Expense Amount (INR)
+      { width: 15 }, // Payment Type
       { width: 15 }, // Status
       { width: 15 }, // Category
       { width: 20 }, // Sub-Category
@@ -884,7 +888,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                 </div>
               ) : (
                 <Table sx={{ 
-                  minWidth: isMobile ? 800 : 650,
+                  minWidth: isMobile ? 1000 : 850,
                   '& .MuiTableCell-root': {
                     fontSize: isMobile ? '0.75rem' : '0.875rem',
                     padding: isMobile ? '8px 6px' : '12px 8px'
@@ -911,6 +915,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                       <TableCell>Summary</TableCell>
                       <TableCell>Reporter</TableCell>
                       <TableCell>Assignee</TableCell>
+                      <TableCell>Amount</TableCell>
+                      <TableCell>Type</TableCell>
                       <TableCell>Actions</TableCell>
                       <TableCell sx={{ 
                         display: { xs: 'none', md: 'table-cell' } // Hide on mobile using MUI responsive display
@@ -1079,6 +1085,84 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                                     </IconButton>
                                   )}
                                 </Box>
+                              )}
+                            </TableCell>
+
+                            {/* Expense Amount */}
+                            <TableCell>
+                              {ticket.expense_amount ? (
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  background: isDarkMode 
+                                    ? 'linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%)'
+                                    : 'linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                                  padding: '0.375rem 0.75rem',
+                                  borderRadius: '8px',
+                                  border: isDarkMode ? '1px solid rgba(5, 150, 105, 0.3)' : '1px solid rgba(5, 150, 105, 0.2)',
+                                  justifyContent: 'center'
+                                }}>
+                                  <span style={{
+                                    fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                    fontWeight: 700,
+                                    color: isDarkMode ? '#10b981' : '#059669',
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    ₹{parseFloat(ticket.expense_amount).toLocaleString('en-IN', { 
+                                      minimumFractionDigits: 2, 
+                                      maximumFractionDigits: 2 
+                                    })}
+                                  </span>
+                                </div>
+                              ) : (
+                                <Typography variant="body2" sx={{ 
+                                  fontStyle: 'italic', 
+                                  color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                  textAlign: 'center'
+                                }}>
+                                  N/A
+                                </Typography>
+                              )}
+                            </TableCell>
+
+                            {/* Payment Type */}
+                            <TableCell>
+                              {ticket.payment_type ? (
+                                <div style={{
+                                  background: ticket.payment_type === 'Pay to Me' 
+                                    ? (isDarkMode 
+                                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.2) 100%)'
+                                      : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%)')
+                                    : (isDarkMode 
+                                      ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%)'
+                                      : 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)'),
+                                  color: ticket.payment_type === 'Pay to Me' 
+                                    ? (isDarkMode ? '#60a5fa' : '#2563eb')
+                                    : (isDarkMode ? '#a78bfa' : '#7c3aed'),
+                                  padding: '0.375rem 0.75rem',
+                                  borderRadius: '8px',
+                                  fontSize: isMobile ? '0.7rem' : '0.8rem',
+                                  fontWeight: 600,
+                                  textAlign: 'center',
+                                  border: ticket.payment_type === 'Pay to Me'
+                                    ? (isDarkMode ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(59, 130, 246, 0.2)')
+                                    : (isDarkMode ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)'),
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                                }}>
+                                  {ticket.payment_type}
+                                </div>
+                              ) : (
+                                <Typography variant="body2" sx={{ 
+                                  fontStyle: 'italic', 
+                                  color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                  textAlign: 'center'
+                                }}>
+                                  N/A
+                                </Typography>
                               )}
                             </TableCell>
 
