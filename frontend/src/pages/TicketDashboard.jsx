@@ -189,12 +189,55 @@ const TicketDashboard = () => {
         const openTickets = records.filter(t => !['RESOLVED', 'CLOSED'].includes(t.status)).length;
         const closedTickets = totalTickets - openTickets;
 
+        // Calculate business hours between two dates (8 hours/day, Mon-Fri only)
+        const calculateBusinessHours = (startDate, endDate) => {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          
+          // Business hours: 9 AM to 5 PM (8 hours)
+          const BUSINESS_START_HOUR = 9;
+          const BUSINESS_END_HOUR = 17;
+          const BUSINESS_HOURS_PER_DAY = 8;
+          
+          let totalBusinessHours = 0;
+          let currentDate = new Date(start);
+          
+          while (currentDate < end) {
+            const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            
+            // Skip weekends (Saturday = 6, Sunday = 0)
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+              const dayStart = new Date(currentDate);
+              dayStart.setHours(BUSINESS_START_HOUR, 0, 0, 0);
+              
+              const dayEnd = new Date(currentDate);
+              dayEnd.setHours(BUSINESS_END_HOUR, 0, 0, 0);
+              
+              // Determine the actual start and end times for this day
+              const actualStart = start > dayStart ? start : dayStart;
+              const actualEnd = end < dayEnd ? end : dayEnd;
+              
+              // Only count hours if there's overlap with business hours
+              if (actualStart < actualEnd) {
+                const hoursThisDay = (actualEnd - actualStart) / (1000 * 60 * 60); // Convert to hours
+                totalBusinessHours += Math.min(hoursThisDay, BUSINESS_HOURS_PER_DAY);
+              }
+            }
+            
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setHours(0, 0, 0, 0);
+          }
+          
+          return totalBusinessHours;
+        };
+
         let totalResolutionHrs = 0;
         let resolvedCount = 0;
         records.forEach(t => {
           if (t.resolved_at) {
-            const hrs = (new Date(t.resolved_at) - new Date(t.created_at)) / 36e5;
-            totalResolutionHrs += hrs;
+            const businessHrs = calculateBusinessHours(t.created_at, t.resolved_at);
+            totalResolutionHrs += businessHrs;
             resolvedCount += 1;
           }
         });
@@ -225,23 +268,23 @@ const TicketDashboard = () => {
         setTicketsByStatus(Object.entries(statusCounts).map(([name, value]) => ({ name, value })));
 
         //------------------------------------------------------------------
-        // Charts: resolution time buckets
+        // Charts: resolution time buckets (using business hours)
         //------------------------------------------------------------------
         const buckets = {
-          '< 1hr': 0,
+          '< 1 hr': 0,
           '1-4 hrs': 0,
-          '4-24 hrs': 0,
-          '1-3 days': 0,
-          '>3 days': 0
+          '4-8 hrs': 0,
+          '1-2 days': 0,
+          '> 2 days': 0
         };
         records.forEach(r => {
           if (!r.resolved_at) return;
-          const hrs = (new Date(r.resolved_at) - new Date(r.created_at)) / 36e5;
-          if (hrs < 1) buckets['< 1hr'] += 1;
-          else if (hrs < 4) buckets['1-4 hrs'] += 1;
-          else if (hrs < 24) buckets['4-24 hrs'] += 1;
-          else if (hrs < 72) buckets['1-3 days'] += 1;
-          else buckets['>3 days'] += 1;
+          const businessHrs = calculateBusinessHours(r.created_at, r.resolved_at);
+          if (businessHrs < 1) buckets['< 1 hr'] += 1;
+          else if (businessHrs < 4) buckets['1-4 hrs'] += 1;
+          else if (businessHrs < 8) buckets['4-8 hrs'] += 1;
+          else if (businessHrs < 16) buckets['1-2 days'] += 1; // 16 hours = 2 business days
+          else buckets['> 2 days'] += 1;
         });
         setResolutionTimeData(Object.entries(buckets).map(([name, value]) => ({ name, value })));
 
@@ -329,7 +372,7 @@ const TicketDashboard = () => {
     },
     {
       label: 'Avg. Resolution Time',
-      value: `${ticketStats.avgResolutionTime} hrs`,
+      value: `${ticketStats.avgResolutionTime} bus. hrs`,
       icon: AccessTimeIcon,
       gradient: 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)',
       shadow: 'rgba(245,158,11,0.3)'
@@ -594,7 +637,7 @@ const TicketDashboard = () => {
 
             {/* Resolution Time Distribution */}
             <Grid item xs={12} md={6} lg={6}>
-              <ChartCard title="Resolution Time Distribution">
+              <ChartCard title="Resolution Time Distribution (Business Hours)">
                 {resolutionTimeData.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={resolutionTimeData} margin={{ bottom: 40 }}>
