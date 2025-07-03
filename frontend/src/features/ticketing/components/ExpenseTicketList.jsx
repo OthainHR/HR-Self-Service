@@ -49,7 +49,7 @@ const getStatusIcon = (status) => {
 };
 
 // Add approval workflow logic
-const getApprovalWorkflow = (currentStatus, userEmail) => {
+const getApprovalWorkflow = (currentStatus, userEmail, expenseAmount) => {
   const workflows = {
     'WAITING FOR APPROVAL 1': {
       approver: 'accounts@othainsoft.com',
@@ -61,7 +61,7 @@ const getApprovalWorkflow = (currentStatus, userEmail) => {
     },
     'WAITING FOR APPROVAL 2': {
       approver: 'praveen.omprakash@othainsoft.com',
-      nextStatus: 'WAITING FOR APPROVAL 3'
+      nextStatus: 'WAITING FOR APPROVAL 3' // default
     },
     'WAITING FOR APPROVAL 3': {
       approver: 'ps@jerseytechpartners.com',
@@ -72,13 +72,19 @@ const getApprovalWorkflow = (currentStatus, userEmail) => {
   const workflow = workflows[currentStatus];
   if (!workflow) return { canApprove: false, canReject: false, nextStatus: null };
 
+  // Skip the final approval if amount ≤ 2000
+  let nextStatus = workflow.nextStatus;
+  if (currentStatus === 'WAITING FOR APPROVAL 2' && parseFloat(expenseAmount || 0) <= 2000) {
+    nextStatus = 'APPROVED';
+  }
+
   const canApprove = workflow.approver === userEmail;
   const canReject = workflow.approver === userEmail;
 
   return {
     canApprove,
     canReject,
-    nextStatus: workflow.nextStatus
+    nextStatus
   };
 };
 
@@ -1170,7 +1176,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               {(() => {
                                 const userEmail = user?.email?.toLowerCase();
-                                const workflow = getApprovalWorkflow(ticket.status, userEmail);
+                                const workflow = getApprovalWorkflow(ticket.status, userEmail, ticket.expense_amount);
                                 
                                 return (
                                       <div style={{
