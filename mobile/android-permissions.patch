@@ -1,0 +1,11 @@
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@
+ <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+ <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
++<!-- Added for background geolocation auto drop-off feature -->
++<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
++<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+@@
+     <!-- capacitor-background-geolocation license placeholder -->
++    <meta-data android:name="com.transistorsoft.locationmanager.license" android:value="${BG_GEO_LICENSE_KEY}" />

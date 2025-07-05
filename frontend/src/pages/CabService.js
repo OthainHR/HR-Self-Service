@@ -64,6 +64,7 @@ import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { initTracking } from '../lib/geofence';
 
 const CabService = () => {
   const { user } = useAuth();
@@ -155,6 +156,19 @@ const CabService = () => {
     drop_off_location: '',
     pickup_time: '', 
   });
+
+  // ADD STATE & HANDLER (place near other React state declarations)
+  const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(false);
+  const handleEnableAutoDropoff = async () => {
+    try {
+      await initTracking();
+      setAutoDropoffEnabled(true);
+      setSnackbarWithLogging({ open: true, message: 'Auto drop-off enabled!', severity: 'success' });
+    } catch (err) {
+      console.error('Failed to enable auto drop-off', err);
+      setSnackbarWithLogging({ open: true, message: 'Failed to enable auto drop-off', severity: 'error' });
+    }
+  };
 
   const setSnackbarWithLogging = React.useCallback((newState) => {
     // console.log('[CabService - setSnackbarWithLogging] Called with:', newState); // Optional: keep for debugging
@@ -1208,6 +1222,17 @@ const CabService = () => {
             </Typography>
           </Box>
         </motion.div>
+
+        {/* INSERT BUTTON AFTER HEADER SECTION */}
+        <Box sx={{ textAlign: 'center', mt: 2, mb: 3 }}>
+          {!autoDropoffEnabled ? (
+            <Button variant="contained" color="success" onClick={handleEnableAutoDropoff}>
+              Enable Auto Drop-off
+            </Button>
+          ) : (
+            <Chip icon={<CheckCircleIcon />} label="Auto Drop-off Enabled" color="success" />
+          )}
+        </Box>
 
         {/* Eligibility Notification Alert */}
         {!loadingWhitelistStatus && !isUserWhitelisted && !isHrAdmin && (
