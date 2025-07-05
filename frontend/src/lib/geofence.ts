@@ -4,6 +4,12 @@
 import BackgroundGeolocation from '@transistorsoft/capacitor-background-geolocation';
 
 /**
+ * Hard-coded coordinates for demo.
+ * In production pull these from Supabase or an API table.
+ */
+const DROP_OFF_COORD = { lat: 17.458968, lng: 78.372215 }; // office gate
+
+/**
  * Initialise BackgroundGeolocation tracking & permissions.
  * – Requests the required runtime permissions (ALWAYS location).
  * – Configures sensible defaults for geofencing / tracking.
@@ -37,6 +43,25 @@ export async function initTracking(): Promise<void> {
     if (!state.enabled) {
       await BackgroundGeolocation.start();
     }
+
+    // Register a native geofence so the OS wakes us exactly at the gate radius.
+    await BackgroundGeolocation.addGeofence({
+      identifier: 'drop-off',
+      radius: 50, // metres
+      latitude: DROP_OFF_COORD.lat,
+      longitude: DROP_OFF_COORD.lng,
+      notifyOnEntry: true,
+      notifyOnExit: false,
+    });
+
+    // One-time geofence callback → bridge to the React layer
+    BackgroundGeolocation.onGeofence((event) => {
+      if (event.identifier === 'drop-off' && event.action === 'ENTER') {
+        window.dispatchEvent(new CustomEvent('ReachedDropoff'));
+      }
+      // BackgroundGeolocation.finish(); // iOS finish not required for geofence event in Capacitor
+    });
+
   } catch (err) {
     console.error('[geofence] Failed to init tracking', err);
     throw err; // propagate so UI can react

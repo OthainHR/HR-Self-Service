@@ -158,11 +158,12 @@ const CabService = () => {
   });
 
   // ADD STATE & HANDLER (place near other React state declarations)
-  const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(false);
+  const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(() => localStorage.getItem('autoDropoff') === 'true');
   const handleEnableAutoDropoff = async () => {
     try {
       await initTracking();
       setAutoDropoffEnabled(true);
+      localStorage.setItem('autoDropoff','true');
       setSnackbarWithLogging({ open: true, message: 'Auto drop-off enabled!', severity: 'success' });
     } catch (err) {
       console.error('Failed to enable auto drop-off', err);
@@ -1160,6 +1161,28 @@ const CabService = () => {
       setLoading(false);
     }
   };
+
+  const bookingsRef = useRef([]);
+  useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
+
+  useEffect(() => {
+    async function ensureTracking() {
+      if (autoDropoffEnabled) {
+        try { await initTracking(); } catch(e) { console.error(e); }
+      }
+    }
+    ensureTracking();
+
+    function onReachedDropoff() {
+      const today = new Date().toISOString().split('T')[0];
+      const todays = bookingsRef.current.filter(b => b.booking_date === today && !b.dropped_off);
+      if (todays.length) {
+        handleDroppedOffUpdate(todays[0].id, true);
+      }
+    }
+    window.addEventListener('ReachedDropoff', onReachedDropoff);
+    return () => window.removeEventListener('ReachedDropoff', onReachedDropoff);
+  }, [autoDropoffEnabled]);
 
   return (
     <Box
