@@ -64,7 +64,7 @@ import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { initTracking } from '../lib/geofence';
+// import { initTracking } from '../lib/geofence'; // Future feature
 
 const CabService = () => {
   const { user } = useAuth();
@@ -157,19 +157,8 @@ const CabService = () => {
     pickup_time: '', 
   });
 
-  // ADD STATE & HANDLER (place near other React state declarations)
+  // Auto drop-off feature (Capacitor background geofence) – coming soon
   const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(() => localStorage.getItem('autoDropoff') === 'true');
-  const handleEnableAutoDropoff = async () => {
-    try {
-      await initTracking();
-      setAutoDropoffEnabled(true);
-      localStorage.setItem('autoDropoff','true');
-      setSnackbarWithLogging({ open: true, message: 'Auto drop-off enabled!', severity: 'success' });
-    } catch (err) {
-      console.error('Failed to enable auto drop-off', err);
-      setSnackbarWithLogging({ open: true, message: 'Failed to enable auto drop-off', severity: 'error' });
-    }
-  };
 
   const setSnackbarWithLogging = React.useCallback((newState) => {
     // console.log('[CabService - setSnackbarWithLogging] Called with:', newState); // Optional: keep for debugging
@@ -1162,27 +1151,28 @@ const CabService = () => {
     }
   };
 
-  const bookingsRef = useRef([]);
-  useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
+  // Bookings ref for future automatic updates
+  // const bookingsRef = useRef([]);
+  // useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
 
-  useEffect(() => {
-    async function ensureTracking() {
-      if (autoDropoffEnabled) {
-        try { await initTracking(); } catch(e) { console.error(e); }
-      }
-    }
-    ensureTracking();
+  // useEffect(() => {
+  //   async function ensureTracking() {
+  //     if (autoDropoffEnabled) {
+  //       try { await initTracking(); } catch(e) { console.error(e); }
+  //     }
+  //   }
+  //   ensureTracking();
 
-    function onReachedDropoff() {
-      const today = new Date().toISOString().split('T')[0];
-      const todays = bookingsRef.current.filter(b => b.booking_date === today && !b.dropped_off);
-      if (todays.length) {
-        handleDroppedOffUpdate(todays[0].id, true);
-      }
-    }
-    window.addEventListener('ReachedDropoff', onReachedDropoff);
-    return () => window.removeEventListener('ReachedDropoff', onReachedDropoff);
-  }, [autoDropoffEnabled]);
+  //   function onReachedDropoff() {
+  //     const today = new Date().toISOString().split('T')[0];
+  //     const todays = bookingsRef.current.filter(b => b.booking_date === today && !b.dropped_off);
+  //     if (todays.length) {
+  //       handleDroppedOffUpdate(todays[0].id, true);
+  //     }
+  //   }
+  //   window.addEventListener('ReachedDropoff', onReachedDropoff);
+  //   return () => window.removeEventListener('ReachedDropoff', onReachedDropoff);
+  // }, [autoDropoffEnabled]);
 
   return (
     <Box
@@ -1246,15 +1236,9 @@ const CabService = () => {
           </Box>
         </motion.div>
 
-        {/* INSERT BUTTON AFTER HEADER SECTION */}
+        {/* Future feature placeholder */}
         <Box sx={{ textAlign: 'center', mt: 2, mb: 3 }}>
-          {!autoDropoffEnabled ? (
-            <Button variant="contained" color="success" onClick={handleEnableAutoDropoff}>
-              Enable Auto Drop-off
-            </Button>
-          ) : (
-            <Chip icon={<CheckCircleIcon />} label="Auto Drop-off Enabled" color="success" />
-          )}
+          <Chip icon={<ScheduleIcon />} label="Hands-free Auto Drop-off coming soon" variant="outlined" />
         </Box>
 
         {/* Eligibility Notification Alert */}
