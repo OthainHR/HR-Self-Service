@@ -88,8 +88,10 @@ serve(async (req)=>{
       });
     }
     const isComm = !!raw.ticket_id && !!raw.message;
-    const ticket = isComm ? (await supabase.from('tickets').select('*').eq('id', raw.ticket_id).single()).data : raw;
-    if (!ticket) throw new Error(`Could not find ticket with ID: ${isComm ? raw.ticket_id : raw.id}`);
+    // Always query v_ticket_board to get complete ticket data including expense fields
+    const ticketId = isComm ? raw.ticket_id : raw.id;
+    const { data: ticket } = await supabase.from('v_ticket_board').select('*').eq('id', ticketId).single();
+    if (!ticket) throw new Error(`Could not find ticket with ID: ${ticketId}`);
     // — category / subcategory names —
     const categoryName = (ticket.category_id ? (await supabase.from('categories').select('name').eq('id', ticket.category_id).single()).data?.name : null) ?? null;
     const subcategoryName = (ticket.sub_category_id ? (await supabase.from('sub_categories').select('name').eq('id', ticket.sub_category_id).single()).data?.name : null) ?? null;
@@ -152,23 +154,28 @@ serve(async (req)=>{
       default:
         fromEmail = Deno.env.get('DEFAULT_SENDER_EMAIL');
     }
-    const shortId = `${prefix}${ticket.id.slice(0, 8)}`;
+    // Generate proper ticket number based on category and creation order
+    const { count } = await supabase
+      .from('tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('category_id', ticket.category_id)
+      .lte('created_at', ticket.created_at);
+    
+    const sequenceNumber = String(count || 1).padStart(3, '0');
+    const shortId = `${prefix}${sequenceNumber}`;
     const link = `${Deno.env.get('APP_BASE_URL')}/ticket/${ticket.id}`;
     const ccRecipients = isAiCategory ? [
       AI_HANDLER_EMAIL
     ] : [];
-
     // Fetch additional email members for this ticket (excluding expense tickets)
     let additionalEmails = [];
     if (!isExpenseCategory) {
       try {
-        const { data: additionalEmailsData, error: additionalEmailsError } = await supabase
-          .rpc('get_ticket_additional_emails', {
-            p_ticket_id: ticket.id
-          });
-        
+        const { data: additionalEmailsData, error: additionalEmailsError } = await supabase.rpc('get_ticket_additional_emails', {
+          p_ticket_id: ticket.id
+        });
         if (!additionalEmailsError && additionalEmailsData) {
-          additionalEmails = additionalEmailsData.map(ae => ae.email);
+          additionalEmails = additionalEmailsData.map((ae)=>ae.email);
         }
       } catch (err) {
         console.log('Failed to fetch additional emails for ticket:', err);
@@ -186,19 +193,19 @@ serve(async (req)=>{
           subject = `[Admin Reply #${shortId}] ${ticket.title}`;
           if (requesterEmail) recipients.add(requesterEmail);
           // Add additional email members for admin replies
-          additionalEmails.forEach(email => recipients.add(email));
+          additionalEmails.forEach((email)=>recipients.add(email));
           break;
         case 'customer_reply':
           subject = `[Customer Reply #${shortId}] ${ticket.title}`;
           if (assigneeEmail) recipients.add(assigneeEmail);
           // Add additional email members for customer replies
-          additionalEmails.forEach(email => recipients.add(email));
+          additionalEmails.forEach((email)=>recipients.add(email));
           break;
         case 'internal_note':
           subject = `[Internal Note #${shortId}] ${ticket.title}`;
           if (assigneeEmail && commAuthor !== assigneeEmail) recipients.add(assigneeEmail);
           // Add additional email members for internal notes
-          additionalEmails.forEach(email => recipients.add(email));
+          additionalEmails.forEach((email)=>recipients.add(email));
           break;
         default:
           console.log(`Unhandled comment type "${raw.type}", no email sent.`);
@@ -227,7 +234,7 @@ serve(async (req)=>{
       if (requesterEmail) recipients.add(requesterEmail);
       if (assigneeEmail) recipients.add(assigneeEmail);
       // Add additional email members for new tickets
-      additionalEmails.forEach(email => recipients.add(email));
+      additionalEmails.forEach((email)=>recipients.add(email));
       const displayStatus = isExpenseCategory ? ticket.expense_status ?? ticket.status : ticket.status;
       const subject = `[New Ticket #${shortId}] ${ticket.title}`;
       const htmlBody = `
@@ -237,6 +244,8 @@ serve(async (req)=>{
         <p><strong>Title:</strong> ${ticket.title}</p>
         <p><strong>Status:</strong> ${displayStatus}</p>
         <p><strong>Priority:</strong> ${ticket.priority}</p>
+        ${isExpenseCategory && ticket.expense_amount ? `<p><strong>Amount:</strong> ${ticket.expense_amount} INR</p>` : ''}
+        ${isExpenseCategory && ticket.payment_type ? `<p><strong>Payment Type:</strong> ${ticket.payment_type}</p>` : ''}
         <p><strong>Description:</strong><br/><pre>${ticket.description ?? 'N/A'}</pre></p>
         ${ticket.client ? `<p><strong>Client:</strong> ${ticket.client}</p>` : ''}
         ${ticket.due_at ? `<p><strong>Due At:</strong> ${new Date(ticket.due_at).toLocaleString()}</p>` : ''}
@@ -260,7 +269,7 @@ serve(async (req)=>{
         if (requesterEmail) recipients.add(requesterEmail);
         if (assigneeEmail) recipients.add(assigneeEmail);
         // Add additional email members for ticket updates
-        additionalEmails.forEach(email => recipients.add(email));
+        additionalEmails.forEach((email)=>recipients.add(email));
         const subject = `[Ticket Update #${shortId}] ${ticket.title}`;
         const htmlBody = `
           <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>

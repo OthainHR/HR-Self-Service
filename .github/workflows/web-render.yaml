@@ -1,0 +1,15 @@
+# .github/workflows/web-render.yml
+name: Deploy Web to Render
+on:
+  push:
+    paths: [ "frontend/**", "backend/**" ]
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd frontend && npm ci && npm run build
+      - run: cd backend && pip install -r requirements.txt
+      - run: curl "$RENDER_DEPLOY_HOOK"    # Render’s Deploy Hook URL (secret)
