@@ -4,8 +4,8 @@
       "appId": "ba2f3740",
       "dependencyInstallCommand": "npm ci && npm ci --prefix frontend",
       "webBuildCommand": "CI=false npm run build --prefix frontend",
-      "iosPath": "mobile/ios/App",
-      "androidPath": "mobile/android/App"
+      "iosPath": "ios/App",
+      "androidPath": "android/App"
     }
   ],
   "scripts": {
