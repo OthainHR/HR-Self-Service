@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "prebuild": ".appflow/scripts/prebuild.sh"
+  }
+} 
