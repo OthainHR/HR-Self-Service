@@ -497,8 +497,6 @@ const NavBar = () => {
         border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
         borderTop: 'none',
         // Ensure content is not hidden under the notch / Dynamic Island
-        paddingLeft: 'env(safe-area-inset-left)',
-        paddingRight: 'env(safe-area-inset-right)',
         zIndex: 1300,
         position: 'relative',
         overflow: 'hidden',
@@ -1292,11 +1290,12 @@ const NavBar = () => {
       </Toolbar>
       
       {/* Mobile drawer */}
-      <Drawer
+      <Drawer 
         anchor="left"
         open={drawerOpen}
         onClose={toggleDrawer(false)}
         sx={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 100px)',
           '& .MuiDrawer-paper': {
             background: isDarkMode 
               ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'

@@ -9,3 +9,4 @@
 @@
      <!-- capacitor-background-geolocation license placeholder -->
 +    <meta-data android:name="com.transistorsoft.locationmanager.license" android:value="${BG_GEO_LICENSE_KEY}" />
+ 

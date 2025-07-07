@@ -235,6 +235,7 @@ function Chat() {
   
   const renderChatHistoryPanel = () => (
     <Paper elevation={0} sx={{
+        paddingTop: 'calc(env(safe-area-inset-top) + 100px)',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
