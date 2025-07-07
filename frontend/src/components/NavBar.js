@@ -496,6 +496,9 @@ const NavBar = () => {
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
         border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
         borderTop: 'none',
+        // Ensure the bar sits below the iOS notch / dynamic island
+        top: 'env(safe-area-inset-top)',
+        paddingTop: 'env(safe-area-inset-top)',
         zIndex: 1300,
         position: 'relative',
         overflow: 'hidden',
