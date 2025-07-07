@@ -4,6 +4,12 @@
     "react-confetti": "^6.4.0",
     "react-markdown": "^10.1.0"
   },
+  "devDependencies": {
+    "@capacitor/android": "^7.4.1",
+    "@capacitor/cli": "^7.4.1",
+    "@capacitor/core": "^7.4.1",
+    "@capacitor/ios": "^7.4.1"
+  },
   "scripts": {
     "build": "npm run build --prefix frontend"
   }
