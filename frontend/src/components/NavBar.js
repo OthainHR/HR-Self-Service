@@ -496,8 +496,7 @@ const NavBar = () => {
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
         border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
         borderTop: 'none',
-        // Ensure the bar sits below the iOS notch / dynamic island
-        top: 'env(safe-area-inset-top)',
+        // Ensure content is not hidden under the notch / Dynamic Island
         paddingTop: 'env(safe-area-inset-top)',
         zIndex: 1300,
         position: 'relative',
@@ -517,7 +516,7 @@ const NavBar = () => {
         }
       }}
     >
-      <Toolbar>
+      <Toolbar sx={{ minHeight: 'calc(56px + env(safe-area-inset-top))' }}>
         {/* Mobile menu icon */}
         {isMobile && (
           <IconButton
