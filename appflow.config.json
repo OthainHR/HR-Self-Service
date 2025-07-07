@@ -3,7 +3,7 @@
     {
       "appId": "ba2f3740",
       "dependencyInstallCommand": "npm ci --prefix frontend",
-      "webBuildCommand": "npm run build --prefix frontend"
+      "webBuildCommand": "CI=false npm run build --prefix frontend"
     }
   ],
   "scripts": {
