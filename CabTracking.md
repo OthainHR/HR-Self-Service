@@ -1,6 +1,6 @@
 # Othain ESS — Mobile Wrapper & Geofencing Drop‑Off
 
-> **Goal:** Give employees a *hands‑free* way to confirm they’ve been dropped off at the office gate, while keeping the existing React + Python web stack on Render intact.
+> **Goal:** Give employees a *hands‑free* way to confirm they’ve been dropped off at their drop off locations, while keeping the existing React + Python web stack on Render intact.
 
 ---
 

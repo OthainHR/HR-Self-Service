@@ -58,7 +58,7 @@
 | **GOOGLE\_SERVICE\_ACCOUNT\_JSON** | *(optional)* JSON key to auto‑upload bundles |
 | **PLAY\_PACKAGE\_NAME**            | *(optional)* `com.othain.ess`                |
 
-Add any Firebase/Supabase keys the app needs.
+Add any Supabase keys the app needs.
 
 ---
 
