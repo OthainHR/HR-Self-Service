@@ -517,7 +517,7 @@ const NavBar = () => {
         }
       }}
     >
-      <Toolbar sx={{ minHeight: 'calc(56px + env(safe-area-inset-top))' }}>
+      <Toolbar>
         {/* Mobile menu icon */}
         {isMobile && (
           <IconButton
