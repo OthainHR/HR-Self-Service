@@ -497,7 +497,6 @@ const NavBar = () => {
         border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
         borderTop: 'none',
         // Ensure content is not hidden under the notch / Dynamic Island
-        paddingTop: 'env(safe-area-inset-top)',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
         zIndex: 1300,
