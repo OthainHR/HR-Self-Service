@@ -3,6 +3,9 @@
   "appName": "OthainESS",
   "webDir": "frontend/build",
   "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false
+    },
     "BackgroundGeolocation": {}
   }
 } 
