@@ -498,6 +498,8 @@ const NavBar = () => {
         borderTop: 'none',
         // Ensure content is not hidden under the notch / Dynamic Island
         paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
         zIndex: 1300,
         position: 'relative',
         overflow: 'hidden',
