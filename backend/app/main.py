@@ -11,8 +11,11 @@ app = FastAPI(
 
 # List of allowed origins
 origins = [
-    "http://localhost:3000",          # React dev server
-    "https://othain-hr-self-service.vercel.app",  # Production domain
+    "http://localhost:3000",
+    "http://10.0.2.2:3000",
+    "capacitor://localhost",
+    "ionic://localhost",
+    "https://othain-hr-self-service.vercel.app",
     "https://ess.othain.com"
 ]
 

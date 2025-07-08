@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from app.models.user import TokenData, User as UserModel
 from dotenv import load_dotenv
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 password bearer for JWT token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
 def verify_password(plain_password, hashed_password):
     """Verify a password against a hash."""
@@ -134,14 +134,22 @@ async def get_current_active_user(current_user = Depends(get_current_user)):
     # In a real application, you would check if the user is active
     return current_user
 
-async def get_current_supabase_user(token: str = Depends(oauth2_scheme)) -> dict:
+async def get_current_supabase_user(request: Request, token: Optional[str] = Depends(oauth2_scheme)) -> Optional[dict]:
     """Dependency to validate Supabase JWT and get user data."""
-    logger.debug(f"Attempting to validate Supabase token: {token[:15]}...{token[-15:]}")
+    
+    # For OPTIONS requests (pre-flight), we don't need to check for a token.
+    # The CORSMiddleware will handle the response.
+    if request.method == "OPTIONS":
+        return None
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials - Invalid or expired token.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not token:
+        raise credentials_exception
 
     if supabase_admin_client is None:
         logger.error("Supabase admin client not available for token validation.")
