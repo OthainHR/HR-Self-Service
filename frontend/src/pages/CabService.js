@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -64,7 +64,7 @@ import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-// import { initTracking } from '../lib/geofence'; // Future feature
+import { Geolocation } from '@capacitor/geolocation'; // Geolocation for auto drop-off
 
 const CabService = () => {
   const { user } = useAuth();
@@ -136,6 +136,10 @@ const CabService = () => {
   const [loadingMorningReminder, setLoadingMorningReminder] = useState(false);
   const [loadingEveningReminder, setLoadingEveningReminder] = useState(false);
 
+    // Use ref to track permission state to prevent race conditions
+  const permissionStateRef = useRef('unknown');
+  const watchIdRef = useRef(null);
+
   // Global cab service visibility (controlled by HR Admin)
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
@@ -173,21 +177,8 @@ const CabService = () => {
   // Dropdown options
   const pickupTimes = ['9pm', '11:30pm', '2:30am'];
   const departments = ['GBT', 'Presidio', 'Othain'];
-  const pickupLocations = ['Building # 9', 'Building # 16']; // Reverted to include #
-  const dropoffLocations = [
-    'Chilakalaguda', 'Pragathi Nagar', 'JNTU', 'KPHB', 'Gurram Gudda',
-    'Badangpet', 'Madhapur', 'Siddique Nagar', 'Shaikpet', 'Kataydhan',
-    'Amberpet', 'Alwal', 'Bahadurpura', 'Towlichoki', 'BHEL', 'Ligampally',
-    'Uppal Stadium', 'Medipally', 'Ameerpet', 'Chengicherla', 'Moulali',
-    'Safil Guda', 'Qutubullapur', 'Balnagar', 'Kompally', 'Shapur', 'Uppal',
-    'Boduppal', 'Sangareddy X Road', 'Dilsukhnagar', 'Krishnanagar',
-    'Balkmpet', 'Kondapur', 'Siddiq Nagar', 'Bandlaguda', 'Financial District',
-    'Borabanda', 'Tirumalgiri', 'Hafezpet', 'Moula Ali', 'Safilguda',
-    'New Bhoiguda', 'Sitafalmandi', 'Kothapet', 'Nagol', 'BN Reddy Colony',
-    'Hastinapur', 'Rajendra Nagar', 'Atthapur', 'Lingampalli', 'Sangareddy',
-    'Vasanth Nagar', 'Gajularamaram', 'Parvathapur', 'Ram Nagar',
-    'Himayath Nagar', 'Rampally', 'Aparna MariGold Gundlapochalli', 'Greenwood Residency, Koukur'
-  ];
+  // const pickupLocations = ['Building # 9', 'Building # 16']; // deprecated, replaced by dynamic list
+  // const dropoffLocations = [ /* many locations */ ]; // deprecated, now dynamic
 
   // Check if user is whitelisted or HR admin
   useEffect(() => {
@@ -285,16 +276,36 @@ const CabService = () => {
   const loadBookings = async () => {
     setLoadingBookings(true);
     try {
-      const { data, error } = await supabase
-        .from('cab_bookings')
-        .select('*, needs_escort, dropped_off')
+      // Attempt to fetch from the new consolidated view first
+      let { data, error } = await supabase
+        .from('v_booking_with_coords')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If the view errors out (e.g. permissions) OR returns zero rows while we know a fresh booking was just inserted,
+      // fall back to the raw table so users still see their bookings.
+      if (error || !data || data.length === 0) {
+        if (error) {
+          console.warn('[CabService] v_booking_with_coords error, falling back to cab_bookings:', error);
+        }
+        const fallback = await supabase
+        .from('cab_bookings')
+          .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        if (!fallback.error) {
+          data = fallback.data;
+        } else {
+          // Preserve original error if both fail – will be thrown below
+          error = error || fallback.error;
+        }
+      }
 
       if (error) throw error;
       setBookings(data || []);
       
-      // Set last booking for quick rebook
+      // Update last booking reference
       if (data && data.length > 0) {
         setLastBooking(data[0]);
       }
@@ -314,6 +325,7 @@ const CabService = () => {
   const loadAdminReport = async () => {
     if (!isAdmin) return;
     setLoadingBookings(true);
+
     // Ensure user is authenticated before querying report view
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
@@ -321,15 +333,32 @@ const CabService = () => {
       setLoadingBookings(false);
       return;
     }
+
     try {
-      const { data, error } = await supabase
-        .from('v_cab_bookings_report')
-        .select('*, needs_escort, dropped_off')
+      // Primary – view with joined coordinates
+      let { data, error } = await supabase
+        .from('v_booking_with_coords')
+        .select('*')
         .order('created_at', { ascending: false });
+
+      // Fallback to legacy view/table on error/empty
+      if (error || !data || data.length === 0) {
+        if (error) {
+          console.warn('[CabService] v_booking_with_coords error (admin), falling back to v_cab_bookings_report:', error);
+        }
+        const fallback = await supabase
+        .from('v_cab_bookings_report')
+          .select('*')
+        .order('created_at', { ascending: false });
+        if (!fallback.error) {
+          data = fallback.data;
+        } else {
+          error = error || fallback.error;
+        }
+      }
 
       if (error) throw error;
       setAllBookings(data || []);
-      // Filter bookings for selected date
       filterBookings(data || [], selectedDate, selectedPickupTime, selectedPickupLocation);
     } catch (error) {
       console.error('Error loading admin report:', error);
@@ -424,9 +453,11 @@ const CabService = () => {
         department: formData.department,
         pickup_location: formData.pickupLocation,
         dropoff_location: formData.dropoffLocation,
-        booking_date: new Date().toISOString().split('T')[0], // Today's date
-        needs_escort: false, // Explicitly set default for new bookings
-        dropped_off: false, // Explicitly set default for new bookings
+        pickup_location_id: locationIdByName[formData.pickupLocation],
+        dropoff_location_id: locationIdByName[formData.dropoffLocation],
+        booking_date: new Date().toISOString().split('T')[0],
+        needs_escort: false,
+        dropped_off: false,
       };
 
       const { error: insertError } = await supabase // Renamed to insertError
@@ -804,6 +835,7 @@ const CabService = () => {
           pick_up_location: newWhitelistedUserDetails.pick_up_location || null,
           drop_off_location: newWhitelistedUserDetails.drop_off_location || null,
           pickup_time: newWhitelistedUserDetails.pickup_time || null, // Add pickup_time
+          drop_off_location_id: locationIdByName[newWhitelistedUserDetails.drop_off_location] || null,
         }); 
       if (error) throw error;
       setSnackbarWithLogging({ open: true, message: `${emailToAdd} added to whitelist.`, severity: 'success' });
@@ -1152,27 +1184,205 @@ const CabService = () => {
   };
 
   // Bookings ref for future automatic updates
-  // const bookingsRef = useRef([]);
-  // useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
+  const bookingsRef = useRef([]);
+  useEffect(() => { bookingsRef.current = bookings; }, [bookings]);
 
-  // useEffect(() => {
-  //   async function ensureTracking() {
-  //     if (autoDropoffEnabled) {
-  //       try { await initTracking(); } catch(e) { console.error(e); }
-  //     }
-  //   }
-  //   ensureTracking();
+  // Geolocation watcher – auto marks drop-off when inside configured radius
+  useEffect(() => {
+    if (!autoDropoffEnabled) {
+        // Clean up existing watcher if auto-dropoff is disabled
+        if (watchIdRef.current) {
+            Geolocation.clearWatch({ id: watchIdRef.current });
+            watchIdRef.current = null;
+        }
+        return;
+    }
 
-  //   function onReachedDropoff() {
-  //     const today = new Date().toISOString().split('T')[0];
-  //     const todays = bookingsRef.current.filter(b => b.booking_date === today && !b.dropped_off);
-  //     if (todays.length) {
-  //       handleDroppedOffUpdate(todays[0].id, true);
-  //     }
-  //   }
-  //   window.addEventListener('ReachedDropoff', onReachedDropoff);
-  //   return () => window.removeEventListener('ReachedDropoff', onReachedDropoff);
-  // }, [autoDropoffEnabled]);
+    // If we already have a watcher running, don't start another
+    if (watchIdRef.current) {
+        return;
+    }
+
+    const startLocationWatcher = async () => {
+        try {
+            console.log('[CabService] Starting location watcher...');
+            watchIdRef.current = await Geolocation.watchPosition(
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 3000
+                },
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log('[CabService] Current location:', latitude, longitude);
+                    
+                    // Check if user is within drop-off radius
+                    const currentBookings = bookingsRef.current;
+                    console.log('[CabService] Total bookings in ref:', currentBookings.length);
+                    
+                    // Debug: Show all bookings and their dates
+                    currentBookings.forEach((booking, index) => {
+                        console.log(`[CabService] All Booking ${index + 1}:`, {
+                            id: booking.id,
+                            booking_date: booking.booking_date,
+                            booking_date_type: typeof booking.booking_date,
+                            dropped_off: booking.dropped_off
+                        });
+                    });
+                    
+                    const today = new Date().toDateString();
+                    console.log('[CabService] Today date string:', today);
+                    
+                    const todayBookings = currentBookings.filter(booking => {
+                        const bookingDate = new Date(booking.booking_date).toDateString();
+                        console.log(`[CabService] Comparing booking date "${bookingDate}" with today "${today}"`);
+                        const isToday = bookingDate === today;
+                        const isNotDroppedOff = !booking.dropped_off;
+                        console.log(`[CabService] Booking ${booking.id}: isToday=${isToday}, isNotDroppedOff=${isNotDroppedOff}`);
+                        return isToday && isNotDroppedOff;
+                    });
+                    
+                    console.log('[CabService] Today\'s active bookings:', todayBookings.length);
+                    
+                    if (todayBookings.length === 0) {
+                        console.log('[CabService] No active bookings for today');
+                        return;
+                    }
+
+                    todayBookings.forEach((booking, index) => {
+                        console.log(`[CabService] Booking ${index + 1}:`, {
+                            id: booking.id,
+                            dropoff_location: booking.dropoff_location,
+                            dropoff_lat: booking.dropoff_lat,
+                            dropoff_lng: booking.dropoff_lng,
+                            dropoff_radius: booking.dropoff_radius,
+                            booking_date: booking.booking_date,
+                            dropped_off: booking.dropped_off
+                        });
+                        
+                        if (booking.dropoff_lat && booking.dropoff_lng && booking.dropoff_radius) {
+                            const distance = haversineDist(
+                                latitude, longitude,
+                                booking.dropoff_lat, booking.dropoff_lng
+                            );
+                            
+                            console.log(`[CabService] Distance to ${booking.dropoff_location}: ${distance.toFixed(1)}m (radius: ${booking.dropoff_radius}m)`);
+                            
+                            if (distance <= booking.dropoff_radius) {
+                                console.log('[CabService] Within drop-off radius! Marking as dropped off...');
+                                handleDroppedOffUpdate(booking.id, true);
+                            }
+                        } else {
+                            console.warn(`[CabService] Missing geo data for booking ${booking.id}:`, {
+                                dropoff_lat: booking.dropoff_lat,
+                                dropoff_lng: booking.dropoff_lng,
+                                dropoff_radius: booking.dropoff_radius
+                            });
+                        }
+                    });
+                },
+                (error) => {
+                    console.error('[CabService] Location watch error:', error);
+                }
+            );
+        } catch (error) {
+            console.error('[CabService] Failed to start location watcher:', error);
+        }
+    };
+
+    // Initialize geolocation after function definition
+    (async () => {
+        try {
+            // Check if we already have permission
+            if (permissionStateRef.current === 'granted') {
+                startLocationWatcher();
+                return;
+            }
+
+            // Only request permission if we haven't already
+            if (permissionStateRef.current === 'unknown') {
+                console.log('[CabService] Checking location permission...');
+                const perm = await Geolocation.checkPermissions();
+                permissionStateRef.current = perm.location;
+                
+                if (perm.location === 'prompt') {
+                    console.log('[CabService] Requesting location permission...');
+                    const result = await Geolocation.requestPermissions();
+                    permissionStateRef.current = result.location;
+                    console.log('[CabService] Permission result:', result.location);
+                }
+            }
+
+            if (permissionStateRef.current === 'granted') {
+                startLocationWatcher();
+            } else {
+                console.warn('[CabService] Location permission not granted:', permissionStateRef.current);
+            }
+        } catch (error) {
+            console.error('[CabService] Geolocation init error', error);
+        }
+    })();
+
+    // Cleanup function
+    return () => {
+        if (watchIdRef.current) {
+            Geolocation.clearWatch({ id: watchIdRef.current });
+            watchIdRef.current = null;
+        }
+    };
+}, [autoDropoffEnabled]); // Only depend on autoDropoffEnabled
+
+  const handleAutoDropoffToggle = (event) => {
+    const isEnabled = event.target.checked;
+    localStorage.setItem('autoDropoff', isEnabled);
+    setAutoDropoffEnabled(isEnabled);
+  };
+
+  const [locations, setLocations] = useState({ pickup: [], dropoff: [] });
+
+  // Derived arrays from locations
+  const pickupLocations = useMemo(() => locations.pickup.map(l => l.name), [locations]);
+  const dropoffLocations = useMemo(() => locations.dropoff.map(l => l.name), [locations]);
+
+  const locationIdByName = useMemo(() => {
+    const map = {};
+    [...locations.pickup, ...locations.dropoff].forEach(l => {
+      map[l.name] = l.id;
+    });
+    return map;
+  }, [locations]);
+
+  useEffect(() => {
+    // Fetch master location list once on mount
+    (async () => {
+      const { data, error } = await supabase
+        .from('cab_locations')
+        .select('id, role, name, radius_m, lat, lng')
+        .order('name');
+      if (!error && data) {
+        setLocations({
+          pickup: data.filter(l => l.role === 'pickup'),
+          dropoff: data.filter(l => l.role === 'dropoff'),
+        });
+      } else {
+        console.error('Failed to load location master', error);
+      }
+    })();
+  }, []);
+
+  // Helper to calculate distance (Haversine) between two lat/lng points – returns metres
+  const haversineDist = (lat1, lon1, lat2, lon2) => {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const R = 6371000; // metres
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
 
   return (
     <Box
@@ -1238,7 +1448,16 @@ const CabService = () => {
 
         {/* Future feature placeholder */}
         <Box sx={{ textAlign: 'center', mt: 2, mb: 3 }}>
-          <Chip icon={<ScheduleIcon />} label="Hands-free Auto Drop-off coming soon" variant="outlined" />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={autoDropoffEnabled}
+                onChange={handleAutoDropoffToggle}
+                color="primary"
+              />
+            }
+            label="Enable Hands-free Auto Drop-off"
+          />
         </Box>
 
         {/* Eligibility Notification Alert */}
