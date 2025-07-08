@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import chat, auth, knowledge, user_management, feedback
 from app.core.config import settings
@@ -16,6 +16,7 @@ origins = [
     "http://10.0.2.2:3000",
     "capacitor://localhost",
     "ionic://localhost",
+    "https://localhost",
     "https://othain-hr-self-service.vercel.app",
     "https://ess.othain.com"
 ]

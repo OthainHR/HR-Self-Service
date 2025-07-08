@@ -455,69 +455,17 @@ const TicketDetailPage = () => {
   
 
 
-  if (isLoading) { 
-    
+  if (isLoading || isAuthLoading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '80vh',
-        background: isDarkMode 
-          ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
-          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        borderRadius: '20px',
-        margin: '2rem',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Background decoration */}
-        <Box sx={{
-          position: 'absolute',
-          top: '-50%',
-          right: '-20%',
-          width: '300px',
-          height: '300px',
-          background: isDarkMode 
-            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-            : 'linear-gradient(135deg, #ddd6fe 0%, #c7d2fe 100%)',
-          borderRadius: '50%',
-          opacity: 0.1,
-          filter: 'blur(40px)'
-        }} />
-        
-        <Box sx={{
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-          borderRadius: '50%',
-          width: '80px',
-          height: '80px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '1.5rem',
-          animation: 'pulse 2s infinite',
-          zIndex: 1
-        }}>
-          <CircularProgress sx={{ color: 'white' }} size={40} />
-        </Box>
-        
-        <Typography variant="h5" sx={{ 
-          fontWeight: 700, 
-          color: isDarkMode ? '#f1f5f9' : '#1e293b',
-          marginBottom: '0.5rem',
-          zIndex: 1
-        }}>
+      <div className="loading-container">
+        <CircularProgress />
+        <Typography variant="h6" style={{ marginTop: '20px' }}>
           Loading Ticket Details
         </Typography>
-        <Typography variant="body1" sx={{ 
-          color: isDarkMode ? '#94a3b8' : '#64748b',
-          textAlign: 'center',
-          zIndex: 1
-        }}>
+        <Typography variant="body1" color="textSecondary">
           Please wait while we fetch the ticket information...
         </Typography>
-      </Box>
+      </div>
     );
   }
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 // Import the Supabase client
 import { supabase } from './supabase'; // Assuming supabase.js exports the client
 
@@ -151,10 +152,14 @@ export const auth = {
 
   // Sign in with Microsoft (Azure AD)
   signInWithMicrosoft: async () => {
+    const isNative = Capacitor.isNativePlatform();
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        redirectTo: window.location.origin + '/chat', // Or your desired redirect path
+        redirectTo: isNative 
+          ? 'msauth.ess.othain.com://auth' 
+          : `${window.location.origin}/chat`,
       },
     });
     if (error) {
