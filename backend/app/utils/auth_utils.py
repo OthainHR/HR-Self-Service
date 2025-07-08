@@ -46,13 +46,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(request: Request, token: Optional[str] = Depends(oauth2_scheme)):
     """Get the current user from a JWT token."""
+    if request.method == "OPTIONS":
+        return None
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not token:
+        raise credentials_exception
     
     # Handle mock tokens with simple string format
     if token and token.startswith("MOCK_ADMIN_TOKEN_"):
@@ -136,12 +142,9 @@ async def get_current_active_user(current_user = Depends(get_current_user)):
 
 async def get_current_supabase_user(request: Request, token: Optional[str] = Depends(oauth2_scheme)) -> Optional[dict]:
     """Dependency to validate Supabase JWT and get user data."""
-    
-    # For OPTIONS requests (pre-flight), we don't need to check for a token.
-    # The CORSMiddleware will handle the response.
     if request.method == "OPTIONS":
         return None
-
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials - Invalid or expired token.",
