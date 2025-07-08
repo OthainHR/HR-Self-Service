@@ -1,7 +1,7 @@
 # This is the main FastAPI application module (main:app)
 # For WSGI/Gunicorn deployments, this should be imported as "main:app"
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -39,6 +39,11 @@ async def log_auth_headers(request: Request, call_next):
     # Continue processing the request
     response = await call_next(request)
     return response
+
+# Catch-all for OPTIONS requests to handle pre-flight
+@app.options("/{full_path:path}")
+async def _preflight_ok(full_path: str):
+    return Response(status_code=200)
 
 # Add a simple public test endpoint
 @app.get("/api/test")
