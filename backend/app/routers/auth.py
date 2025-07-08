@@ -49,6 +49,11 @@ async def register_user(
     db_user = auth_service.create_user(db, user)
     return db_user
 
+@router.post("/logout")
+async def logout():
+    """Endpoint for user logout."""
+    return {"message": "Logout successful"}
+
 @router.get("/me", response_model=dict)
 async def read_users_me(current_user = Depends(get_current_active_user)):
     """Get the current user."""

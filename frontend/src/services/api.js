@@ -170,43 +170,61 @@ export const auth = {
 // Chat API service
 export const chatApi = {
   getSessions: async () => {
-    
     try {
-      // Correct path: /chat/sessions
-      const response = await axiosInstance.get('/chat/sessions');
-      return response.data.sessions || []; // Ensure consistent return type
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("User not authenticated");
+
+      const response = await fetch(`${API_URL}/chat/sessions`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch sessions");
+      const data = await response.json();
+      return data.sessions || [];
     } catch (error) {
-      
-      // Don't clear auth state here, let the interceptor handle 401
-      return []; // Return empty array on error
+      console.error("Error getting sessions:", error);
+      return [];
     }
   },
 
   getSessionMessages: async (sessionId) => {
-    
     try {
-      // Correct path: /chat/sessions/{sessionId}/messages
-      const response = await axiosInstance.get(`/chat/sessions/${sessionId}/messages`);
-      // The backend returns {"messages": [...]}, which is what ChatWindow expects.
-      // Just return the whole data object.
-      return response.data || { messages: [] }; // Return the data or a default structure
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("User not authenticated");
+
+      const response = await fetch(`${API_URL}/chat/sessions/${sessionId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch messages");
+      return await response.json();
     } catch (error) {
-      
-      return { messages: [] }; // Return default structure on error
+      console.error("Error getting messages:", error);
+      return { messages: [] };
     }
   },
 
   createSession: async () => {
-    
     try {
-       // Correct path: /chat/sessions
-      const response = await axiosInstance.post('/chat/sessions');
-      return response.data; // The created session object
-    } catch (error) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("User not authenticated");
+
+      const response = await fetch(`${API_URL}/chat/sessions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       
-      // Optionally create a local session as fallback? Be careful with this.
-      // For now, just throw the error
-        throw error;
+      if (!response.ok) throw new Error("Failed to create session");
+      return await response.json();
+    } catch (error) {
+      console.error("Error creating session:", error);
+      throw error;
     }
   },
 
