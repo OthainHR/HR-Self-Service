@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import chat, auth, knowledge, user_management, feedback
 from app.core.config import settings
@@ -27,6 +28,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add a catch-all for OPTIONS requests to handle pre-flight.
+# This must be before any routes are included.
+@app.options("/{full_path:path}")
+async def _preflight_ok(full_path: str):
+    return Response(status_code=200)
 
 # Include routers
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
