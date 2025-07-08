@@ -1,7 +1,7 @@
 # This is the main FastAPI application module (main:app)
 # For WSGI/Gunicorn deployments, this should be imported as "main:app"
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -17,10 +17,11 @@ init_db()
 app = FastAPI(title="HR Chatbot API")
 
 # Get CORS origins from environment variable
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app,https://ess.othain.com").split(",")
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app,https://ess.othain.com,capacitor://localhost,ionic://localhost,http://10.0.2.2:3000")
+cors_origins = cors_origins_str.split(",")
 print(f"*** Allowed CORS Origins: {cors_origins} ***")
 
-# Configure CORS
+# 1. CORSMiddleware MUST be the first middleware added.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -29,7 +30,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add a debug middleware to log authentication headers
+# Optional: Add a catch-all for OPTIONS requests as a secondary safeguard.
+# This runs after CORSMiddleware but before specific routes.
+@app.options("/{full_path:path}")
+async def _preflight_ok(full_path: str):
+    return Response(status_code=200)
+
+# Optional: Add a debug middleware to log authentication headers.
+# This runs after the OPTIONS handler, so it won't log pre-flight requests.
 @app.middleware("http")
 async def log_auth_headers(request: Request, call_next):
     # Log the authentication header
@@ -40,10 +48,7 @@ async def log_auth_headers(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# Catch-all for OPTIONS requests to handle pre-flight
-@app.options("/{full_path:path}")
-async def _preflight_ok(full_path: str):
-    return Response(status_code=200)
+# All other middleware and routers are added AFTER CORSMiddleware.
 
 # Add a simple public test endpoint
 @app.get("/api/test")
