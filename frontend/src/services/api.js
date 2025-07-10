@@ -229,7 +229,7 @@ export const chatApi = {
       return await response.json();
     } catch (error) {
       console.error("Error creating session:", error);
-      throw error;
+        throw error;
     }
   },
 
