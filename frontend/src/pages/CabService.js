@@ -1299,18 +1299,12 @@ const CabService = () => {
                 return;
             }
 
-            // Only request permission if we haven't already
-            if (permissionStateRef.current === 'unknown') {
-                console.log('[CabService] Checking location permission...');
-                const perm = await Geolocation.checkPermissions();
-                permissionStateRef.current = perm.location;
-                
-                if (perm.location === 'prompt') {
-                    console.log('[CabService] Requesting location permission...');
-                    const result = await Geolocation.requestPermissions();
-                    permissionStateRef.current = result.location;
-                    console.log('[CabService] Permission result:', result.location);
-                }
+            // Only request permission if we haven't already been granted access
+            if (permissionStateRef.current !== 'granted') {
+                console.log('[CabService] Location permission not granted. Current state:', permissionStateRef.current, 'Requesting permission...');
+                const result = await Geolocation.requestPermissions();
+                permissionStateRef.current = result.location;
+                console.log('[CabService] Permission request result:', result.location);
             }
 
             if (permissionStateRef.current === 'granted') {
