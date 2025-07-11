@@ -1,8 +1,6 @@
 PODS:
   - Capacitor (7.4.1):
     - CapacitorCordova
-  - CapacitorBrowser (7.0.1):
-    - Capacitor
   - CapacitorCordova (7.4.1)
   - CapacitorGeolocation (7.1.3):
     - Capacitor
@@ -11,7 +9,6 @@ PODS:
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
-  - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
 
@@ -22,8 +19,6 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Capacitor:
     :path: "../../node_modules/@capacitor/ios"
-  CapacitorBrowser:
-    :path: "../../node_modules/@capacitor/browser"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorGeolocation:
@@ -31,7 +26,6 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Capacitor: 78ad32d4b0d9dfa25402eb8b0ac46c2b8a4696b8
-  CapacitorBrowser: 6299776d496e968505464884d565992faa20444a
   CapacitorCordova: 34618fa1b14b6b091fd60a7658f7654044ae8d8a
   CapacitorGeolocation: 5e8f3f1bbf3bd914edb0a6a121f2dc55f7ea5c4e
   IONGeolocationLib: 81f33f88d025846946de2cf63b0c7628e7c6bc9d
