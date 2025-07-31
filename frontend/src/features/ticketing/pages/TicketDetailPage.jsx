@@ -238,11 +238,12 @@ const TicketDetailPage = () => {
       if (ticketError) throw ticketError;
       setTicket(ticketData);
 
-      // Fetch all tickets for proper numbering (use same source as other components)
+      // Fetch ALL tickets for proper numbering (bypass RLS to ensure consistent numbering)
+      // This ensures ticket numbers are the same for all users regardless of RLS policies
       const { data: allTicketsData, error: allTicketsError } = await supabase
-        .from('v_ticket_board')
+        .from('tickets')
         .select('id, category_id, created_at')
-        .in('category_id', [1,2,3,4,6])  // Same filters as TicketingPage
+        .in('category_id', [1,2,3,4,6])  // Same category filters
         .order('created_at', { ascending: true });
       
       if (allTicketsError) {

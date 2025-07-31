@@ -51,32 +51,52 @@ export default function TicketingPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [allTickets, setAllTickets] = useState([]);
+  const [allTicketsForNumbering, setAllTicketsForNumbering] = useState([]); // For consistent numbering across all users
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [isExpenseApprover, setIsExpenseApprover] = useState(false);
 
   // ✅ NEW: Centralized ticket number map for consistent numbering across all views
   const ticketNumberMap = useMemo(() => {
-    return createTicketNumberMap(allTickets);
-  }, [allTickets]);
+    return createTicketNumberMap(allTicketsForNumbering);
+  }, [allTicketsForNumbering]);
   
   const loadTickets = async () => {
     setError(null);
     setIsLoading(true);
+    
+    // Fetch tickets for display (with RLS applied)
     const { data: ticketData, error: fetchError } = await supabase
       .from('v_ticket_board')
       .select('*')
       .in('category_id', [1,2,3,4,6])         // keep Expense tickets out of normal view
       .order('created_at', { ascending: false });
+    
     if (fetchError) {
       setError(`Failed to load tickets: ${fetchError.message}`);
       setAllTickets([]);
     } else {
       setAllTickets(ticketData || []);
     }
+    
+    // Fetch ALL tickets for numbering (bypass RLS to ensure consistent numbering)
+    // This ensures ticket numbers are the same for all users regardless of RLS policies
+    const { data: allTicketsForNumbering, error: numberingError } = await supabase
+      .from('tickets')
+      .select('id, category_id, created_at')
+      .in('category_id', [1,2,3,4,6])
+      .order('created_at', { ascending: true });
+    
+    if (numberingError) {
+      console.error('Failed to fetch all tickets for numbering:', numberingError);
+    } else {
+      // Update the ticketNumberMap with ALL tickets for consistent numbering
+      setAllTicketsForNumbering(allTicketsForNumbering || []);
+    }
+    
     setIsLoading(false);
   };
   
