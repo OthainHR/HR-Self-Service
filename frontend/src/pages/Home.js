@@ -422,7 +422,7 @@ const Home = () => {
                       backdropFilter: 'blur(10px)',
                       fontSize: '1rem',
                       transition: 'all 0.2s ease',
-                      border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      border: isDarkMode ? '2px solid rgba(75, 85, 99, 0.5)' : '2px solid rgba(226, 232, 240, 0.5)',
                       '&:hover': {
                         boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
                         borderColor: '#6366f1'
