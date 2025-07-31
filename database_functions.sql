@@ -1,4 +1,34 @@
 -- ============================================================================
+-- TICKET NUMBERING FUNCTION (BYPASSES RLS FOR CONSISTENT NUMBERING)
+-- ============================================================================
+
+-- Function to get all tickets for numbering purposes (bypasses RLS)
+-- This ensures consistent ticket numbering across all user roles
+CREATE OR REPLACE FUNCTION get_all_tickets_for_numbering()
+RETURNS TABLE (
+    id UUID,
+    category_id INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        t.id,
+        t.category_id,
+        t.created_at
+    FROM tickets t
+    WHERE t.category_id IN (1, 2, 3, 4, 6)  -- Same filters as frontend
+    ORDER BY t.created_at ASC;
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION get_all_tickets_for_numbering() TO authenticated;
+
+-- ============================================================================
 -- TICKET ADDITIONAL EMAILS FUNCTIONALITY
 -- ============================================================================
 -- This file contains the database schema and functions for managing 

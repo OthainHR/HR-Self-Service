@@ -85,10 +85,7 @@ export default function TicketingPage() {
     // Fetch ALL tickets for numbering (bypass RLS to ensure consistent numbering)
     // This ensures ticket numbers are the same for all users regardless of RLS policies
     const { data: allTicketsForNumbering, error: numberingError } = await supabase
-      .from('tickets')
-      .select('id, category_id, created_at')
-      .in('category_id', [1,2,3,4,6])
-      .order('created_at', { ascending: true });
+      .rpc('get_all_tickets_for_numbering');
     
     if (numberingError) {
       console.error('Failed to fetch all tickets for numbering:', numberingError);
