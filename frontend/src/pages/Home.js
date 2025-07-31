@@ -362,12 +362,21 @@ const Home = () => {
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               {/* Header */}  
               <Box sx={{ textAlign: 'center', mb: 3 }}>
+                {displayName && (
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 600,
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                    mb: 1
+                  }}>
+                    Hello, {displayName}! <span style={{ color: isDarkMode ? '#f1f5f9' : '#1e293b' }}>👋</span>
+                  </Typography>
+                )}
                 <Typography variant="h4" sx={{ 
                   fontWeight: 700,
                   color: isDarkMode ? '#f1f5f9' : '#1e293b',
                   mb: 1
                 }}>
-                  {displayName ? `Hello, ${displayName}! 👋 What's on your mind today?` : "What's on your mind today?"}
+                  What's on your mind today?
                 </Typography>
                 <Typography variant="body2" sx={{ 
                   color: isDarkMode ? '#94a3b8' : '#64748b',
