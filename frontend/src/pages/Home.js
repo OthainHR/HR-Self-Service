@@ -323,126 +323,11 @@ const Home = () => {
         position: 'relative', 
         zIndex: 1 
       }}>
-        {/* Hero Section */}
-        <motion.div
-          custom={0}
-          initial="hidden"
-          animate="visible"
-          variants={sectionVariants}
-        >
-          <Box sx={{ 
-            textAlign: 'center', 
-            mb: 4,
-            position: 'relative'
-          }}>
-            {/* Hero background decoration */}
-            <Box sx={{
-              position: 'absolute',
-              top: '-50%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '400px',
-              height: '200px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              borderRadius: '50%',
-              opacity: 0.05,
-              filter: 'blur(60px)',
-              zIndex: -1
-            }} />
 
-            <Box sx={{
-              background: isDarkMode 
-                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '24px',
-              padding: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-              border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              {/* Welcome icon */}
-              <Box sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                borderRadius: '50%',
-                width: '60px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem auto',
-                boxShadow: '0 8px 25px rgba(99, 102, 241, 0.3)',
-                animation: 'pulse 3s infinite',
-                '@keyframes pulse': {
-                  '0%, 100%': {
-                    transform: 'scale(1)',
-                  },
-                  '50%': {
-                    transform: 'scale(1.05)',
-                  },
-                },
-              }}>
-                <RocketIcon sx={{ fontSize: '2rem', color: 'white' }} />
-              </Box>
-
-              <Typography 
-                variant="h2" 
-                component="h1" 
-                sx={{ 
-                  fontWeight: 800,
-                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                  marginBottom: '0.75rem',
-                  background: isDarkMode 
-                    ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
-                    : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  lineHeight: 1.2
-                }}
-              >
-                Welcome to Othain
-                {displayName && (
-                  <Box component="span" sx={{ display: 'block', fontSize: '0.7em', mt: 0.5 }}>
-                    Hello, {displayName}! 👋
-                  </Box>
-                )}
-              </Typography>
-              
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: isDarkMode ? '#94a3b8' : '#64748b',
-                  fontWeight: 500,
-                  maxWidth: '700px',
-                  margin: '0 auto 1.5rem auto',
-                  lineHeight: 1.6,
-                  fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' }
-                }}
-              >
-                Your dedicated Employee Self-Service platform for HR support, IT assistance, and workplace resources
-              </Typography>
-
-              <Chip 
-                label="✨ Othain AI Agent" 
-                sx={{
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  height: '32px',
-                  borderRadius: '16px',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.3)'
-                }}
-              />
-            </Box>
-          </Box>
-        </motion.div>
 
         {/* Mini Chat Interface */}
         <motion.div
-          custom={1}
+          custom={0}
           initial="hidden"
           animate="visible"
           variants={sectionVariants}
@@ -475,14 +360,14 @@ const Home = () => {
             }} />
 
             <Box sx={{ position: 'relative', zIndex: 1 }}>
-              {/* Header */}
+              {/* Header */}  
               <Box sx={{ textAlign: 'center', mb: 3 }}>
                 <Typography variant="h5" sx={{ 
                   fontWeight: 700,
                   color: isDarkMode ? '#f1f5f9' : '#1e293b',
                   mb: 1
                 }}>
-                  What's on your mind today?
+                  {displayName ? `Hello, ${displayName}! What's on your mind today?` : "What's on your mind today?"}
                 </Typography>
                 <Typography variant="body2" sx={{ 
                   color: isDarkMode ? '#94a3b8' : '#64748b',
@@ -639,7 +524,7 @@ const Home = () => {
 
         {/* Main Action Cards */}
         <motion.div
-          custom={2}
+          custom={1}
           initial="hidden"
           animate="visible"
           variants={sectionVariants}
@@ -874,7 +759,7 @@ const Home = () => {
 
         {/* Quick Links Section */}
         <motion.div
-          custom={3}
+          custom={2}
           initial="hidden"
           animate="visible"
           variants={sectionVariants}
