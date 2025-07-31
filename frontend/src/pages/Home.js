@@ -363,22 +363,28 @@ const Home = () => {
               {/* Header */}  
               <Box sx={{ textAlign: 'center', mb: 3 }}>
                 {/* Logo */}
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  mb: 2
-                }}>
-                  <img 
-                    src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
-                    alt="Othain Logo"
-                    style={{ 
-                      width: '60px', 
-                      height: '60px', 
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
-                    }} 
-                  />
-                </Box>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+                >
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mb: 2
+                  }}>
+                    <img 
+                      src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+                      alt="Othain Logo"
+                      style={{ 
+                        width: '60px', 
+                        height: '60px', 
+                        objectFit: 'contain',
+                        filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
+                      }} 
+                    />
+                  </Box>
+                </motion.div>
                 
                 {displayName && (
                   <Typography variant="h5" sx={{ 
