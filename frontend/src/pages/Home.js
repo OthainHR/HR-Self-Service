@@ -362,6 +362,24 @@ const Home = () => {
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               {/* Header */}  
               <Box sx={{ textAlign: 'center', mb: 3 }}>
+                {/* Logo */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  mb: 2
+                }}>
+                  <img 
+                    src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+                    alt="Othain Logo"
+                    style={{ 
+                      width: '60px', 
+                      height: '60px', 
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
+                    }} 
+                  />
+                </Box>
+                
                 {displayName && (
                   <Typography variant="h5" sx={{ 
                     fontWeight: 600,
