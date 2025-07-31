@@ -107,15 +107,104 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     const handleAutoSubmit = (event) => {
       const { message, sessionId: eventSessionId } = event.detail;
       if (eventSessionId === sessionId && message) {
-        setInput(message);
-        // Auto-submit after a short delay
-        setTimeout(() => {
-          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-          const form = document.querySelector('form');
-          if (form) {
-            form.dispatchEvent(submitEvent);
+        console.log('Auto-submitting message:', message, 'for session:', sessionId);
+        
+        // Auto-submit after a short delay to ensure component is ready
+        setTimeout(async () => {
+          try {
+            // Set the input first
+            setInput(message);
+            
+            // Wait a bit more for state to update
+            setTimeout(async () => {
+              if (!sessionId || sending) return;
+              
+              const messageText = message.trim();
+              setSending(true);
+              setServerError(false);
+              setError(null); 
+              bufferedContentRef.current = '';
+              if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+              updateTimerRef.current = null;
+              isFirstChunkRef.current = true;
+              
+              // 1. Add user message 
+              const userMessage = {
+                id: `user-${Date.now()}`,
+                role: 'user',
+                content: messageText,
+                created_at: new Date().toISOString()
+              };
+              setMessages(prev => [...prev, userMessage]);
+              
+              // 2. Add placeholder
+              const assistantMessageId = `assistant-${Date.now()}`;
+              currentAssistantMessageId.current = assistantMessageId;
+              const placeholderMessage = {
+                id: assistantMessageId,
+                role: 'assistant',
+                content: 'Thinking...',
+                created_at: new Date().toISOString(),
+                isLoading: true 
+              };
+              setMessages(prev => [...prev, placeholderMessage]);
+              
+              try {
+                // 3. Call the streaming API function
+                await chatApi.sendMessage(sessionId, messageText, (chunk) => {
+                  if (chunk === null) {
+                    // Stream finished
+                    if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+                    updateTimerRef.current = null;
+                    applyBufferedUpdate();
+                    
+                    setMessages(prev => {
+                      const finalMsg = prev.find(m => m.id === assistantMessageId);
+                      if (finalMsg && finalMsg.content.trim() === '') {
+                          console.warn("Stream ended with empty content.");
+                          return prev.map(m => m.id === assistantMessageId ? { ...m, content: 'Error: No response received.', isError: true, isLoading: false } : m);
+                      } else {
+                          return prev.map(m => m.id === assistantMessageId ? { ...m, isLoading: false } : m);
+                      }
+                    });
+
+                    currentAssistantMessageId.current = null; 
+                    setSending(false); 
+
+                  } else {
+                    // Append chunk to buffer
+                    bufferedContentRef.current += chunk;
+                    // Schedule update if timer isn't already running
+                    if (!updateTimerRef.current) {
+                      updateTimerRef.current = setTimeout(() => {
+                        applyBufferedUpdate();
+                        updateTimerRef.current = null;
+                      }, 100);
+                    }
+                  }
+                });
+
+              } catch (error) {
+                console.error("Error sending/streaming message:", error);
+                if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+                updateTimerRef.current = null;
+                bufferedContentRef.current = '';
+                
+                setMessages(prev => prev.map(msg => 
+                  msg.id === currentAssistantMessageId.current
+                    ? { ...msg, content: `Sorry, an error occurred: ${error.message || 'Network error'}`, isLoading: false, isError: true }
+                    : msg
+                ));
+                currentAssistantMessageId.current = null;
+                setSending(false); 
+                setServerError(true); 
+              }
+            }, 500);
+          } catch (error) {
+            console.error('Error in auto-submit:', error);
+            setSending(false);
           }
-        }, 500);
+        }, 800);
       }
     };
 
@@ -123,7 +212,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     return () => {
       window.removeEventListener('autoSubmitMessage', handleAutoSubmit);
     };
-  }, [sessionId]);
+  }, [sessionId, sending, applyBufferedUpdate]);
 
   // Debounced state update function
   const applyBufferedUpdate = useCallback(() => {
@@ -156,7 +245,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   }, []);
 
   // Handle sending a message (Updated for Streaming with Batching)
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (!input.trim() || !sessionId || sending) return;
@@ -242,7 +331,7 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       setSending(false); 
       setServerError(true); 
     } 
-  };
+  }, [input, sessionId, sending, applyBufferedUpdate]);
 
   // Display the status badge
   const getStatusBadge = () => {

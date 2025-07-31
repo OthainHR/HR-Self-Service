@@ -94,20 +94,44 @@ function Chat() {
     const autoFillMessage = sessionStorage.getItem('autoFillMessage');
     const autoSubmitChat = sessionStorage.getItem('autoSubmitChat');
     
-    if (autoFillMessage && autoSubmitChat === 'true' && selectedSessionId) {
-      // Clear the session storage
+    if (autoFillMessage && autoSubmitChat === 'true') {
+      // Clear the session storage immediately
       sessionStorage.removeItem('autoFillMessage');
       sessionStorage.removeItem('autoSubmitChat');
       
-      // Auto-fill and submit the message
-      setTimeout(() => {
-        // This will be handled by the ChatWindow component
-        window.dispatchEvent(new CustomEvent('autoSubmitMessage', {
-          detail: { message: autoFillMessage, sessionId: selectedSessionId }
-        }));
-      }, 1000); // Give time for the chat window to load
+      // Create a new chat session if none exists
+      const createNewChatAndSubmit = async () => {
+        try {
+          // If no session is selected, create a new one
+          if (!selectedSessionId) {
+            const newSession = await chatApi.createSession();
+            if (newSession && newSession.id) {
+              setSessions(prevSessions => [newSession, ...prevSessions].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
+              setSelectedSessionId(newSession.id);
+              
+              // Wait for the session to be set, then auto-submit
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('autoSubmitMessage', {
+                  detail: { message: autoFillMessage, sessionId: newSession.id }
+                }));
+              }, 1500);
+            }
+          } else {
+            // If session exists, auto-submit immediately
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('autoSubmitMessage', {
+                detail: { message: autoFillMessage, sessionId: selectedSessionId }
+              }));
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('Error creating new chat session:', error);
+        }
+      };
+      
+      createNewChatAndSubmit();
     }
-  }, [selectedSessionId]);
+  }, [selectedSessionId, sessions.length]);
   
   const loadSessions = async () => {
     setLoading(true);
