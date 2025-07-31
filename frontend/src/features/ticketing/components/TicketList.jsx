@@ -41,6 +41,13 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
+  // ✅ DEBUG: Log what we're receiving
+  console.log('📋 TicketList received:', {
+    ticketsCount: tickets?.length,
+    ticketNumberMapEntries: Object.keys(ticketNumberMap || {}).length,
+    sampleTicketNumbers: Object.entries(ticketNumberMap || {}).slice(0, 3)
+  });
+
   // State for assignee editing
   const [editingAssignee, setEditingAssignee] = useState(null); // { ticketId: string, tempAssigneeId: string | null }
 

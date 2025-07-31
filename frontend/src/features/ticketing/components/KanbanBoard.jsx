@@ -755,13 +755,119 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
   );
 };
 
-export default function KanbanBoard({ ticketNumberMap }) {
+export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onDataRefresh }) {
+  const [tickets, setTickets] = useState(propTickets || []);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false since we're not fetching
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    search: '',
+    category: '',
+    sub_category: '',
+    status: ''
+  });
+  const [assignOptions, setAssignOptions] = useState([]);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: null, loading: false });
+  const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [tickets, setTickets] = useState([]);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [assignOptions, setAssignOptions] = useState([]);
-  const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
+
+  // ✅ DEBUG: Log what we're receiving
+  console.log('🎯 KanbanBoard received:', {
+    propTicketsCount: propTickets?.length,
+    localTicketsCount: tickets?.length,
+    ticketNumberMapEntries: Object.keys(ticketNumberMap || {}).length,
+    sampleTicketNumbers: Object.entries(ticketNumberMap || {}).slice(0, 3)
+  });
+
+  // ✅ NEW: Update tickets when propTickets changes
+  useEffect(() => {
+    setTickets(propTickets || []);
+  }, [propTickets]);
+
+  // ✅ REMOVED: Local ticketNumberMap creation - now using prop from parent
+  // const ticketNumberMap = React.useMemo(() => {
+  //   return createTicketNumberMap(allTickets);
+  // }, [allTickets]);
+
+  // ✅ REMOVED: fetchTickets function - now using propTickets
+  // const fetchTickets = async () => {
+  //   // ... removed entire function
+  // };
+
+  // ✅ REMOVED: useEffect for fetchTickets - no longer needed
+  // useEffect(() => {
+  //   fetchTickets();
+  // }, [filters]);
+
+  // ✅ MODIFIED: Simplified subscription to trigger parent refresh
+  useEffect(() => {
+    const subscription = supabase
+      .channel('public:tickets:kanban-board')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tickets' }, () => {
+        // Trigger parent refresh when new tickets are added
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [onDataRefresh]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAdminStatusChange = async (ticketId, newStatus) => {
+    if (["RESOLVED", "CLOSED"].includes(newStatus)) {
+      setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
+    } else {
+      // Directly update status for other transitions
+      try {
+        const { error } = await supabase
+          .from('tickets')
+          .update({ status: newStatus })
+          .eq('id', ticketId);
+        if (error) throw error;
+        // Update local state immediately for better UX
+        setTickets(prev => prev.map(ticket => 
+          ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
+        ));
+        // Trigger parent refresh to sync data
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
+      } catch (err) {
+        alert('Failed to update ticket: ' + (err.message || err));
+      }
+    }
+  };
+
+  const handleUpdateTicketAssignee = async (ticketId, newAssigneeId) => {
+    setTickets(prev => prev.map(ticket => ticket.id === ticketId ? { ...ticket, assignee: newAssigneeId } : ticket));
+    try {
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({ assignee: newAssigneeId })
+        .eq('id', ticketId);
+      if (updateError) {
+        setError(`Failed to update assignee: ${updateError.message}`);
+      } else {
+        // Trigger parent refresh to sync data
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
+      }
+    } catch (err) {
+      setError('An unexpected error occurred while updating the assignee.');
+    }
+  };
+
   useEffect(() => {
     const fetchAssignees = async () => {
       if (!currentUserRole) {
@@ -782,11 +888,6 @@ export default function KanbanBoard({ ticketNumberMap }) {
     };
     fetchAssignees();
   }, [currentUserRole]);
-  const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
-  const [filters, setFilters] = useState({ search: '', category: '', sub_category: '', status: '' });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -833,97 +934,6 @@ export default function KanbanBoard({ ticketNumberMap }) {
     fetchSubCategories();
   }, [filters.category]);
 
-  const fetchTickets = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let query = supabase
-        .from('v_ticket_board')
-        .select('*')
-        .in('category_id', [1,2,3,4,6]);          // ← exclude Expense Mgmt
-
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-      if (filters.category) {
-        query = query.eq('category_id', filters.category);
-      }
-      if (filters.sub_category) {
-        query = query.eq('sub_category_id', filters.sub_category);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
-      
-      if (fetchError) throw fetchError;
-      setTickets(data || []);
-    } catch (fetchError) {
-      setError(`Failed to load tickets: ${fetchError.message}`);
-      setTickets([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTickets();
-  }, [filters]);
-
-  // Subscribe to ticket insert events to auto-refresh board
-  useEffect(() => {
-    const subscription = supabase
-      .channel('public:tickets:kanban-board')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tickets' }, () => {
-        fetchTickets();
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAdminStatusChange = async (ticketId, newStatus) => {
-    if (["RESOLVED", "CLOSED"].includes(newStatus)) {
-      setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
-    } else {
-      // Directly update status for other transitions
-    try {
-        const { error } = await supabase
-        .from('tickets')
-        .update({ status: newStatus })
-        .eq('id', ticketId);
-        if (error) throw error;
-        await fetchTickets();
-    } catch (err) {
-        alert('Failed to update ticket: ' + (err.message || err));
-      }
-    }
-  };
-
-  const handleUpdateTicketAssignee = async (ticketId, newAssigneeId) => {
-    setTickets(prev => prev.map(ticket => ticket.id === ticketId ? { ...ticket, assignee: newAssigneeId } : ticket));
-    try {
-      const { error: updateError } = await supabase
-        .from('tickets')
-        .update({ assignee: newAssigneeId })
-        .eq('id', ticketId);
-      if (updateError) {
-        setError(`Failed to update assignee: ${updateError.message}`);
-        await fetchTickets();
-      }
-    } catch (err) {
-      setError('An unexpected error occurred while updating the assignee.');
-      await fetchTickets();
-    }
-  };
-
   // Priority change function for Kanban - simplified
   const handlePriorityChange = async (ticketId, newPriority) => {
     try {
@@ -936,60 +946,62 @@ export default function KanbanBoard({ ticketNumberMap }) {
         return;
       }
 
-      // Calculate new due date based on priority
+      // Calculate new due date based on priority change
       let newDueDate = null;
       if (currentTicket.due_at) {
-        // Adjust existing due date based on priority change
-        const currentDue = new Date(currentTicket.due_at);
+        const currentDueDate = new Date(currentTicket.due_at);
         const now = new Date();
-        const timeDiff = currentDue.getTime() - now.getTime();
         
-        // Base hours for each priority from now
-        const priorityHours = {
-          'Urgent': 4,
-          'High': 24,
-          'Medium': 72,
-          'Low': 168
-        };
+        // Calculate days to add based on priority
+        let daysToAdd = 0;
+        switch (newPriority.toLowerCase()) {
+          case 'urgent':
+            daysToAdd = 1;
+            break;
+          case 'high':
+            daysToAdd = 3;
+            break;
+          case 'medium':
+            daysToAdd = 7;
+            break;
+          case 'low':
+            daysToAdd = 14;
+            break;
+          default:
+            daysToAdd = 7;
+        }
         
-        // Set new due date based on new priority
-        const newDueTime = new Date();
-        newDueTime.setHours(newDueTime.getHours() + priorityHours[newPriority]);
-        newDueDate = newDueTime.toISOString();
-      } else {
-        // If no due date exists, create one based on priority
-        const now = new Date();
-        const hoursToAdd = {
-          'Urgent': 4,
-          'High': 24,
-          'Medium': 72,
-          'Low': 168
-        }[newPriority] || 72;
-        
-        now.setHours(now.getHours() + hoursToAdd);
-        newDueDate = now.toISOString();
+        newDueDate = new Date(now.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
       }
 
-      // Update both priority and due date
+      // Update ticket in database
+      const updateData = { priority: newPriority };
+      if (newDueDate) {
+        updateData.due_at = newDueDate.toISOString();
+      }
+
       const { error } = await supabase
         .from('tickets')
-        .update({ 
-          priority: newPriority,
-          due_at: newDueDate
-        })
+        .update(updateData)
         .eq('id', ticketId);
 
       if (error) throw error;
 
-      // Show success message
-      alert(`Priority updated to ${newPriority} and due date adjusted successfully!`);
+      // Update local state immediately for better UX
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, priority: newPriority, due_at: newDueDate?.toISOString() || ticket.due_at }
+          : ticket
+      ));
 
-      // Refresh tickets after update
-      await fetchTickets();
+      // Trigger parent refresh to sync data
+      if (onDataRefresh) {
+        onDataRefresh();
+      }
 
     } catch (error) {
       console.error('Error changing priority and due date:', error);
-      alert('Failed to change priority and due date: ' + error.message);
+      alert('Failed to update priority: ' + (error.message || error));
     }
   };
 
@@ -1001,33 +1013,33 @@ export default function KanbanBoard({ ticketNumberMap }) {
 
   // Modal submit handler
   const handleAdminCommentSubmit = async (comment) => {
-    setAdminCommentModal(modal => ({ ...modal, loading: true }));
-    const { ticketId, newStatus } = adminCommentModal;
     try {
-      // Prepare update object
-      const updateData = { 
-        status: newStatus, 
-        admin_comment: comment,
-        updated_at: new Date().toISOString()
-      };
-      
-      // Add resolved_at timestamp if status is RESOLVED
-      if (newStatus === 'RESOLVED') {
-        updateData.resolved_at = new Date().toISOString();
-      }
-      
-      // Update status, admin_comment, and timestamps
+      setAdminCommentModal(prev => ({ ...prev, loading: true }));
       const { error } = await supabase
         .from('tickets')
-        .update(updateData)
-        .eq('id', ticketId);
+        .update({ 
+          status: adminCommentModal.newStatus,
+          admin_comment: comment 
+        })
+        .eq('id', adminCommentModal.ticketId);
       if (error) throw error;
-      // Refresh tickets after update
-      await fetchTickets();
+      
+      // Update local state immediately for better UX
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === adminCommentModal.ticketId 
+          ? { ...ticket, status: adminCommentModal.newStatus, admin_comment: comment }
+          : ticket
+      ));
+      
+      // Trigger parent refresh to sync data
+      if (onDataRefresh) {
+        onDataRefresh();
+      }
+      
       setAdminCommentModal({ open: false, ticketId: null, newStatus: '', loading: false });
     } catch (err) {
-      setAdminCommentModal(modal => ({ ...modal, loading: false }));
       alert('Failed to update ticket: ' + (err.message || err));
+      setAdminCommentModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -1304,7 +1316,12 @@ export default function KanbanBoard({ ticketNumberMap }) {
 
           {/* Refresh Button */}
           <button 
-            onClick={fetchTickets} 
+            onClick={() => {
+              if (onDataRefresh) {
+                setIsLoading(true);
+                onDataRefresh().finally(() => setIsLoading(false));
+              }
+            }} 
             disabled={isLoading} 
             style={{
               display: 'flex',
