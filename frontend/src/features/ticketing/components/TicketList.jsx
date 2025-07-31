@@ -587,7 +587,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
             borderBottom: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)'
           }}>
             {/* Search and Filter Bar */}
-            <Slide direction="down" in={true} timeout={600}>
+            <Fade in={true} timeout={600}>
               <div style={{
                 display: 'flex',
                 flexDirection: isMobile ? 'column' : isTablet ? 'row' : 'row',
@@ -737,8 +737,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                   ))}
                   </div>
                 </div>
-              </div>
-            </Slide>
+                              </div>
+              </Fade>
 
             {/* Results Count and Actions */}
             <div style={{

@@ -250,7 +250,7 @@ export default function TicketingPage() {
         zIndex: 1
       }}>
         {/* Modern Header */}
-        <Slide direction="down" in={true} timeout={800}>
+        <Fade in={true} timeout={800}>
           <div style={{
             background: isDarkMode 
               ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
@@ -390,7 +390,7 @@ export default function TicketingPage() {
               </button>
             </div>
           </div>
-        </Slide>
+        </Fade>
 
         {/* Modern Tab Navigation */}
         <Fade in={true} timeout={1000}>
