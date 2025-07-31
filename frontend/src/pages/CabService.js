@@ -1302,8 +1302,8 @@ const CabService = () => {
             // Only request permission if we haven't already been granted access
             if (permissionStateRef.current !== 'granted') {
                 console.log('[CabService] Location permission not granted. Current state:', permissionStateRef.current, 'Requesting permission...');
-                const result = await Geolocation.requestPermissions();
-                permissionStateRef.current = result.location;
+                    const result = await Geolocation.requestPermissions();
+                    permissionStateRef.current = result.location;
                 console.log('[CabService] Permission request result:', result.location);
             }
 

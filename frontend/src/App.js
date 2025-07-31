@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, Component, useMemo, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import {
   Box,
   CssBaseline,
@@ -12,9 +12,12 @@ import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import AdminReport from './pages/AdminReport';
+import { App as CapacitorApp } from '@capacitor/app';
+import { supabase } from './services/supabase';
 
 // Components
 import NavBar from './components/NavBar';
+import FloatingChat from './components/FloatingChat';
 
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -258,8 +261,9 @@ const LoadingIndicator = () => (
 
 // Main app content with theme provider
 const AppContent = () => {
+  const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
-  const { user } = useAuth(); // Get user to pass to NavBar if needed
   const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);
 
 
@@ -275,14 +279,33 @@ const AppContent = () => {
     }
   }, [user]); // Add clearAuthFlags to dependency array
 
+  useEffect(() => {
+    CapacitorApp.addListener('appUrlOpen', async (event) => {
+      console.log('[App] Deep link opened:', event.url);
+      // Refresh Supabase session to handle OAuth callback
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('[App] Error refreshing session after deep link:', error);
+      } else if (session) {
+        console.log('[App] Session refreshed after deep link');
+        // Navigate to the desired page after successful login
+        navigate('/chat');
+      }
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
+  }, [navigate]);
+
   
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
             {user && <NavBar />} 
             <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' /*overflow: 'auto'*/ }}>
               <Routes>
@@ -307,9 +330,9 @@ const AppContent = () => {
                 <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />
               </Routes>
             </Box>
+            {user && <FloatingChat />}
           </Box>
-        </Suspense>
-      </Router>
+      </Suspense>
     </ThemeProvider>
   );
 };
@@ -330,11 +353,13 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <DarkModeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </DarkModeProvider>
+      <Router>
+        <DarkModeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </DarkModeProvider>
+      </Router>
     </ErrorBoundary>
   );
 };

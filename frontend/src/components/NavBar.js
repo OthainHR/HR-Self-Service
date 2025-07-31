@@ -220,12 +220,12 @@ const NavBar = () => {
             }
           }}
         >
-          <ListItemIcon><Home sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+          <ListItemIcon><Home sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
           <ListItemText 
             primary="Home" 
             primaryTypographyProps={{ 
               fontWeight: isActive('/') ? 700 : 500,
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
             }}
           />
         </ListItem>
@@ -246,12 +246,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><Chat sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><Chat sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Chat" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/chat') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -271,12 +271,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><ConfirmationNumber sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><ConfirmationNumber sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Ticketing" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/tickets') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -296,12 +296,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><Receipt sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><Receipt sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Expense Tickets" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/expense-tickets') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -321,12 +321,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><DirectionsCar sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><DirectionsCar sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Book A Cab" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/cab-service') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -346,12 +346,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Knowledge Base" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/knowledge') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -371,12 +371,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><Book sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Weekly Report" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/report') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -426,12 +426,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><Logout sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><Logout sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Logout" 
               primaryTypographyProps={{ 
                 fontWeight: 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -451,12 +451,12 @@ const NavBar = () => {
               }
             }}
           >
-            <ListItemIcon><AccountCircle sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)' }} /></ListItemIcon>
+            <ListItemIcon><AccountCircle sx={{ color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1' }} /></ListItemIcon>
             <ListItemText 
               primary="Login" 
               primaryTypographyProps={{ 
                 fontWeight: isActive('/login') ? 700 : 500,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
               }}
             />
           </ListItem>
@@ -476,7 +476,7 @@ const NavBar = () => {
             primary="Dark Mode" 
             primaryTypographyProps={{ 
               fontWeight: 500,
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(17, 179, 207, 0.8)'
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6366f1'
             }}
           />
           <DarkModeSwitch checked={isDarkMode} onChange={toggleDarkMode} />
@@ -515,7 +515,7 @@ const NavBar = () => {
         }
       }}
     >
-      <Toolbar>
+      <Toolbar sx={{ minHeight: '80px', py: 1 }}>
         {/* Mobile menu icon */}
         {isMobile && (
           <IconButton
@@ -683,7 +683,7 @@ const NavBar = () => {
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   background: isActive('/chat') 
-                    ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                    ? 'linear-gradient(135deg,rgb(9, 154, 216) 0%,rgb(17, 130, 210) 100%)'
                     : isDarkMode 
                       ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)'
                       : 'linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%)',
@@ -698,13 +698,13 @@ const NavBar = () => {
                   overflow: 'hidden',
                   '&:hover': {
                     background: isActive('/chat') 
-                      ? 'linear-gradient(135deg, #047857 0%, #059669 100%)'
+                      ? 'linear-gradient(135deg,rgb(11, 103, 194) 0%,rgb(12, 120, 202) 100%)'
                       : isDarkMode 
                         ? 'linear-gradient(135deg, rgba(75, 85, 99, 0.8) 0%, rgba(107, 114, 128, 0.8) 100%)'
                         : 'linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%)',
                     transform: 'translateY(-2px)',
                     boxShadow: isActive('/chat') 
-                      ? '0 12px 35px rgba(5, 150, 105, 0.4)'
+                      ? '0 12px 35px rgba(5, 68, 150, 0.4)'
                       : '0 8px 25px rgba(0, 0, 0, 0.1)'
                   },
                   '&::before': {
@@ -1295,7 +1295,7 @@ const NavBar = () => {
         open={drawerOpen}
         onClose={toggleDrawer(false)}
         sx={{
-          paddingTop: 'calc(env(safe-area-inset-top) + 100px)',
+          paddingTop: 'calc(env(safe-area-inset-top) + 105px)',
           '& .MuiDrawer-paper': {
             background: isDarkMode 
               ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'

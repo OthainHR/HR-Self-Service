@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import { 
   Chat as ChatIcon, 
@@ -44,6 +44,7 @@ const Home = () => {
   // Mini chat state
   const [miniChatInput, setMiniChatInput] = useState('');
   const [isSubmittingMiniChat, setIsSubmittingMiniChat] = useState(false);
+  const miniChatInputRef = useRef(null);
 
   const getDisplayName = () => {
     if (user?.name) {
@@ -89,6 +90,13 @@ const Home = () => {
     };
     checkWhitelist();
   }, [user, isHrAdmin]);
+
+  // Auto-focus the mini chat input when component mounts
+  useEffect(() => {
+    if (miniChatInputRef.current) {
+      miniChatInputRef.current.focus();
+    }
+  }, []);
 
   useEffect(() => {
     const fetchCabServiceVisibility = async () => {
@@ -377,8 +385,8 @@ const Home = () => {
                       src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
                       alt="Othain Logo"
                       style={{ 
-                        width: '60px', 
-                        height: '60px', 
+                        width: '50px', 
+                        height: '50px', 
                         objectFit: 'contain',
                         filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
                       }} 
@@ -398,9 +406,14 @@ const Home = () => {
                 <Typography variant="h4" sx={{ 
                   fontWeight: 700,
                   color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                  mb: 1
+                  mb: 1,
+                  fontSize: {
+                    xs: '1.5rem', // Mobile: smaller size
+                    sm: '2rem',   // Small tablets
+                    md: '2.125rem' // Desktop: original h4 size
+                  }
                 }}>
-                  What's on your mind today?
+                  How can I help you today?
                 </Typography>
                 <Typography variant="body2" sx={{ 
                   color: isDarkMode ? '#94a3b8' : '#64748b',
@@ -419,6 +432,7 @@ const Home = () => {
                   value={miniChatInput}
                   onChange={(e) => setMiniChatInput(e.target.value)}
                   disabled={isSubmittingMiniChat}
+                  inputRef={miniChatInputRef}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '20px',
