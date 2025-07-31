@@ -36,16 +36,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
 
 
-const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole, onDataRefresh }) => {
+const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole, onDataRefresh, ticketNumberMap }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-
-  // Create ticket number mapping for proper sequential numbering
-  const ticketNumberMap = useMemo(() => {
-    if (!tickets || tickets.length === 0) return {};
-    return createTicketNumberMap(tickets);
-  }, [tickets]);
 
   // State for assignee editing
   const [editingAssignee, setEditingAssignee] = useState(null); // { ticketId: string, tempAssigneeId: string | null }

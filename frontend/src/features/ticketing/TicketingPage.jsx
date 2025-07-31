@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Tabs, Tab, Typography, Button, Fade, Slide, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +11,7 @@ import TicketList from './components/TicketList';
 import './styles/ticketing.css';
 import { useTheme } from '@mui/material/styles';
 import { supabase } from '../../services/supabase';
+import { createTicketNumberMap } from '../../utils/ticketUtils';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -57,6 +58,11 @@ export default function TicketingPage() {
   const [error, setError] = useState(null);
   const [isExpenseApprover, setIsExpenseApprover] = useState(false);
 
+  // ✅ NEW: Centralized ticket number map for consistent numbering across all views
+  const ticketNumberMap = useMemo(() => {
+    return createTicketNumberMap(allTickets);
+  }, [allTickets]);
+  
   const loadTickets = async () => {
     setError(null);
     setIsLoading(true);
@@ -98,7 +104,7 @@ export default function TicketingPage() {
     
     // Only set default tab value on initial load, not on subsequent session updates
     if (isInitialLoad) {
-    setTabValue(isAdmin ? 1 : 0);
+    setTabValue(isAdmin ? 0 : 1);
     setViewMode(isAdmin ? 'list' : 'kanban');
     }
   };
@@ -572,7 +578,7 @@ export default function TicketingPage() {
                 </Typography>
               </Box>
             ) : viewMode === 'kanban' ? (
-              <KanbanBoard />
+              <KanbanBoard ticketNumberMap={ticketNumberMap} />
             ) : (
               <TicketList
                 tickets={allTickets}
@@ -581,6 +587,7 @@ export default function TicketingPage() {
                 handleUpdateTicketAssignee={handleUpdateTicketAssignee}
                 currentUserRole={currentUserRole}
                 onDataRefresh={loadTickets}
+                ticketNumberMap={ticketNumberMap}
               />
             )}
           </TabPanel>

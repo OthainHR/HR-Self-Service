@@ -128,18 +128,18 @@ const formatNameFromEmail = (email) => {
   return capitalize(parts[0]);
 };
 
-const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityChange, assignOptions, allTickets }) => {
+const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdminStatusChange, handleUpdateTicketAssignee, handlePriorityChange, assignOptions, allTickets, ticketNumberMap }) => {
   const icon = getStatusIcon(status);
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const statusColors = getStatusColors(status);
   
-  // Create ticket number mapping for proper sequential numbering
-  const ticketNumberMap = React.useMemo(() => {
-    if (!allTickets || allTickets.length === 0) return {};
-    return createTicketNumberMap(allTickets);
-  }, [allTickets]);
+  // ✅ REMOVED: Local ticketNumberMap creation - now using prop from parent
+  // const ticketNumberMap = React.useMemo(() => {
+  //   if (!allTickets || allTickets.length === 0) return {};
+  //   return createTicketNumberMap(allTickets);
+  // }, [allTickets]);
   
   const handleTicketClick = (ticketId, e) => {
     if (
@@ -755,7 +755,7 @@ const KanbanColumn = ({ tickets, status, currentUserRole, statusOrder, handleAdm
   );
 };
 
-export default function KanbanBoard() {
+export default function KanbanBoard({ ticketNumberMap }) {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [tickets, setTickets] = useState([]);
@@ -1390,6 +1390,7 @@ export default function KanbanBoard() {
             handlePriorityChange={handlePriorityChange}
             assignOptions={assignOptions}
             allTickets={tickets}
+            ticketNumberMap={ticketNumberMap}
           />
         ))}
       </div>
