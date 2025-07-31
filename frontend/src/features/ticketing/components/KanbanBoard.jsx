@@ -774,14 +774,6 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // ✅ DEBUG: Log what we're receiving
-  console.log('🎯 KanbanBoard received:', {
-    propTicketsCount: propTickets?.length,
-    localTicketsCount: tickets?.length,
-    ticketNumberMapEntries: Object.keys(ticketNumberMap || {}).length,
-    sampleTicketNumbers: Object.entries(ticketNumberMap || {}).slice(0, 3)
-  });
-
   // ✅ NEW: Update tickets when propTickets changes
   useEffect(() => {
     setTickets(propTickets || []);

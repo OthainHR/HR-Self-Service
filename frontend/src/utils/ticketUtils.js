@@ -84,6 +84,10 @@ export const generateTicketNumberFromName = (categoryName, ticketId) => {
 export const createTicketNumberMap = (tickets) => {
   const numberMap = {};
   
+  if (!tickets || tickets.length === 0) {
+    return numberMap;
+  }
+  
   // Group tickets by category
   const ticketsByCategory = tickets.reduce((acc, ticket) => {
     const categoryId = ticket.category_id;
@@ -94,16 +98,29 @@ export const createTicketNumberMap = (tickets) => {
   
   // Generate numbers for each category
   Object.entries(ticketsByCategory).forEach(([categoryId, categoryTickets]) => {
-    // Sort by creation date, then by ID
+    // Sort by creation date, then by ID for consistent ordering
     const sortedTickets = categoryTickets.sort((a, b) => {
       const dateCompare = new Date(a.created_at) - new Date(b.created_at);
       if (dateCompare !== 0) return dateCompare;
       return a.id.localeCompare(b.id);
     });
     
-    // Assign sequential numbers
+    // Category prefix mapping
+    const categoryPrefixes = {
+      1: 'OTH-IT',   // IT Requests
+      2: 'OTH-HR',   // HR Requests  
+      3: 'OTH-PAY',  // Payroll Requests
+      4: 'OTH-OPS',  // Operations
+      5: 'OTH-EXP',  // Expense Management
+      6: 'OTH-AI',   // AI Requests
+    };
+    
+    const prefix = categoryPrefixes[parseInt(categoryId)] || 'OTH-GEN';
+    
+    // Assign sequential numbers directly
     sortedTickets.forEach((ticket, index) => {
-      numberMap[ticket.id] = generateTicketNumber(ticket.id, parseInt(categoryId), tickets);
+      const sequenceNumber = index + 1;
+      numberMap[ticket.id] = `${prefix}${String(sequenceNumber).padStart(3, '0')}`;
     });
   });
   

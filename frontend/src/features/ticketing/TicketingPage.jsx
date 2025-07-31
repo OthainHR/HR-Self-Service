@@ -60,13 +60,7 @@ export default function TicketingPage() {
 
   // ✅ NEW: Centralized ticket number map for consistent numbering across all views
   const ticketNumberMap = useMemo(() => {
-    console.log('🔍 Creating ticketNumberMap with allTickets:', allTickets.length, 'tickets');
-    const map = createTicketNumberMap(allTickets);
-    console.log('🔍 ticketNumberMap created:', Object.keys(map).length, 'entries');
-    // Log a few sample entries
-    const sampleEntries = Object.entries(map).slice(0, 3);
-    console.log('🔍 Sample ticketNumberMap entries:', sampleEntries);
-    return map;
+    return createTicketNumberMap(allTickets);
   }, [allTickets]);
   
   const loadTickets = async () => {

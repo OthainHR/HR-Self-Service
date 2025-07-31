@@ -41,13 +41,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // ✅ DEBUG: Log what we're receiving
-  console.log('📋 TicketList received:', {
-    ticketsCount: tickets?.length,
-    ticketNumberMapEntries: Object.keys(ticketNumberMap || {}).length,
-    sampleTicketNumbers: Object.entries(ticketNumberMap || {}).slice(0, 3)
-  });
-
   // State for assignee editing
   const [editingAssignee, setEditingAssignee] = useState(null); // { ticketId: string, tempAssigneeId: string | null }
 
@@ -374,7 +367,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   // Priority change function - simplified
   const handlePriorityChange = async (ticketId, newPriority) => {
-    console.log('Priority change called:', { ticketId, newPriority });
     
     try {
       // Find the current ticket
@@ -389,8 +381,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       if (currentTicket.priority === newPriority) {
         return;
       }
-
-      console.log('Current ticket:', currentTicket);
 
       // Calculate new due date based on priority
       let newDueDate = null;
@@ -426,8 +416,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         newDueDate = now.toISOString();
       }
 
-      console.log('Updating ticket with:', { priority: newPriority, due_at: newDueDate });
-
       // Update both priority and due date
       const { data, error } = await supabase
         .from('tickets')
@@ -442,8 +430,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
         console.error('Supabase error:', error);
         throw error;
       }
-
-      console.log('Update successful:', data);
 
       // Show success message
       alert(`Priority updated to ${newPriority} and due date adjusted successfully!`);
