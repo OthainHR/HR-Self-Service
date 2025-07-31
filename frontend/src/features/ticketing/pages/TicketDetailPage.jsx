@@ -9,8 +9,6 @@ import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../contexts/AuthContext';
 
-import { generateTicketNumber } from '../../../utils/ticketUtils';
-
 /* --- Log after all imports --- */
 
 
@@ -56,7 +54,32 @@ const TicketDetailPage = () => {
   // Generate the proper ticket number
   const getTicketNumber = useCallback(() => {
     if (!ticket || !allTickets.length) return `#${ticket?.id || ''}`;
-    return generateTicketNumber(ticket.id, ticket.category_id, allTickets);
+    
+    // Use the same logic as createTicketNumberMap for consistency
+    const categoryTickets = allTickets.filter(t => t.category_id === ticket.category_id);
+    
+    // Sort by creation date, then by ID for consistent ordering
+    const sortedTickets = categoryTickets.sort((a, b) => {
+      const dateCompare = new Date(a.created_at) - new Date(b.created_at);
+      if (dateCompare !== 0) return dateCompare;
+      return a.id.localeCompare(b.id);
+    });
+    
+    // Find the position of current ticket in the sorted list
+    const sequenceNumber = sortedTickets.findIndex(t => t.id === ticket.id) + 1;
+    
+    // Category prefix mapping
+    const categoryPrefixes = {
+      1: 'OTH-IT',   // IT Requests
+      2: 'OTH-HR',   // HR Requests  
+      3: 'OTH-PAY',  // Payroll Requests
+      4: 'OTH-OPS',  // Operations
+      5: 'OTH-EXP',  // Expense Management
+      6: 'OTH-AI',   // AI Requests
+    };
+    
+    const prefix = categoryPrefixes[ticket.category_id] || 'OTH-GEN';
+    return `${prefix}${String(sequenceNumber).padStart(3, '0')}`;
   }, [ticket, allTickets]);
 
   // Fetch all users for email selection
@@ -215,10 +238,11 @@ const TicketDetailPage = () => {
       if (ticketError) throw ticketError;
       setTicket(ticketData);
 
-      // Fetch all tickets for proper numbering (only basic fields needed)
+      // Fetch all tickets for proper numbering (use same source as other components)
       const { data: allTicketsData, error: allTicketsError } = await supabase
-        .from('tickets')
+        .from('v_ticket_board')
         .select('id, category_id, created_at')
+        .in('category_id', [1,2,3,4,6])  // Same filters as TicketingPage
         .order('created_at', { ascending: true });
       
       if (allTicketsError) {
