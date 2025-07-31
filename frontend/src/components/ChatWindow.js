@@ -102,6 +102,27 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Debounced state update function
+  const applyBufferedUpdate = useCallback(() => {
+    if (bufferedContentRef.current === '' || !currentAssistantMessageId.current) return;
+
+    const contentToAdd = bufferedContentRef.current;
+    bufferedContentRef.current = '';
+    const targetId = currentAssistantMessageId.current;
+    
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === targetId) {
+        const newContent = isFirstChunkRef.current 
+          ? contentToAdd
+          : msg.content + contentToAdd;
+        isFirstChunkRef.current = false;
+        return { ...msg, content: newContent, isLoading: false }; 
+      } else {
+        return msg;
+      }
+    }));
+  }, []);
+
   // Handle auto-submit from home page
   useEffect(() => {
     const handleAutoSubmit = (event) => {
@@ -213,27 +234,6 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       window.removeEventListener('autoSubmitMessage', handleAutoSubmit);
     };
   }, [sessionId, sending, applyBufferedUpdate]);
-
-  // Debounced state update function
-  const applyBufferedUpdate = useCallback(() => {
-    if (bufferedContentRef.current === '' || !currentAssistantMessageId.current) return;
-
-    const contentToAdd = bufferedContentRef.current;
-    bufferedContentRef.current = '';
-    const targetId = currentAssistantMessageId.current;
-    
-    setMessages(prev => prev.map(msg => {
-      if (msg.id === targetId) {
-        const newContent = isFirstChunkRef.current 
-          ? contentToAdd
-          : msg.content + contentToAdd;
-        isFirstChunkRef.current = false;
-        return { ...msg, content: newContent, isLoading: false }; 
-      } else {
-        return msg;
-      }
-    }));
-  }, []);
 
   // Cleanup timer on unmount
   useEffect(() => {
