@@ -88,6 +88,26 @@ function Chat() {
       setServerError(false);
     }
   }, [isAuthenticated, authLoading]);
+
+  // Handle auto-fill and auto-submit from home page
+  useEffect(() => {
+    const autoFillMessage = sessionStorage.getItem('autoFillMessage');
+    const autoSubmitChat = sessionStorage.getItem('autoSubmitChat');
+    
+    if (autoFillMessage && autoSubmitChat === 'true' && selectedSessionId) {
+      // Clear the session storage
+      sessionStorage.removeItem('autoFillMessage');
+      sessionStorage.removeItem('autoSubmitChat');
+      
+      // Auto-fill and submit the message
+      setTimeout(() => {
+        // This will be handled by the ChatWindow component
+        window.dispatchEvent(new CustomEvent('autoSubmitMessage', {
+          detail: { message: autoFillMessage, sessionId: selectedSessionId }
+        }));
+      }, 1000); // Give time for the chat window to load
+    }
+  }, [selectedSessionId]);
   
   const loadSessions = async () => {
     setLoading(true);

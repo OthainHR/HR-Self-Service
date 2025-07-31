@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress } from '@mui/material';
+import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import { 
   Chat as ChatIcon, 
   QuestionAnswer as QuestionAnswerIcon, 
@@ -19,7 +19,8 @@ import {
   Support as SupportIcon,
   Dashboard as DashboardIcon,
   ConfirmationNumber as TicketIcon,
-  DirectionsCar as DirectionsCarIcon
+  DirectionsCar as DirectionsCarIcon,
+  Send as SendIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,6 +40,10 @@ const Home = () => {
   const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
+  
+  // Mini chat state
+  const [miniChatInput, setMiniChatInput] = useState('');
+  const [isSubmittingMiniChat, setIsSubmittingMiniChat] = useState(false);
 
   const getDisplayName = () => {
     if (user?.name) {
@@ -109,6 +114,31 @@ const Home = () => {
     };
     fetchCabServiceVisibility();
   }, []);
+
+  // Mini chat handlers
+  const handleMiniChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!miniChatInput.trim() || isSubmittingMiniChat) return;
+    
+    setIsSubmittingMiniChat(true);
+    
+    // Store the message in sessionStorage to auto-fill in chat page
+    sessionStorage.setItem('autoFillMessage', miniChatInput.trim());
+    sessionStorage.setItem('autoSubmitChat', 'true');
+    
+    // Navigate to chat page
+    navigate('/chat');
+  };
+
+  const handlePresetQuestion = (question) => {
+    setMiniChatInput(question);
+    // Auto-submit after a short delay
+    setTimeout(() => {
+      sessionStorage.setItem('autoFillMessage', question);
+      sessionStorage.setItem('autoSubmitChat', 'true');
+      navigate('/chat');
+    }, 100);
+  };
 
   // Enhanced quick links with icons and categories
   const quickLinks = [
@@ -410,9 +440,206 @@ const Home = () => {
           </Box>
         </motion.div>
 
-        {/* Main Action Cards */}
+        {/* Mini Chat Interface */}
         <motion.div
           custom={1}
+          initial="hidden"
+          animate="visible"
+          variants={sectionVariants}
+        >
+          <Box sx={{
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '24px',
+            padding: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+            position: 'relative',
+            overflow: 'hidden',
+            mb: 4
+          }}>
+            {/* Mini chat background decoration */}
+            <Box sx={{
+              position: 'absolute',
+              top: '-30%',
+              right: '-20%',
+              width: '200px',
+              height: '200px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              borderRadius: '50%',
+              opacity: 0.05,
+              filter: 'blur(40px)',
+              zIndex: 0
+            }} />
+
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              {/* Header */}
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 700,
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                  mb: 1
+                }}>
+                  What's on your mind today?
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
+                  fontWeight: 500
+                }}>
+                  Ask me anything about HR, IT, or workplace policies
+                </Typography>
+              </Box>
+
+              {/* Chat Input */}
+              <Box component="form" onSubmit={handleMiniChatSubmit} sx={{ mb: 3 }}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Ask anything"
+                  value={miniChatInput}
+                  onChange={(e) => setMiniChatInput(e.target.value)}
+                  disabled={isSubmittingMiniChat}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '20px',
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                      backdropFilter: 'blur(10px)',
+                      fontSize: '1rem',
+                      transition: 'all 0.2s ease',
+                      border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      '&:hover': {
+                        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
+                        borderColor: '#6366f1'
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 8px 25px rgba(99, 102, 241, 0.2)',
+                        borderColor: '#6366f1'
+                      }
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      border: 'none'
+                    },
+                    '& .MuiInputBase-input': {
+                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                      '&::placeholder': {
+                        color: isDarkMode ? '#94a3b8' : '#64748b',
+                        opacity: 1
+                      }
+                    }
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Button
+                          type="submit"
+                          disabled={!miniChatInput.trim() || isSubmittingMiniChat}
+                          sx={{
+                            borderRadius: '16px',
+                            minWidth: '48px',
+                            height: '48px',
+                            background: !miniChatInput.trim() || isSubmittingMiniChat
+                              ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
+                              : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                            color: 'white',
+                            boxShadow: !miniChatInput.trim() || isSubmittingMiniChat
+                              ? 'none'
+                              : '0 6px 20px rgba(59, 130, 246, 0.3)',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              background: !miniChatInput.trim() || isSubmittingMiniChat
+                                ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
+                                : 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                              transform: !miniChatInput.trim() || isSubmittingMiniChat ? 'none' : 'translateY(-2px)',
+                              boxShadow: !miniChatInput.trim() || isSubmittingMiniChat
+                                ? 'none'
+                                : '0 8px 25px rgba(59, 130, 246, 0.4)'
+                            }
+                          }}
+                        >
+                          {isSubmittingMiniChat ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            <SendIcon sx={{ fontSize: '1.125rem' }} />
+                          )}
+                        </Button>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Box>
+
+              {/* Preset Questions */}
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ 
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
+                  mb: 2,
+                  fontWeight: 500
+                }}>
+                  Quick questions:
+                </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 1,
+                  justifyContent: 'center',
+                  flexWrap: 'wrap'
+                }}>
+                  {[
+                    'What is the attendance policy at Othain?',
+                    'How do I apply for leave?',
+                    'When is salary credited each month?'
+                  ].map((question, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + (index * 0.1), duration: 0.3 }}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => handlePresetQuestion(question)}
+                        disabled={isSubmittingMiniChat}
+                        sx={{
+                          borderRadius: '12px',
+                          px: 2,
+                          py: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'none',
+                          color: isDarkMode ? '#d1d5db' : '#374151',
+                          background: isDarkMode 
+                            ? 'rgba(55, 65, 81, 0.3)'
+                            : 'rgba(255, 255, 255, 0.5)',
+                          backdropFilter: 'blur(5px)',
+                          border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.5)',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            background: isDarkMode 
+                              ? 'rgba(75, 85, 99, 0.4)'
+                              : 'rgba(255, 255, 255, 0.8)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
+                            borderColor: '#6366f1'
+                          }
+                        }}
+                      >
+                        {question}
+                      </Button>
+                    </motion.div>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </motion.div>
+
+        {/* Main Action Cards */}
+        <motion.div
+          custom={2}
           initial="hidden"
           animate="visible"
           variants={sectionVariants}
@@ -647,7 +874,7 @@ const Home = () => {
 
         {/* Quick Links Section */}
         <motion.div
-          custom={2}
+          custom={3}
           initial="hidden"
           animate="visible"
           variants={sectionVariants}

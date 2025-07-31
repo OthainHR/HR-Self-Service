@@ -102,6 +102,29 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle auto-submit from home page
+  useEffect(() => {
+    const handleAutoSubmit = (event) => {
+      const { message, sessionId: eventSessionId } = event.detail;
+      if (eventSessionId === sessionId && message) {
+        setInput(message);
+        // Auto-submit after a short delay
+        setTimeout(() => {
+          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+          const form = document.querySelector('form');
+          if (form) {
+            form.dispatchEvent(submitEvent);
+          }
+        }, 500);
+      }
+    };
+
+    window.addEventListener('autoSubmitMessage', handleAutoSubmit);
+    return () => {
+      window.removeEventListener('autoSubmitMessage', handleAutoSubmit);
+    };
+  }, [sessionId]);
+
   // Debounced state update function
   const applyBufferedUpdate = useCallback(() => {
     if (bufferedContentRef.current === '' || !currentAssistantMessageId.current) return;
