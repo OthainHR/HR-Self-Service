@@ -39,7 +39,8 @@
 }
 
 body, #root {
-  padding-top: calc(env(safe-area-inset-top) + 26px);
+  margin: 0;
+  padding: 0;
 }
 
 code {
@@ -47,7 +48,6 @@ code {
 }
 
 a {
-  padding-top: calc(env(safe-area-inset-top) + 25px);
   text-decoration: none;
   color: inherit;
   font-family: Lexend, sans-serif;

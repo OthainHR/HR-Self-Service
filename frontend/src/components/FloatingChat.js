@@ -78,7 +78,6 @@ const FloatingChat = () => {
   // Focus input field when chat opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      // Use a longer delay to ensure the chat window is fully rendered
       const timer = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -215,14 +214,15 @@ const FloatingChat = () => {
           label="Error"
           size="small"
           sx={{ 
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(239, 68, 68, 0.15) 100%)',
-            border: '1px solid rgba(220, 38, 38, 0.3)',
-            color: '#dc2626',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            color: '#ef4444',
             fontWeight: 600,
-            fontSize: '0.625rem',
-            height: '20px',
-            '& .MuiChip-icon': { color: '#dc2626', fontSize: '0.75rem' }
+            fontSize: '0.7rem',
+            height: '24px',
+            '& .MuiChip-icon': { color: '#ef4444', fontSize: '0.8rem' },
+            transition: 'all 0.3s ease'
           }}
         />
       );
@@ -233,14 +233,15 @@ const FloatingChat = () => {
         label="Online"
         size="small"
         sx={{ 
-          borderRadius: '8px',
-          background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
-          border: '1px solid rgba(5, 150, 105, 0.3)',
-          color: '#059669',
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%)',
+          border: '1px solid rgba(34, 197, 94, 0.2)',
+          color: '#22c55e',
           fontWeight: 600,
-          fontSize: '0.625rem',
-          height: '20px',
-          '& .MuiChip-icon': { color: '#059669', fontSize: '0.75rem' }
+          fontSize: '0.7rem',
+          height: '24px',
+          '& .MuiChip-icon': { color: '#22c55e', fontSize: '0.8rem' },
+          transition: 'all 0.3s ease'
         }}
       />
     );
@@ -299,7 +300,7 @@ const FloatingChat = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - UNCHANGED */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ 
@@ -308,15 +309,15 @@ const FloatingChat = () => {
           y: isHovered ? -8 : (isAnimating ? 0 : [0, -8, 0])
         }}
         transition={{ 
-          delay: isHovered ? 0 : (isAnimating ? 0 : 1), 
-          duration: 0.3,
+          delay: isHovered ? 0 : (isAnimating ? 0 : 4.5), 
+          duration: 1.2,
           y: {
-            duration: isHovered ? 0.3 : (isAnimating ? 0.3 : 2),
+            duration: isHovered ? 0.4 : (isAnimating ? 0.4 : 3),
             repeat: isHovered ? 0 : (isAnimating ? 0 : Infinity),
             ease: "easeInOut"
           },
           scale: {
-            duration: isHovered ? 0.3 : (isAnimating ? 0.3 : 2),
+            duration: isHovered ? 0.4 : (isAnimating ? 0.4 : 3),
             repeat: isHovered ? 0 : (isAnimating ? 0 : Infinity),
             ease: "easeInOut"
           }
@@ -408,494 +409,675 @@ const FloatingChat = () => {
         </Tooltip>
       </motion.div>
 
-      {/* Mini Chat Window */}
+      {/* Modern Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
+            initial={{ y: '100%', opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: '100%', opacity: 0, scale: 0.9 }}
             transition={{ 
               duration: 0.25, 
-              ease: [0.4, 0.0, 0.2, 1],
-              opacity: { duration: 0.2 }
+              ease: [0.25, 0.1, 0.25, 1]
             }}
             style={{
               position: 'fixed',
               bottom: '100px',
               right: '20px',
-              width: '400px',
-              height: '500px',
+              width: '420px',
+              height: '600px',
               zIndex: 999,
-              maxWidth: '400px'
+              maxWidth: '420px'
             }}
           >
             <Paper
-              elevation={8}
+              elevation={0}
               sx={{
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: '20px',
+                borderRadius: '24px',
                 overflow: 'hidden',
                 background: isDarkMode 
-                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
-                backdropFilter: 'blur(20px)',
-                border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+                  ? 'linear-gradient(145deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 50%, rgba(51, 65, 85, 0.98) 100%)'
+                  : 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(24px)',
+                border: isDarkMode 
+                  ? '1px solid rgba(71, 85, 105, 0.3)' 
+                  : '1px solid rgba(226, 232, 240, 0.4)',
+                boxShadow: isDarkMode
+                  ? '0 32px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(71, 85, 105, 0.1)'
+                  : '0 32px 64px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.3)',
                 position: 'relative'
               }}
             >
-              {/* Header */}
+              {/* Modern Header */}
               <Box 
                 sx={{ 
-                  py: 2,
-                  px: 2,
+                  py: 3,
+                  px: 3,
                   background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
-                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
-                  backdropFilter: 'blur(10px)',
-                  borderBottom: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                    ? 'linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.4) 100%)'
+                    : 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(16px)',
+                  borderBottom: isDarkMode 
+                    ? '1px solid rgba(71, 85, 105, 0.2)' 
+                    : '1px solid rgba(226, 232, 240, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  position: 'relative'
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar
-                    sx={{
-                      background: 'none',
-                      width: 32,
-                      height: 32,
-                      mr: 1.5,
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                    }}
+                {/* Subtle animated background */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, 
+                      ${isDarkMode ? 'rgba(99, 102, 241, 0.03)' : 'rgba(99, 102, 241, 0.02)'} 0%, 
+                      transparent 25%, 
+                      transparent 75%, 
+                      ${isDarkMode ? 'rgba(139, 92, 246, 0.03)' : 'rgba(139, 92, 246, 0.02)'} 100%)`,
+                    animation: 'subtle-flow 8s ease-in-out infinite',
+                    '@keyframes subtle-flow': {
+                      '0%, 100%': { opacity: 0.3 },
+                      '50%': { opacity: 0.6 }
+                    }
+                  }}
+                />
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ duration: 0.5, ease: "backOut" }}
                   >
-                    <img 
-                      src={isDarkMode ? '/logowhite.png' : '/Othain-logo2.png'}
-                      alt="Othain Logo"
-                      style={{ width: '70%', height: '70%', objectFit: 'contain' }}
-                    />
-                  </Avatar>
+                    <Avatar
+                      sx={{
+                        background: isDarkMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255, 255, 255, 0.9)',
+                        width: 40,
+                        height: 40,
+                        mr: 2,
+                        boxShadow: isDarkMode ? '0 8px 24px rgba(102, 126, 234, 0.3)' : '0 8px 24px rgba(0, 0, 0, 0.1)',
+                        border: isDarkMode ? '2px solid rgba(255, 255, 255, 0.1)' : '2px solid rgba(226, 232, 240, 0.3)'
+                      }}
+                    >
+                      <img 
+                        src={isDarkMode ? '/logowhite.png' : '/Othain-logo2.png'}
+                        alt="Othain Logo"
+                        style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+                      />
+                    </Avatar>
+                  </motion.div>
                   
                   <Box>
-                    <Typography variant="subtitle2" sx={{ 
-                      fontWeight: 700, 
-                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                      fontSize: '0.875rem'
-                    }}>
-                      Othain Agent
-                    </Typography>
-                    <Typography variant="caption" sx={{ 
-                      color: isDarkMode ? '#94a3b8' : '#64748b',
-                      fontWeight: 500,
-                      fontSize: '0.625rem'
-                    }}>
-                      Ask me anything
-                    </Typography>
+                    <motion.div
+                      initial={{ x: -15, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                    >
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 700, 
+                        color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                        fontSize: '1rem',
+                        letterSpacing: '-0.025em'
+                      }}>
+                        Othain Agent
+                      </Typography>
+                    </motion.div>
+                    <motion.div
+                      initial={{ x: -15, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
+                      <Typography variant="body2" sx={{ 
+                        color: isDarkMode ? '#94a3b8' : '#64748b',
+                        fontWeight: 500,
+                        fontSize: '0.75rem'
+                      }}>
+                        Ask me anything
+                      </Typography>
+                    </motion.div>
                   </Box>
                 </Box>
                 
-                {getStatusBadge()}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.25, duration: 0.25 }}
+                >
+                  {getStatusBadge()}
+                </motion.div>
               </Box>
 
-              {/* Messages Area */}
+              {/* Enhanced Messages Area */}
               <Box 
                 sx={{ 
                   flexGrow: 1, 
                   overflow: 'auto',
-                  p: 2,
+                  p: 3,
                   display: 'flex',
                   flexDirection: 'column',
                   background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.3) 0%, rgba(30, 41, 59, 0.3) 100%)'
-                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.3) 0%, rgba(241, 245, 249, 0.3) 100%)',
-                  // Custom scrollbar
+                    ? 'linear-gradient(145deg, rgba(15, 23, 42, 0.2) 0%, rgba(30, 41, 59, 0.2) 100%)'
+                    : 'rgba(255, 255, 255, 0.5)',
+                  position: 'relative',
+                  // Modern scrollbar
                   '&::-webkit-scrollbar': {
-                    width: '4px',
+                    width: '6px',
                   },
                   '&::-webkit-scrollbar-track': {
                     background: 'transparent',
                   },
                   '&::-webkit-scrollbar-thumb': {
                     background: isDarkMode 
-                      ? 'rgba(75, 85, 99, 0.5)'
-                      : 'rgba(203, 213, 225, 0.5)',
+                      ? 'linear-gradient(to bottom, rgba(71, 85, 105, 0.4), rgba(51, 65, 85, 0.4))'
+                      : 'linear-gradient(to bottom, rgba(203, 213, 225, 0.4), rgba(148, 163, 184, 0.4))',
                     borderRadius: '10px',
+                    '&:hover': {
+                      background: isDarkMode 
+                        ? 'linear-gradient(to bottom, rgba(71, 85, 105, 0.6), rgba(51, 65, 85, 0.6))'
+                        : 'linear-gradient(to bottom, rgba(203, 213, 225, 0.6), rgba(148, 163, 184, 0.6))'
+                    }
                   }
                 }}
               >
                 {messages.length === 0 ? (
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      justifyContent: 'center', 
-                      alignItems: 'center',
-                      height: '100%',
-                      p: 2,
-                      textAlign: 'center'
-                    }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
                   >
-                    <Avatar sx={{
-                      width: 48,
-                      height: 48,
-                      mx: 'auto',
-                      mb: 2,
-                      background: 'none',
-                      boxShadow: '0 8px 20px rgba(59, 130, 246, 0.3)'
-                    }}>
-                      <img 
-                        src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
-                        alt="Othain Logo"
-                        style={{ width: '70%', height: '70%', objectFit: 'contain' }}
-                      />
-                    </Avatar>
-                    
-                    <Typography variant="body2" sx={{ 
-                      mb: 2, 
-                      fontWeight: 600,
-                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                      fontSize: '0.875rem'
-                    }}>
-                      Welcome to Othain ESS!
-                    </Typography>
-                    
-                    <Typography variant="caption" sx={{ 
-                      color: isDarkMode ? '#94a3b8' : '#64748b',
-                      fontSize: '0.75rem',
-                      maxWidth: '250px'
-                    }}>
-                      Ask about HR policies, benefits, IT support, or anything else.
-                    </Typography>
-                  </Box>
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        height: '100%',
+                        p: 3,
+                        textAlign: 'center'
+                      }}
+                    >
+                      <motion.div
+                        animate={{ 
+                          y: [0, -8, 0],
+                          scale: [1, 1.05, 1]
+                        }}
+                        transition={{ 
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      >
+                        <Avatar sx={{
+                          width: 64,
+                          height: 64,
+                          mx: 'auto',
+                          mb: 3,
+                          background: isDarkMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255, 255, 255, 0.9)',
+                          boxShadow: isDarkMode ? '0 16px 32px rgba(102, 126, 234, 0.3)' : '0 16px 32px rgba(0, 0, 0, 0.1)',
+                          border: isDarkMode ? '3px solid rgba(255, 255, 255, 0.1)' : '3px solid rgba(226, 232, 240, 0.3)'
+                        }}>
+                          <img 
+                            src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
+                            alt="Othain Logo"
+                            style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+                          />
+                        </Avatar>
+                      </motion.div>
+                      
+                      <Typography variant="h5" sx={{ 
+                        mb: 2, 
+                        fontWeight: 700,
+                        color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                        fontSize: '1.25rem',
+                        letterSpacing: '-0.025em'
+                      }}>
+                        Welcome to Othain ESS!
+                      </Typography>
+                      
+                      <Typography variant="body1" sx={{ 
+                        color: isDarkMode ? '#94a3b8' : '#64748b',
+                        fontSize: '0.9rem',
+                        maxWidth: '280px',
+                        lineHeight: 1.6,
+                        mb: 3
+                      }}>
+                        Ask about HR policies, benefits, IT support, or anything else. I'm here to help!
+                      </Typography>
+
+                      {/* Quick action suggestions */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                        {['HR Policy', 'Benefits', 'IT Support'].map((suggestion, index) => (
+                          <motion.div
+                            key={suggestion}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 + index * 0.05, duration: 0.2 }}
+                          >
+                            <Chip
+                              label={suggestion}
+                              size="small"
+                              onClick={() => setInput(`Tell me about ${suggestion.toLowerCase()}`)}
+                              sx={{
+                                background: isDarkMode 
+                                  ? 'linear-gradient(135deg, rgba(71, 85, 105, 0.3) 0%, rgba(51, 65, 85, 0.3) 100%)'
+                                  : 'rgba(255, 255, 255, 0.8)',
+                                color: isDarkMode ? '#e2e8f0' : '#475569',
+                                border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.4)' : 'rgba(226, 232, 240, 0.4)'}`,
+                                fontWeight: 500,
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  background: isDarkMode 
+                                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)'
+                                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                                  transform: 'translateY(-1px)',
+                                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+                                }
+                              }}
+                            />
+                          </motion.div>
+                        ))}
+                      </Box>
+                    </Box>
+                  </motion.div>
                 ) : (
                   messages.map((message, index) => (
-                    <Box
+                    <motion.div
                       key={message.id || index}
-                      sx={{
-                        mb: 2,
-                        display: 'flex',
-                        justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
-                      }}
+                      initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
                     >
                       <Box
                         sx={{
-                          maxWidth: '80%',
-                          p: 1.5,
-                          borderRadius: message.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          background: message.role === 'user'
-                            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-                            : isDarkMode 
-                              ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
-                              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                          backdropFilter: 'blur(10px)',
-                          border: message.role === 'user'
-                            ? '1px solid rgba(59, 130, 246, 0.3)'
-                            : isDarkMode ? '1px solid rgba(75, 85, 99, 0.3)' : '1px solid rgba(226, 232, 240, 0.3)',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                          wordBreak: 'break-word'
+                          mb: 3,
+                          display: 'flex',
+                          justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
                         }}
                       >
-                        {message.role === 'user' ? (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: 'white',
-                              fontSize: '0.75rem',
-                              lineHeight: 1.4,
-                              fontWeight: 500
-                            }}
-                          >
-                            {message.content}
-                          </Typography>
-                        ) : (
-                          <Box sx={{ 
-                            color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                            fontSize: '0.75rem',
-                            lineHeight: 1.4,
-                            fontWeight: 400,
-                            '& h1, & h2, & h3, & h4, & h5, & h6': {
-                              color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                              fontWeight: 600,
-                              margin: '8px 0 4px 0',
-                              fontSize: '0.875rem'
-                            },
-                            '& p': {
-                              margin: '4px 0',
-                              fontSize: '0.75rem'
-                            },
-                            '& ul, & ol': {
-                              margin: '4px 0',
-                              paddingLeft: '16px'
-                            },
-                            '& li': {
-                              margin: '2px 0',
-                              fontSize: '0.75rem'
-                            },
-                            '& strong, & b': {
-                              fontWeight: 600,
-                              color: isDarkMode ? '#f1f5f9' : '#1e293b'
-                            },
-                            '& em, & i': {
-                              fontStyle: 'italic'
-                            },
-                            '& code': {
-                              backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)',
-                              padding: '2px 4px',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              fontFamily: 'monospace'
-                            },
-                            '& pre': {
-                              backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)',
-                              padding: '8px',
-                              borderRadius: '8px',
-                              overflow: 'auto',
-                              margin: '8px 0',
-                              fontSize: '0.7rem'
-                            },
-                            '& blockquote': {
-                              borderLeft: `3px solid ${isDarkMode ? '#6366f1' : '#3b82f6'}`,
-                              paddingLeft: '8px',
-                              margin: '8px 0',
-                              fontStyle: 'italic',
-                              color: isDarkMode ? '#94a3b8' : '#64748b'
-                            }
-                          }}>
-                            <ReactMarkdown 
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                // Custom components for better styling
-                                p: ({ children }) => <Typography component="p" variant="body2" sx={{ margin: '4px 0', fontSize: '0.75rem' }}>{children}</Typography>,
-                                strong: ({ children }) => <strong style={{ fontWeight: 600, color: isDarkMode ? '#f1f5f9' : '#1e293b' }}>{children}</strong>,
-                                em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
-                                code: ({ children, className }) => {
-                                  const isInline = !className;
-                                  if (isInline) {
-                                    return (
-                                      <code style={{
-                                        backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)',
-                                        padding: '2px 4px',
-                                        borderRadius: '4px',
-                                        fontSize: '0.7rem',
-                                        fontFamily: 'monospace'
-                                      }}>
-                                        {children}
-                                      </code>
-                                    );
-                                  }
-                                  return (
-                                    <pre style={{
-                                      backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 0.5)',
-                                      padding: '8px',
-                                      borderRadius: '8px',
-                                      overflow: 'auto',
-                                      margin: '8px 0',
-                                      fontSize: '0.7rem'
-                                    }}>
-                                      <code>{children}</code>
-                                    </pre>
-                                  );
-                                }
+                        <Box
+                          sx={{
+                            maxWidth: '85%',
+                            p: 2.5,
+                            borderRadius: message.role === 'user' ? '20px 20px 8px 20px' : '20px 20px 20px 8px',
+                            background: message.role === 'user'
+                              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                              : isDarkMode 
+                                ? 'linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.4) 100%)'
+                                : 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(16px)',
+                            border: message.role === 'user'
+                              ? '1px solid rgba(102, 126, 234, 0.3)'
+                              : isDarkMode ? '1px solid rgba(71, 85, 105, 0.3)' : '1px solid rgba(226, 232, 240, 0.4)',
+                            boxShadow: message.role === 'user'
+                              ? '0 8px 24px rgba(102, 126, 234, 0.2)'
+                              : '0 8px 24px rgba(0, 0, 0, 0.08)',
+                            wordBreak: 'break-word',
+                            position: 'relative'
+                          }}
+                        >
+                          {message.role === 'user' ? (
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: 'white',
+                                fontSize: '0.875rem',
+                                lineHeight: 1.5,
+                                fontWeight: 500
                               }}
                             >
                               {message.content}
-                            </ReactMarkdown>
-                            {message.isLoading && (
-                              <Box sx={{ 
-                                display: 'flex', 
-                                flexDirection: 'column',
-                                gap: 0.5,
-                                mt: 1
-                              }}>
-                                {/* AI is thinking... section */}
-                                <Box sx={{ 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: 0.5,
-                                  fontSize: '0.625rem',
-                                  fontStyle: 'italic',
-                                  color: isDarkMode ? '#94a3b8' : '#64748b',
-                                  fontWeight: 500
-                                }}>
-                                  <motion.div
-                                    animate={{ 
-                                      scale: [1, 1.2, 1],
-                                      rotate: [0, 10, -10, 0]
-                                    }}
-                                    transition={{ 
-                                      duration: 2, 
-                                      repeat: Infinity, 
-                                      ease: "easeInOut" 
-                                    }}
-                                    style={{ fontSize: '0.75rem' }}
-                                  >
-                                    ✨
-                                  </motion.div>
-                                  <motion.div
-                                    animate={{ 
-                                      scale: [1, 1.1, 1],
-                                      rotate: [0, -5, 5, 0]
-                                    }}
-                                    transition={{ 
-                                      duration: 1.5, 
-                                      repeat: Infinity, 
-                                      ease: "easeInOut",
-                                      delay: 0.5
-                                    }}
-                                    style={{ fontSize: '0.625rem' }}
-                                  >
-                                    ✨
-                                  </motion.div>
-                                  
-                                </Box>
-                                
-                                {/* Thinking button */}
+                            </Typography>
+                          ) : (
+                            <Box sx={{ 
+                              color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                              fontSize: '0.875rem',
+                              lineHeight: 1.6,
+                              fontWeight: 400,
+                              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                                color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                                fontWeight: 600,
+                                margin: '12px 0 8px 0',
+                                fontSize: '1rem'
+                              },
+                              '& p': {
+                                margin: '8px 0',
+                                fontSize: '0.875rem'
+                              },
+                              '& ul, & ol': {
+                                margin: '8px 0',
+                                paddingLeft: '20px'
+                              },
+                              '& li': {
+                                margin: '4px 0',
+                                fontSize: '0.875rem'
+                              },
+                              '& strong, & b': {
+                                fontWeight: 600,
+                                color: isDarkMode ? '#f1f5f9' : '#1e293b'
+                              },
+                              '& em, & i': {
+                                fontStyle: 'italic'
+                              },
+                              '& code': {
+                                backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                                padding: '3px 6px',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem',
+                                fontFamily: 'Monaco, Consolas, monospace',
+                                border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.4)'}`
+                              },
+                              '& pre': {
+                                backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                                padding: '12px',
+                                borderRadius: '12px',
+                                overflow: 'auto',
+                                margin: '12px 0',
+                                fontSize: '0.8rem',
+                                border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.4)'}`
+                              },
+                              '& blockquote': {
+                                borderLeft: `4px solid ${isDarkMode ? '#667eea' : '#3b82f6'}`,
+                                paddingLeft: '12px',
+                                margin: '12px 0',
+                                fontStyle: 'italic',
+                                color: isDarkMode ? '#94a3b8' : '#64748b',
+                                background: isDarkMode ? 'rgba(51, 65, 85, 0.2)' : 'rgba(248, 250, 252, 0.5)',
+                                borderRadius: '0 8px 8px 0',
+                                padding: '8px 12px'
+                              }
+                            }}>
+                              <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => <Typography component="p" variant="body2" sx={{ margin: '8px 0', fontSize: '0.875rem', lineHeight: 1.6 }}>{children}</Typography>,
+                                  strong: ({ children }) => <strong style={{ fontWeight: 600, color: isDarkMode ? '#f1f5f9' : '#1e293b' }}>{children}</strong>,
+                                  em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+                                  code: ({ children, className }) => {
+                                    const isInline = !className;
+                                    if (isInline) {
+                                      return (
+                                        <code style={{
+                                          backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                                          padding: '3px 6px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.8rem',
+                                          fontFamily: 'Monaco, Consolas, monospace',
+                                          border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.4)'}`
+                                        }}>
+                                          {children}
+                                        </code>
+                                      );
+                                    }
+                                    return (
+                                      <pre style={{
+                                        backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        overflow: 'auto',
+                                        margin: '12px 0',
+                                        fontSize: '0.8rem',
+                                        border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.4)'}`
+                                      }}>
+                                        <code>{children}</code>
+                                      </pre>
+                                    );
+                                  }
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                              {message.isLoading && (
                                 <motion.div
-                                  animate={{ 
-                                    scale: [1, 1.05, 1],
-                                    y: [0, -2, 0]
-                                  }}
-                                  transition={{ 
-                                    duration: 1.5, 
-                                    repeat: Infinity, 
-                                    ease: "easeInOut" 
-                                  }}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3 }}
                                 >
                                   <Box sx={{ 
-                                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                                    color: '#92400e',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    borderRadius: '12px',
-                                    fontSize: '0.625rem',
-                                    fontWeight: 600,
-                                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    alignSelf: 'flex-start'
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    gap: 1.5,
+                                    mt: 2
                                   }}>
+                                    {/* Enhanced AI thinking section */}
+                                    <Box sx={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: 1,
+                                      fontSize: '0.75rem',
+                                      fontStyle: 'italic',
+                                      color: isDarkMode ? '#94a3b8' : '#64748b',
+                                      fontWeight: 500
+                                    }}>
+                                      <motion.div
+                                        animate={{ 
+                                          scale: [1, 1.3, 1],
+                                          rotate: [0, 15, -15, 0]
+                                        }}
+                                        transition={{ 
+                                          duration: 2.5, 
+                                          repeat: Infinity, 
+                                          ease: "easeInOut" 
+                                        }}
+                                        style={{ fontSize: '1rem' }}
+                                      >
+                                        ✨
+                                      </motion.div>
+                                      <motion.div
+                                        animate={{ 
+                                          scale: [1, 1.2, 1],
+                                          rotate: [0, -10, 10, 0]
+                                        }}
+                                        transition={{ 
+                                          duration: 2, 
+                                          repeat: Infinity, 
+                                          ease: "easeInOut",
+                                          delay: 0.5
+                                        }}
+                                        style={{ fontSize: '0.8rem' }}
+                                      >
+                                        ✨
+                                      </motion.div>
+                                      <motion.div
+                                        animate={{ 
+                                          scale: [1, 1.1, 1],
+                                          rotate: [0, 8, -8, 0]
+                                        }}
+                                        transition={{ 
+                                          duration: 1.8, 
+                                          repeat: Infinity, 
+                                          ease: "easeInOut",
+                                          delay: 1
+                                        }}
+                                        style={{ fontSize: '0.7rem' }}
+                                      >
+                                        ✨
+                                      </motion.div>
+                                    </Box>
+                                    
+                                    {/* Enhanced thinking indicator */}
                                     <motion.div
-                                      animate={{ rotate: 360 }}
-                                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                      animate={{ 
+                                        scale: [1, 1.02, 1],
+                                        y: [0, -1, 0]
+                                      }}
+                                      transition={{ 
+                                        duration: 2, 
+                                        repeat: Infinity, 
+                                        ease: "easeInOut" 
+                                      }}
                                     >
-                                      <CircularProgress size={8} sx={{ color: 'inherit' }} />
+                                      <Box sx={{ 
+                                        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                                        color: '#92400e',
+                                        px: 2,
+                                        py: 1,
+                                        borderRadius: '16px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        alignSelf: 'flex-start',
+                                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                                        backdropFilter: 'blur(8px)'
+                                      }}>
+                                        <motion.div
+                                          animate={{ rotate: 360 }}
+                                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                                        >
+                                          <CircularProgress size={12} sx={{ color: 'inherit' }} />
+                                        </motion.div>
+                                        AI is thinking...
+                                      </Box>
                                     </motion.div>
-                                    Thinking...
                                   </Box>
                                 </motion.div>
-                              </Box>
-                            )}
-                          </Box>
-                        )}
+                              )}
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
+                    </motion.div>
                   ))
                 )}
                 <div ref={messagesEndRef} />
               </Box>
 
-              {/* Input Area */}
-              <Box 
-                component="form" 
-                onSubmit={handleSubmit}
-                sx={{
-                  p: 2,
-                  background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
-                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%)',
-                  backdropFilter: 'blur(10px)',
-                  borderTop: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}
+              {/* Enhanced Input Area */}
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
               >
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Type your message..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (input.trim() && sessionId && !sending) {
-                        handleSubmit(e);
-                      }
-                    }
-                  }}
-                  disabled={!sessionId || sending}
-                  size="small"
-                  inputRef={inputRef}
+                <Box 
+                  component="form" 
+                  onSubmit={handleSubmit}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '16px',
-                      background: isDarkMode 
-                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
-                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                      backdropFilter: 'blur(10px)',
-                      fontSize: '0.75rem',
-                      border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                      '&:hover': {
-                        borderColor: '#6366f1'
-                      },
-                      '&.Mui-focused': {
-                        borderColor: '#6366f1'
-                      }
-                    },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      border: 'none'
-                    },
-                    '& .MuiInputBase-input': {
-                      color: isDarkMode ? '#f1f5f9' : '#1e293b',
-                      fontSize: '0.75rem',
-                      '&::placeholder': {
-                        color: isDarkMode ? '#94a3b8' : '#64748b',
-                        opacity: 1
-                      }
-                    }
-                  }}
-                />
-                
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={!sessionId || sending || !input.trim()}
-                  size="small"
-                  sx={{
-                    borderRadius: '12px',
-                    minWidth: '40px',
-                    height: '40px',
-                    background: !sessionId || sending || !input.trim()
-                      ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
-                      : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                    color: 'white',
-                    boxShadow: !sessionId || sending || !input.trim()
-                      ? 'none'
-                      : '0 4px 12px rgba(59, 130, 246, 0.3)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      background: !sessionId || sending || !input.trim()
-                        ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
-                        : 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                      transform: !sessionId || sending || !input.trim() ? 'none' : 'translateY(-1px)',
-                      boxShadow: !sessionId || sending || !input.trim()
-                        ? 'none'
-                        : '0 6px 20px rgba(59, 130, 246, 0.4)'
-                    }
+                    p: 3,
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.4) 100%)'
+                      : 'rgba(255, 255, 255, 0.9)',
+                    backdropFilter: 'blur(16px)',
+                    borderTop: isDarkMode 
+                      ? '1px solid rgba(71, 85, 105, 0.3)' 
+                      : '1px solid rgba(226, 232, 240, 0.3)',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: 2
                   }}
                 >
-                  {sending ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <SendIcon sx={{ fontSize: '1rem' }} />
-                  )}
-                </Button>
-              </Box>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Type your message..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (input.trim() && sessionId && !sending) {
+                          handleSubmit(e);
+                        }
+                      }
+                    }}
+                    disabled={!sessionId || sending}
+                    multiline
+                    maxRows={4}
+                    inputRef={inputRef}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '20px',
+                        background: isDarkMode 
+                          ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(51, 65, 85, 0.6) 100%)'
+                          : 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(12px)',
+                        fontSize: '0.875rem',
+                        border: isDarkMode 
+                          ? '1px solid rgba(71, 85, 105, 0.4)' 
+                          : '1px solid rgba(226, 232, 240, 0.4)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          boxShadow: '0 4px 16px rgba(102, 126, 234, 0.1)'
+                        },
+                        '&.Mui-focused': {
+                          borderColor: '#667eea',
+                          boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)'
+                        }
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        border: 'none'
+                      },
+                      '& .MuiInputBase-input': {
+                        color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5,
+                        '&::placeholder': {
+                          color: isDarkMode ? '#94a3b8' : '#64748b',
+                          opacity: 1
+                        }
+                      }
+                    }}
+                  />
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={!sessionId || sending || !input.trim()}
+                      sx={{
+                        borderRadius: '16px',
+                        minWidth: '48px',
+                        height: '48px',
+                        background: !sessionId || sending || !input.trim()
+                          ? (isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(226, 232, 240, 0.3)')
+                          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        boxShadow: !sessionId || sending || !input.trim()
+                          ? 'none'
+                          : '0 8px 24px rgba(102, 126, 234, 0.3)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          background: !sessionId || sending || !input.trim()
+                            ? (isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(226, 232, 240, 0.3)')
+                            : 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                          transform: !sessionId || sending || !input.trim() ? 'none' : 'translateY(-2px)',
+                          boxShadow: !sessionId || sending || !input.trim()
+                            ? 'none'
+                            : '0 12px 32px rgba(102, 126, 234, 0.4)'
+                        },
+                        '&:disabled': {
+                          color: isDarkMode ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 0.5)'
+                        }
+                      }}
+                    >
+                      {sending ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <CircularProgress size={20} color="inherit" />
+                        </motion.div>
+                      ) : (
+                        <SendIcon sx={{ fontSize: '1.25rem' }} />
+                      )}
+                    </Button>
+                  </motion.div>
+                </Box>
+              </motion.div>
             </Paper>
           </motion.div>
         )}
@@ -904,4 +1086,4 @@ const FloatingChat = () => {
   );
 };
 
-export default FloatingChat; 
+export default FloatingChat;

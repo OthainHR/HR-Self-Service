@@ -307,7 +307,7 @@ const AppContent = () => {
       <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
             {user && <NavBar />} 
-            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' /*overflow: 'auto'*/ }}>
+            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', pt: '80px' /*overflow: 'auto'*/ }}>
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />

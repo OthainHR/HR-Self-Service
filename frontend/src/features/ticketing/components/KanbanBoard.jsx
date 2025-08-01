@@ -8,8 +8,10 @@ import {
   faHeadset, faExternalLinkAlt, faClock, faCalendarAlt,
   faUser, faBuilding, faLaptopCode, faUserTie, 
   faFileInvoiceDollar, faTools, faMoneyCheckAlt,
-  faRobot
+  faRobot, faDownload
 } from '@fortawesome/free-solid-svg-icons';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { useNavigate } from 'react-router-dom';
 import { 
   Select, MenuItem, FormControl, InputLabel, Chip, 
@@ -770,6 +772,13 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: null, loading: false });
+  
+  // Date range selector state for export
+  const [selectedDateRange, setSelectedDateRange] = useState('');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDateRange, setShowCustomDateRange] = useState(false);
+  
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -810,9 +819,180 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
     };
   }, [onDataRefresh]);
 
+  // Date range selector helper functions
+  const getDateRangeOptions = () => {
+    const now = new Date();
+    const options = [
+      { value: '', label: 'All Tickets' },
+      { value: 'this_week', label: 'This Week' },
+      { value: 'last_week', label: 'Last Week' },
+      { value: 'this_month', label: 'This Month' },
+      { value: 'last_month', label: 'Last Month' },
+      { value: 'this_year', label: 'This Year' },
+      { value: 'last_year', label: 'Last Year' },
+      { value: 'last_30_days', label: 'Last 30 Days' },
+      { value: 'last_90_days', label: 'Last 90 Days' },
+      { value: 'custom', label: 'Custom Date Range' }
+    ];
+    
+    // Add last 4 weeks
+    for (let i = 1; i <= 4; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (i * 7));
+      
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - date.getDay());
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      const weekLabel = `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      options.push({ value: `week_${startOfWeek.toISOString().split('T')[0]}`, label: weekLabel });
+    }
+    
+    return options;
+  };
+
+  const getTicketsForDateRange = (dateRange, tickets) => {
+    if (!dateRange) return tickets;
+    
+    const now = new Date();
+    let startDate, endDate;
+    
+    switch (dateRange) {
+      case 'this_week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - now.getDay());
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 7);
+        break;
+      case 'last_week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - now.getDay() - 7);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 7);
+        break;
+      case 'this_month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      case 'last_month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'this_year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear() + 1, 0, 1);
+        break;
+      case 'last_year':
+        startDate = new Date(now.getFullYear() - 1, 0, 1);
+        endDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      case 'last_30_days':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        endDate = new Date(now);
+        endDate.setDate(now.getDate() + 1);
+        break;
+      case 'last_90_days':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 90);
+        endDate = new Date(now);
+        endDate.setDate(now.getDate() + 1);
+        break;
+      default:
+        if (dateRange.startsWith('week_')) {
+          const weekStart = dateRange.replace('week_', '');
+          startDate = new Date(weekStart);
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 7);
+        } else if (dateRange === 'custom' && customStartDate && customEndDate) {
+          startDate = new Date(customStartDate);
+          endDate = new Date(customEndDate);
+          endDate.setDate(endDate.getDate() + 1); // Include the end date
+        } else {
+          return tickets;
+        }
+    }
+    
+    return tickets.filter(ticket => {
+      const ticketDate = new Date(ticket.created_at);
+      return ticketDate >= startDate && ticketDate < endDate;
+    });
+  };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleExportToExcel = async () => {
+    // Get tickets for selected date range (or all if no range selected)
+    const ticketsToExport = getTicketsForDateRange(selectedDateRange, tickets);
+    
+    const dataToExport = ticketsToExport.map(ticket => [
+      ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets),
+      ticket.title,
+      formatNameFromEmail(ticket.requester_email),
+      formatNameFromEmail(ticket.assignee_email),
+      ticket.status?.replace('_', ' '),
+      ticket.category_name || 'N/A',
+      ticket.sub_category_name || 'N/A',
+      ticket.client || 'N/A',
+      new Date(ticket.created_at).toLocaleString(),
+      ticket.due_at ? new Date(ticket.due_at).toLocaleString() : 'N/A',
+      ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : 'N/A',
+      ticket.resolved_at ? new Date(ticket.resolved_at).toLocaleString() : 'N/A',
+      ticket.priority || 'N/A',
+      ticket.description || 'N/A'
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Kanban Tickets');
+
+    // Add headers
+    const headers = [
+      'Ticket ID', 'Summary', 'Reporter', 'Assignee', 'Status',
+      'Category', 'Sub-Category', 'Client', 'Created At', 'Due At',
+      'Updated At', 'Resolved At', 'Priority', 'Description'
+    ];
+    worksheet.addRow(headers);
+
+    // Add data rows
+    dataToExport.forEach(row => worksheet.addRow(row));
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 12 }, // Ticket ID
+      { width: 30 }, // Summary
+      { width: 20 }, // Reporter
+      { width: 20 }, // Assignee
+      { width: 15 }, // Status
+      { width: 15 }, // Category
+      { width: 20 }, // Sub-Category
+      { width: 15 }, // Client
+      { width: 20 }, // Created At
+      { width: 20 }, // Due At
+      { width: 20 }, // Updated At
+      { width: 20 }, // Resolved At
+      { width: 12 }, // Priority
+      { width: 40 }  // Description
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4CAF50' }
+    };
+    headerRow.alignment = { horizontal: 'center' };
+
+    // Write and download the file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'kanban_tickets.xlsx');
   };
 
   const handleAdminStatusChange = async (ticketId, newStatus) => {
@@ -1241,8 +1421,8 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
               : 'rgba(255, 255, 255, 0.9)',
             borderRadius: '10px',
             padding: '0 0.75rem',
-            minWidth: '140px',
-            flex: '1 1 140px',
+            minWidth: '180px',
+            flex: '1 1 180px',
             border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
             backdropFilter: 'blur(10px)',
             opacity: (!filters.category || subCategories.length === 0) ? 0.6 : 1
@@ -1357,6 +1537,134 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
             />
             {isLoading ? 'Refreshing...' : 'Refresh Board'}
           </button>
+
+          {/* Export Section - Admin Only */}
+          {currentUserRole && ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'].includes(currentUserRole) && tickets.length > 0 && (
+            <>
+              {/* Date Range Selector */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: isDarkMode 
+                  ? 'rgba(55, 65, 81, 0.8)' 
+                  : 'rgba(255, 255, 255, 0.9)',
+                borderRadius: '10px',
+                padding: '0 0.75rem',
+                minWidth: '180px',
+                flex: '1 1 180px',
+                border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <FontAwesomeIcon icon={faCalendarAlt} style={{ color: '#6b7280', marginRight: '0.5rem', fontSize: '0.8rem' }} />
+                <select
+                  value={selectedDateRange}
+                  onChange={(e) => {
+                    setSelectedDateRange(e.target.value);
+                    if (e.target.value !== 'custom') {
+                      setShowCustomDateRange(false);
+                    } else {
+                      setShowCustomDateRange(true);
+                    }
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    padding: '0.5rem 0',
+                    fontSize: '0.8rem',
+                    color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                    width: '100%',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {getDateRangeOptions().map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Custom Date Range Inputs */}
+              {showCustomDateRange && (
+                <div style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center'
+                }}>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    style={{
+                      background: isDarkMode 
+                        ? 'rgba(55, 65, 81, 0.8)' 
+                        : 'rgba(255, 255, 255, 0.9)',
+                      border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                    placeholder="Start Date"
+                  />
+                  <span style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '0.8rem' }}>
+                    to
+                  </span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    style={{
+                      background: isDarkMode 
+                        ? 'rgba(55, 65, 81, 0.8)' 
+                        : 'rgba(255, 255, 255, 0.9)',
+                      border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                    placeholder="End Date"
+                  />
+                </div>
+              )}
+
+              {/* Export Button */}
+              <button
+                onClick={handleExportToExcel}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 6px 20px rgba(5, 150, 105, 0.3)',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(5, 150, 105, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.3)';
+                }}
+              >
+                <FontAwesomeIcon icon={faDownload} style={{ fontSize: '0.8rem' }} />
+                Export Excel
+              </button>
+            </>
+          )}
         </div>
       </Fade>
 

@@ -54,6 +54,12 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   const [selectedStatus, setSelectedStatus] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Date range selector state for export
+  const [selectedDateRange, setSelectedDateRange] = useState('');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDateRange, setShowCustomDateRange] = useState(false);
+  
   // Fetch assignees from Supabase ticket_assignees table
   const [assignOptions, setAssignOptions] = useState([]);
   const [isAssignOptionsLoading, setIsAssignOptionsLoading] = useState(true);
@@ -215,6 +221,108 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     return 'normal';
   };
 
+  // Date range selector helper functions
+  const getDateRangeOptions = () => {
+    const now = new Date();
+    const options = [
+      { value: '', label: 'All Tickets' },
+      { value: 'this_week', label: 'This Week' },
+      { value: 'last_week', label: 'Last Week' },
+      { value: 'this_month', label: 'This Month' },
+      { value: 'last_month', label: 'Last Month' },
+      { value: 'this_year', label: 'This Year' },
+      { value: 'last_year', label: 'Last Year' },
+      { value: 'last_30_days', label: 'Last 30 Days' },
+      { value: 'last_90_days', label: 'Last 90 Days' },
+      { value: 'custom', label: 'Custom Date Range' }
+    ];
+    
+    // Add last 4 weeks
+    for (let i = 1; i <= 4; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (i * 7));
+      
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - date.getDay());
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      const weekLabel = `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      options.push({ value: `week_${startOfWeek.toISOString().split('T')[0]}`, label: weekLabel });
+    }
+    
+    return options;
+  };
+
+  const getTicketsForDateRange = (dateRange, tickets) => {
+    if (!dateRange) return tickets;
+    
+    const now = new Date();
+    let startDate, endDate;
+    
+    switch (dateRange) {
+      case 'this_week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - now.getDay());
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 7);
+        break;
+      case 'last_week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - now.getDay() - 7);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 7);
+        break;
+      case 'this_month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      case 'last_month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'this_year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear() + 1, 0, 1);
+        break;
+      case 'last_year':
+        startDate = new Date(now.getFullYear() - 1, 0, 1);
+        endDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      case 'last_30_days':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        endDate = new Date(now);
+        endDate.setDate(now.getDate() + 1);
+        break;
+      case 'last_90_days':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 90);
+        endDate = new Date(now);
+        endDate.setDate(now.getDate() + 1);
+        break;
+      default:
+        if (dateRange.startsWith('week_')) {
+          const weekStart = dateRange.replace('week_', '');
+          startDate = new Date(weekStart);
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 7);
+        } else if (dateRange === 'custom' && customStartDate && customEndDate) {
+          startDate = new Date(customStartDate);
+          endDate = new Date(customEndDate);
+          endDate.setDate(endDate.getDate() + 1); // Include the end date
+        } else {
+          return tickets;
+        }
+    }
+    
+    return tickets.filter(ticket => {
+      const ticketDate = new Date(ticket.created_at);
+      return ticketDate >= startDate && ticketDate < endDate;
+    });
+  };
+
   // Unique categories from tickets
   const categories = useMemo(() => [...new Set(tickets.map(t => t.category_name).filter(Boolean))], [tickets]);
   
@@ -255,7 +363,10 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   }, [filteredTickets, page]);
 
   const handleExportToExcel = async () => {
-    const dataToExport = filteredTickets.map(ticket => [
+    // Get tickets for selected date range (or all if no range selected)
+    const ticketsToExport = getTicketsForDateRange(selectedDateRange, filteredTickets);
+    
+    const dataToExport = ticketsToExport.map(ticket => [
       ticketNumberMap[ticket.id] || generateTicketNumber(ticket.id, ticket.category_id, tickets),
       ticket.title,
       formatNameFromEmail(ticket.requester_email),
@@ -673,20 +784,23 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                       label: 'Category', 
                       value: selectedCategory, 
                       onChange: (val) => { setSelectedCategory(val); setSelectedSubCategory(''); },
-                      options: categories.map(cat => ({ value: cat, label: cat }))
+                      options: categories.map(cat => ({ value: cat, label: cat })),
+                      minWidth: isMobile ? 'auto' : '120px'
                     },
                     { 
                       label: 'Subcategory', 
                       value: selectedSubCategory, 
                       onChange: setSelectedSubCategory,
                       options: subCategories.map(sub => ({ value: sub, label: sub })),
-                      disabled: !selectedCategory
+                      disabled: !selectedCategory,
+                      minWidth: isMobile ? 'auto' : '160px'
                     },
                     { 
                       label: 'Status', 
                       value: selectedStatus, 
                       onChange: setSelectedStatus,
-                      options: statusOrder.map(stat => ({ value: stat, label: stat.replace('_', ' ') }))
+                      options: statusOrder.map(stat => ({ value: stat, label: stat.replace('_', ' ') })),
+                      minWidth: isMobile ? 'auto' : '120px'
                     }
                   ].map((filter, index) => (
                     <div key={filter.label} style={{
@@ -696,8 +810,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                       backdropFilter: 'blur(10px)',
                       borderRadius: '12px',
                       border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
-                        minWidth: isMobile ? 'auto' : '120px',
-                        width: isMobile ? '100%' : 'auto',
+                      minWidth: filter.minWidth,
+                      width: isMobile ? '100%' : 'auto',
                       opacity: filter.disabled ? 0.5 : 1,
                       pointerEvents: filter.disabled ? 'none' : 'auto'
                     }}>
@@ -775,39 +889,141 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
               
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 {isAdmin && filteredTickets.length > 0 && (
-                  <button
-                    onClick={handleExportToExcel}
-                    style={{
-                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                      border: 'none',
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
+                    {/* Date Range Selector */}
+                    <div style={{
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%)',
+                      backdropFilter: 'blur(10px)',
                       borderRadius: '12px',
-                      padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
-                      color: 'white',
-                      fontSize: isMobile ? '0.75rem' : '0.875rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: isMobile ? '0.375rem' : '0.5rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isMobile) {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.4)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isMobile) {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
-                      }
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faDownload} />
-                    {isMobile ? 'Export' : 'Export Excel'}
-                  </button>
+                      border: isDarkMode ? '1px solid rgba(55, 65, 81, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                      minWidth: isMobile ? 'auto' : '200px',
+                      width: isMobile ? '100%' : 'auto'
+                    }}>
+                      <FormControl size="small" fullWidth>
+                        <InputLabel 
+                          sx={{ 
+                            color: isDarkMode ? '#94a3b8' : '#64748b',
+                            fontSize: isMobile ? '0.8rem' : '0.875rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          Export Date Range
+                        </InputLabel>
+                        <Select
+                          value={selectedDateRange}
+                          label="Export Date Range"
+                          onChange={(e) => {
+                            setSelectedDateRange(e.target.value);
+                            if (e.target.value !== 'custom') {
+                              setShowCustomDateRange(false);
+                            } else {
+                              setShowCustomDateRange(true);
+                            }
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                            '& .MuiSelect-select': {
+                              color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                              fontSize: isMobile ? '0.8rem' : '0.875rem',
+                              fontWeight: 500,
+                              padding: isMobile ? '8px 14px' : '10px 14px'
+                            }
+                          }}
+                        >
+                          {getDateRangeOptions().map(option => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </div>
+                    
+                    {/* Custom Date Range Inputs */}
+                    {showCustomDateRange && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                        flexDirection: isMobile ? 'column' : 'row'
+                      }}>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          style={{
+                            background: isDarkMode 
+                              ? 'rgba(55, 65, 81, 0.8)' 
+                              : 'rgba(255, 255, 255, 0.9)',
+                            border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                          placeholder="Start Date"
+                        />
+                        <span style={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontSize: '0.8rem' }}>
+                          to
+                        </span>
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          style={{
+                            background: isDarkMode 
+                              ? 'rgba(55, 65, 81, 0.8)' 
+                              : 'rgba(255, 255, 255, 0.9)',
+                            border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(226, 232, 240, 0.5)',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                          placeholder="End Date"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Export Button */}
+                    <button
+                      onClick={handleExportToExcel}
+                      style={{
+                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
+                        color: 'white',
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '0.375rem' : '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isMobile) {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 6px 20px rgba(5, 150, 105, 0.4)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isMobile) {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
+                        }
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faDownload} />
+                      {isMobile ? 'Export' : 'Export Excel'}
+                    </button>
+                  </div>
                 )}
                 {(selectedCategory || selectedSubCategory || selectedStatus || searchTerm) && (
                   <button
