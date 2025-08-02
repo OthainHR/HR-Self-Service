@@ -789,16 +789,12 @@ function Chat() {
         {/* Enhanced Mobile Controls */}
         {isMobile && isAuthenticated && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            style={{ position: 'fixed', top: '96px', left: 16, right: 16, zIndex: 1000 }}
           >
             <Box sx={{ 
-              position: 'fixed', 
-              top: 16, 
-              left: 16, 
-              right: 16,
-              zIndex: 1000, 
               display: 'flex', 
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -863,7 +859,7 @@ function Chat() {
         )}
 
         <Container maxWidth="xl" sx={{ 
-            pt: isMobile ? 10 : 3,
+            pt: isMobile ? 12 : 3, // Reduced padding to decrease spacing
             pb: 3, 
             height: isMobile ? 'calc(100vh - 80px)' : '95vh',
             display: 'flex',

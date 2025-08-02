@@ -356,25 +356,25 @@ const NavBar = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         p: 3,
+        pt: 12, // Add extra top padding to account for navbar height
         borderBottom: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.3)'}`,
         position: 'relative',
         zIndex: 1
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar
-            sx={{ 
-              width: 40,
-              height: 40,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)'
-            }}
-          >
-            <img 
-              src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
-              alt="Othain Logo" 
-              style={{ width: '24px', height: '24px', filter: 'brightness(0) invert(1)' }}
-            />
-          </Avatar>
+          <Box
+            component="img"
+            src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
+            alt="Othain Logo" 
+            sx={{
+              height: '24px',
+              filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
+              transition: 'transform 0.2s ease',
+              '&:hover': {
+                transform: 'scale(1.05)'
+              }
+            }} 
+          />
           <Box>
             <Typography variant="h6" sx={{ 
               fontWeight: 800, 
@@ -384,14 +384,12 @@ const NavBar = () => {
               WebkitTextFillColor: 'transparent',
               letterSpacing: '0.5px'
             }}>
-              Othain
             </Typography>
             <Typography variant="caption" sx={{ 
               color: isDarkMode ? '#94a3b8' : '#64748b',
               fontSize: '0.75rem',
               fontWeight: 500
             }}>
-              Employee Portal
             </Typography>
           </Box>
         </Box>

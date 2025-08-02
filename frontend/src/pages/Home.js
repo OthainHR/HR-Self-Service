@@ -1137,7 +1137,7 @@ const Home = () => {
                               overflow: 'hidden',
                               '&:hover': {
                                 background: link.gradient,
-                                borderColor: 'transparent',
+                                border: 'none',
                                 boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)',
                                 '& .link-icon': {
                                   color: 'white !important',
@@ -1150,19 +1150,6 @@ const Home = () => {
                                   color: 'rgba(255, 255, 255, 0.9) !important',
                                   borderColor: 'rgba(255, 255, 255, 0.3) !important'
                                 }
-                              },
-                              '&:before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: '-100%',
-                                width: '100%',
-                                height: '100%',
-                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-                                transition: 'left 0.6s',
-                              },
-                              '&:hover:before': {
-                                left: '100%'
                               }
                             }}
                           >
