@@ -218,12 +218,18 @@ const FloatingChat = () => {
           setIsHovered(true);
           setShowTooltip(true);
           
-          // Keep the attention for 3 seconds, then hide everything
+          // Keep the attention for 3 seconds, then hide everything smoothly
           const hideTimeout = setTimeout(() => {
-            // Force hide the tooltip and hover state after 3 seconds
+            // Use the same smooth transition as manual hover
             setShowTooltip(false);
             setIsHovered(false);
+            setIsAnimating(true);
             setAutoAttentionMode(false);
+            
+            // Wait for shrink animation to complete, then stop animating
+            setTimeout(() => {
+              setIsAnimating(false);
+            }, 1300); // 300ms for shrink + 1000ms pause
           }, 3000);
           
           // Store the timeout reference for cleanup
@@ -371,11 +377,18 @@ const FloatingChat = () => {
             setIsHovered(true);
             setShowTooltip(true);
             
-            // Keep the attention for 3 seconds, then hide everything
+            // Keep the attention for 3 seconds, then hide everything smoothly
             const hideTimeout = setTimeout(() => {
+              // Use the same smooth transition as manual hover
               setShowTooltip(false);
               setIsHovered(false);
+              setIsAnimating(true);
               setAutoAttentionMode(false);
+              
+              // Wait for shrink animation to complete, then stop animating
+              setTimeout(() => {
+                setIsAnimating(false);
+              }, 1300); // 300ms for shrink + 1000ms pause
             }, 3000);
             
             if (tooltipTimerRef.current) {
@@ -399,9 +412,16 @@ const FloatingChat = () => {
   useEffect(() => {
     if (autoAttentionMode && showTooltip) {
       const safetyTimeout = setTimeout(() => {
+        // Use the same smooth transition as manual hover
         setShowTooltip(false);
         setIsHovered(false);
+        setIsAnimating(true);
         setAutoAttentionMode(false);
+        
+        // Wait for shrink animation to complete, then stop animating
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 1300); // 300ms for shrink + 1000ms pause
       }, 5000); // 5 second safety timeout
 
       return () => clearTimeout(safetyTimeout);
