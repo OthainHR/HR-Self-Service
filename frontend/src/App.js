@@ -12,6 +12,7 @@ import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import AdminReport from './pages/AdminReport';
+import AdminPage from './pages/AdminPage';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from './services/supabase';
 
@@ -215,24 +216,19 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 // Admin route component
 const AdminRoute = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const authContext = useAuth();
+  const { user, isLoading, isAdmin } = authContext;
   const [renderCount, setRenderCount] = React.useState(0); // Add render count state
 
   React.useEffect(() => { // Increment render count on mount/update
       setRenderCount(prev => prev + 1);
   }, [user, isLoading]);
 
-
-  // ---- Add AdminRoute Debug Log ----
-  
-  // ---- End AdminRoute Debug Log ----
-
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.email === 'admin@example.com';
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -319,6 +315,7 @@ const AppContent = () => {
                 <Route path="/knowledge" element={<ProtectedRoute><Knowledge /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
+                <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                 <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
                 <Route path="/expense-tickets" element={<ProtectedRoute><ExpenseTicketing /></ProtectedRoute>} />
                 <Route path="/ticket/:ticketId" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />

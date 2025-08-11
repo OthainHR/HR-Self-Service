@@ -115,16 +115,14 @@ function Knowledge() {
         const result = await supabaseService.testConnection();
         if (!result.success) {
           console.warn('Supabase connection test failed');
-        } else {
-          console.log('Supabase connection successful');
         }
+        // Removed: console.log('Supabase connection successful');
       } catch (err) {
         console.error('Connection test error:', err);
       }
     };
     testConnection();
   }, []);
-  
   // Handle tab change with smooth transition
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);

@@ -366,7 +366,7 @@ const NavBar = () => {
             component="img"
             src={isDarkMode ? "/logowhite.png" : "/Othain-logo2.png"} 
             alt="Othain Logo" 
-            sx={{
+            sx={{ 
               height: '24px',
               filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
               transition: 'transform 0.2s ease',

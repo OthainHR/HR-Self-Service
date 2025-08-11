@@ -212,19 +212,25 @@ const FloatingChat = () => {
     if (!isOpen) {
       // Start auto-attention timer when chat is closed
       autoAttentionTimerRef.current = setInterval(() => {
-        if (!isOpen && !isHovered) {
+        // Only trigger if chat is still closed and not already in auto-attention mode
+        if (!isOpen && !autoAttentionMode) {
           setAutoAttentionMode(true);
           setIsHovered(true);
           setShowTooltip(true);
           
-          // Keep the attention for 3 seconds
-          setTimeout(() => {
-            if (autoAttentionMode) {
-              setIsHovered(false);
-              setShowTooltip(false);
-              setAutoAttentionMode(false);
-            }
+          // Keep the attention for 3 seconds, then hide everything
+          const hideTimeout = setTimeout(() => {
+            // Force hide the tooltip and hover state after 3 seconds
+            setShowTooltip(false);
+            setIsHovered(false);
+            setAutoAttentionMode(false);
           }, 3000);
+          
+          // Store the timeout reference for cleanup
+          if (tooltipTimerRef.current) {
+            clearTimeout(tooltipTimerRef.current);
+          }
+          tooltipTimerRef.current = hideTimeout;
         }
       }, 60000); // Every 60 seconds (1 minute)
     } else {
@@ -232,6 +238,11 @@ const FloatingChat = () => {
       if (autoAttentionTimerRef.current) {
         clearInterval(autoAttentionTimerRef.current);
         autoAttentionTimerRef.current = null;
+      }
+      // Also clear any pending hide timeout
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+        tooltipTimerRef.current = null;
       }
     }
 
@@ -241,8 +252,12 @@ const FloatingChat = () => {
         clearInterval(autoAttentionTimerRef.current);
         autoAttentionTimerRef.current = null;
       }
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+        tooltipTimerRef.current = null;
+      }
     };
-  }, [isOpen, isHovered]);
+  }, [isOpen, autoAttentionMode]);
 
   // Display the status badge
   const getStatusBadge = () => {
@@ -310,13 +325,23 @@ const FloatingChat = () => {
   };
 
   const handleMouseEnter = () => {
+    // Clear auto-attention state immediately
+    setAutoAttentionMode(false);
     setIsHovered(true);
     setShowTooltip(false);
-    setAutoAttentionMode(false); // Disable auto-attention when user manually hovers
-    // Clear any existing timer
+    
+    // Clear any existing auto-attention timers
+    if (autoAttentionTimerRef.current) {
+      clearInterval(autoAttentionTimerRef.current);
+      autoAttentionTimerRef.current = null;
+    }
+    
+    // Clear any existing tooltip timer
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = null;
     }
+    
     // Show tooltip after icon has fully grown
     tooltipTimerRef.current = setTimeout(() => {
       setShowTooltip(true);
@@ -327,16 +352,61 @@ const FloatingChat = () => {
     setIsHovered(false);
     setShowTooltip(false);
     setIsAnimating(true);
+    
     // Clear the tooltip timer
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
       tooltipTimerRef.current = null;
     }
+    
     // Wait for shrink animation to complete, then pause for 1 second before resuming pulsing
     setTimeout(() => {
       setIsAnimating(false);
+      
+      // Restart auto-attention timer after user stops hovering (only if chat is closed)
+      if (!isOpen && !autoAttentionTimerRef.current) {
+        autoAttentionTimerRef.current = setInterval(() => {
+          if (!isOpen && !autoAttentionMode) {
+            setAutoAttentionMode(true);
+            setIsHovered(true);
+            setShowTooltip(true);
+            
+            // Keep the attention for 3 seconds, then hide everything
+            const hideTimeout = setTimeout(() => {
+              setShowTooltip(false);
+              setIsHovered(false);
+              setAutoAttentionMode(false);
+            }, 3000);
+            
+            if (tooltipTimerRef.current) {
+              clearTimeout(tooltipTimerRef.current);
+            }
+            tooltipTimerRef.current = hideTimeout;
+          }
+        }, 60000); // Every 60 seconds
+      }
     }, 1300); // 300ms for shrink + 1000ms pause
   };
+
+  // Safety check: ensure tooltip is hidden if auto-attention is off
+  useEffect(() => {
+    if (!autoAttentionMode && !isHovered) {
+      setShowTooltip(false);
+    }
+  }, [autoAttentionMode, isHovered]);
+
+  // Additional safety: force hide tooltip after 5 seconds if auto-attention is active
+  useEffect(() => {
+    if (autoAttentionMode && showTooltip) {
+      const safetyTimeout = setTimeout(() => {
+        setShowTooltip(false);
+        setIsHovered(false);
+        setAutoAttentionMode(false);
+      }, 5000); // 5 second safety timeout
+
+      return () => clearTimeout(safetyTimeout);
+    }
+  }, [autoAttentionMode, showTooltip]);
 
   // Don't render on mobile devices
   if (isMobile) {

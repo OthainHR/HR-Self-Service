@@ -417,24 +417,34 @@ const Home = () => {
         pt: { xs: 2, sm: 3, md: 4 }, 
         pb: { xs: 2, sm: 3, md: 4 }, 
         position: 'relative', 
-        zIndex: 1 
+        zIndex: 1,
+        // Remove transform scaling to fix snapping and layout issues
+        // Use responsive sizing instead
+        maxWidth: { xs: 'xl', sm: 'xl', md: 'xl', lg: 'xl' },
+        // Responsive padding that creates zoomed out effect
+        px: { xs: 2, sm: 4, md: 6, lg: 8 },
+        // Ensure proper height management
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         <AnimatePresence>
           {isVisible && (
-            <motion.div
+        <motion.div
               variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+          initial="hidden"
+          animate="visible"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+        >
               {/* Enhanced Mini Chat Interface */}
               <motion.div variants={itemVariants}>
-                <Box sx={{
+          <Box sx={{ 
                   background: isDarkMode 
                     ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
                     : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
                   backdropFilter: 'blur(25px)',
                   borderRadius: '32px',
-                  padding: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                  padding: { xs: '2rem', sm: '3rem', md: '4rem', lg: '5rem' },
                   border: isDarkMode 
                     ? '1px solid rgba(148, 163, 184, 0.1)' 
                     : '1px solid rgba(226, 232, 240, 0.3)',
@@ -443,19 +453,19 @@ const Home = () => {
                     : '0 25px 50px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
                   position: 'relative',
                   overflow: 'hidden',
-                  mb: 5
+                  mb: { xs: 4, sm: 5, md: 6, lg: 7 }
                 }}>
                   {/* Enhanced background decoration */}
-                  <Box sx={{
-                    position: 'absolute',
-                    top: '-50%',
+            <Box sx={{
+              position: 'absolute',
+              top: '-50%',
                     right: '-30%',
                     width: '300px',
                     height: '300px',
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    borderRadius: '50%',
+              borderRadius: '50%',
                     opacity: 0.06,
-                    filter: 'blur(60px)',
+              filter: 'blur(60px)',
                     zIndex: 0
                   }} />
 
@@ -467,12 +477,12 @@ const Home = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.2, duration: 0.8, ease: [0.25, 0.25, 0, 1] }}
                       >
-                        <Box sx={{
+            <Box sx={{
                           display: 'flex',
                           justifyContent: 'center',
                           mb: 3
                         }}>
-                          <Box sx={{
+              <Box sx={{
                             position: 'relative',
                             display: 'inline-block'
                           }}>
@@ -493,10 +503,10 @@ const Home = () => {
                                 right: '-8px',
                                 width: '24px',
                                 height: '24px',
-                                borderRadius: '50%',
+                borderRadius: '50%',
                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
+                display: 'flex',
+                alignItems: 'center',
                                 justifyContent: 'center'
                               }}
                               animate={{
@@ -511,7 +521,7 @@ const Home = () => {
                             >
                               <StarIcon sx={{ fontSize: '14px', color: 'white' }} />
                             </motion.div>
-                          </Box>
+              </Box>
                         </Box>
                       </motion.div>
                       
@@ -545,18 +555,18 @@ const Home = () => {
                         transition={{ delay: 0.6, duration: 0.6 }}
                       >
                         <Typography variant="h4" sx={{ 
-                          fontWeight: 800,
-                          background: isDarkMode 
-                            ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
-                            : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                  fontWeight: 800,
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
+                    : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
                           backgroundClip: 'text',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                           mb: 1,
                           fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                         }}>
                           How can I help you today?
-                        </Typography>
+              </Typography>
                         <Typography variant="body1" sx={{ 
                           color: isDarkMode ? '#94a3b8' : '#64748b',
                           fontWeight: 500,
@@ -582,7 +592,7 @@ const Home = () => {
                           onChange={(e) => setMiniChatInput(e.target.value)}
                           disabled={isSubmittingMiniChat}
                           inputRef={miniChatInputRef}
-                          sx={{
+                sx={{ 
                             '& .MuiOutlinedInput-root': {
                               borderRadius: '24px',
                               background: isDarkMode 
@@ -616,7 +626,7 @@ const Home = () => {
                             '& .MuiInputBase-input': {
                               color: isDarkMode ? '#f1f5f9' : '#1e293b',
                               '&::placeholder': {
-                                color: isDarkMode ? '#94a3b8' : '#64748b',
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
                                 opacity: 1
                               }
                             }
@@ -631,14 +641,14 @@ const Home = () => {
                                   <Button
                                     type="submit"
                                     disabled={!miniChatInput.trim() || isSubmittingMiniChat}
-                                    sx={{
+                sx={{
                                       borderRadius: '20px',
                                       minWidth: '52px',
                                       height: '52px',
                                       background: !miniChatInput.trim() || isSubmittingMiniChat
                                         ? (isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(226, 232, 240, 0.5)')
                                         : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                      color: 'white',
+                  color: 'white',
                                       boxShadow: !miniChatInput.trim() || isSubmittingMiniChat
                                         ? 'none'
                                         : '0 8px 25px rgba(102, 126, 234, 0.4)',
@@ -665,11 +675,11 @@ const Home = () => {
                             )
                           }}
                         />
-                      </Box>
-                    </motion.div>
+          </Box>
+        </motion.div>
 
                     {/* Enhanced Preset Questions with Animation */}
-                    <motion.div
+        <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 1, duration: 0.6 }}
@@ -754,24 +764,24 @@ const Home = () => {
 
               {/* Enhanced Main Action Cards */}
               <motion.div variants={itemVariants}>
-                <Typography 
+          <Typography 
                   variant="h4" 
-                  component="h2" 
-                  sx={{ 
-                    textAlign: 'center',
+            component="h2" 
+            sx={{ 
+              textAlign: 'center',
                     fontWeight: 800,
-                    marginBottom: '3rem',
+                    marginBottom: { xs: '2rem', sm: '2.5rem', md: '3rem', lg: '3.5rem' },
                     background: isDarkMode 
                       ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
                       : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    position: 'relative',
+              position: 'relative',
                     fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                  }}
-                >
-                  Get Started
+            }}
+          >
+            Get Started
                   <Box sx={{
                     position: 'absolute',
                     bottom: '-8px',
@@ -782,37 +792,37 @@ const Home = () => {
                     borderRadius: '2px',
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                   }} />
-                </Typography>
-                
-                <Grid container spacing={4} sx={{ mb: 6 }}>
-                  {gridCards.map((card, index) => (
-                    <Grid item xs={12} md={4} key={card.title}>
-                      <motion.div
+          </Typography>
+          
+                <Grid container spacing={{ xs: 3, sm: 4, md: 5, lg: 6 }} sx={{ mb: { xs: 4, sm: 5, md: 6, lg: 7 } }}>
+            {gridCards.map((card, index) => (
+              <Grid item xs={12} md={4} key={card.title}>
+                <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 + (index * 0.1), duration: 0.6, ease: [0.25, 0.25, 0, 1] }}
                         variants={cardHoverVariants}
                         whileHover="hover"
-                      >
-                        <Card
-                          onClick={card.action}
-                          sx={{
-                            height: '100%',
-                            minHeight: '320px',
-                            cursor: 'pointer',
+                >
+                  <Card
+                    onClick={card.action}
+                    sx={{
+                      height: '100%',
+                            minHeight: { xs: '260px', sm: '280px', md: '300px', lg: '320px' },
+                      cursor: 'pointer',
                             borderRadius: '28px',
-                            background: isDarkMode 
+                      background: isDarkMode 
                               ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)'
                               : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
                             backdropFilter: 'blur(25px)',
                             border: `1px solid ${card.accent}20`,
                             boxShadow: `0 20px 40px ${card.shadowColor}`,
                             transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            '&:hover': {
+                      position: 'relative',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      '&:hover': {
                               borderColor: card.accent,
                               boxShadow: `0 25px 50px ${card.shadowColor}, 0 0 0 1px ${card.accent}40`
                             }
@@ -830,43 +840,43 @@ const Home = () => {
                           }} />
 
                           {/* Animated background pattern */}
-                          <Box sx={{
-                            position: 'absolute',
-                            top: '-50%',
+                    <Box sx={{
+                      position: 'absolute',
+                      top: '-50%',
                             right: '-50%',
-                            width: '200%',
-                            height: '200%',
+                      width: '200%',
+                      height: '200%',
                             background: `conic-gradient(from 0deg at 50% 50%, ${card.accent}10, transparent, ${card.accent}10)`,
                             opacity: 0.03,
                             animation: 'rotate 20s linear infinite',
                             '@keyframes rotate': {
                               '0%': { transform: 'rotate(0deg)' },
                               '100%': { transform: 'rotate(360deg)' }
-                            }
-                          }} />
+                      }
+                    }} />
 
-                          <CardContent sx={{ 
-                            p: 4, 
-                            textAlign: 'center', 
-                            position: 'relative', 
-                            zIndex: 1,
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center'
-                          }}>
+                    <CardContent sx={{ 
+                            p: { xs: 3, sm: 3.5, md: 4, lg: 4.5 }, 
+                      textAlign: 'center', 
+                      position: 'relative', 
+                      zIndex: 1,
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
+                    }}>
                             <motion.div
                               whileHover={{ scale: 1.1, rotate: 5 }}
                               transition={{ duration: 0.3 }}
                             >
-                              <Box sx={{
-                                background: card.gradient,
+                      <Box sx={{
+                        background: card.gradient,
                                 borderRadius: '20px',
-                                width: '72px',
-                                height: '72px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                width: { xs: '64px', sm: '68px', md: '72px', lg: '76px' },
+                                height: { xs: '64px', sm: '68px', md: '72px', lg: '76px' },
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                                 margin: '0 auto 2rem auto',
                                 boxShadow: `0 12px 30px ${card.shadowColor}`,
                                 position: 'relative',
@@ -882,50 +892,50 @@ const Home = () => {
                                   opacity: 0.5
                                 }
                               }}>
-                                {React.createElement(card.icon, { sx: { fontSize: '2.25rem', color: 'white' } })}
-                              </Box>
+                                {React.createElement(card.icon, { sx: { fontSize: { xs: '2rem', sm: '2.125rem', md: '2.25rem', lg: '2.375rem' }, color: 'white' } })}
+                      </Box>
                             </motion.div>
-                            
-                            <Typography 
+                      
+                      <Typography 
                               variant="h5" 
-                              component="h3" 
-                              sx={{ 
-                                fontWeight: 700,
+                        component="h3" 
+                        sx={{ 
+                          fontWeight: 700,
                                 marginBottom: '1rem',
                                 color: isDarkMode ? '#f8fafc' : '#0f172a',
-                                fontSize: '1.375rem'
-                              }}
-                            >
-                              {card.title}
-                            </Typography>
-                            
-                            <Typography 
+                                fontSize: { xs: '1.25rem', sm: '1.3rem', md: '1.375rem', lg: '1.45rem' }
+                        }}
+                      >
+                        {card.title}
+                      </Typography>
+                      
+                      <Typography 
                               variant="body1" 
-                              sx={{ 
+                        sx={{ 
                                 color: isDarkMode ? '#cbd5e1' : '#64748b',
                                 lineHeight: 1.6,
-                                fontSize: '1rem'
-                              }}
-                            >
-                              {card.description}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    </Grid>
-                  ))}
-                </Grid>
+                                fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1rem', lg: '1.05rem' }
+                        }}
+                      >
+                        {card.description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
 
                 {/* Enhanced Centered Book A Cab Card */}
-                <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 8 }}> 
-                  {
-                    bookACabCard && (loadingWhitelistStatus || loadingCabServiceGlobalVisibility) ? (
-                      <Grid item xs={12} sm={10} md={8}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: { xs: 5, sm: 6, md: 7, lg: 8 } }}> 
+            {
+              bookACabCard && (loadingWhitelistStatus || loadingCabServiceGlobalVisibility) ? (
+                <Grid item xs={12} sm={10} md={8}>
                         <Card sx={{ 
                           display: 'flex', 
                           justifyContent: 'center', 
                           alignItems: 'center', 
-                          height: '200px',
+                          height: { xs: '160px', sm: '170px', md: '180px', lg: '190px' },
                           borderRadius: '28px',
                           background: isDarkMode 
                             ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)'
@@ -936,163 +946,164 @@ const Home = () => {
                             : '1px solid rgba(226, 232, 240, 0.3)'
                         }}>
                           <CircularProgress size={40} sx={{ color: '#667eea' }} />
-                        </Card>
-                      </Grid>
-                    ) : bookACabCard && canUserAccessCabService ? (
-                      <Grid item xs={12} sm={10} md={8} key={bookACabCard.title}>
-                        <motion.div
+                  </Card>
+                </Grid>
+              ) : bookACabCard && canUserAccessCabService ? (
+                <Grid item xs={12} sm={10} md={8} key={bookACabCard.title}>
+                  <motion.div
                           initial={{ opacity: 0, y: 50 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.8, duration: 0.6, ease: [0.25, 0.25, 0, 1] }}
                           variants={cardHoverVariants}
                           whileHover="hover"
-                        >
-                          <Card
-                            onClick={bookACabCard.action}
-                            sx={{
-                              height: '100%',
-                              minHeight: '320px',
-                              cursor: 'pointer',
+                  >
+                    <Card
+                      onClick={bookACabCard.action}
+                      sx={{
+                        height: '100%',
+                              minHeight: { xs: '260px', sm: '280px', md: '300px', lg: '320px' },
+                        cursor: 'pointer',
                               borderRadius: '28px',
-                              background: isDarkMode 
+                        background: isDarkMode 
                                 ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)'
                                 : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
                               backdropFilter: 'blur(25px)',
                               border: `1px solid ${bookACabCard.accent}20`,
                               boxShadow: `0 20px 40px ${bookACabCard.shadowColor}`,
                               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                              position: 'relative',
-                              overflow: 'hidden',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              '&:hover': {
+                        position: 'relative',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:hover': {
                                 borderColor: bookACabCard.accent,
                                 boxShadow: `0 25px 50px ${bookACabCard.shadowColor}, 0 0 0 1px ${bookACabCard.accent}40`
-                              }
-                            }}
-                          >
-                            <Box sx={{
-                              position: 'absolute',
+                        }
+                      }}
+                    >
+                      <Box sx={{
+                        position: 'absolute',
                               top: 0,
                               left: 0,
                               right: 0,
                               height: '4px',
                               background: bookACabCard.gradient,
                               opacity: 0.8
-                            }} />
+                      }} />
 
-                            <CardContent sx={{ 
-                              p: 4, 
-                              textAlign: 'center', 
-                              position: 'relative', 
-                              zIndex: 1,
-                              flex: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'center'
-                            }}>
+                      <CardContent sx={{ 
+                              p: { xs: 3, sm: 3.5, md: 4, lg: 4.5 }, 
+                        textAlign: 'center', 
+                        position: 'relative', 
+                        zIndex: 1,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                      }}>
                               <motion.div
                                 whileHover={{ scale: 1.1, rotate: 5 }}
                                 transition={{ duration: 0.3 }}
                               >
-                                <Box sx={{
-                                  background: bookACabCard.gradient,
+                        <Box sx={{
+                          background: bookACabCard.gradient,
                                   borderRadius: '20px',
-                                  width: '72px',
-                                  height: '72px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
+                                  width: { xs: '64px', sm: '68px', md: '72px', lg: '76px' },
+                                  height: { xs: '64px', sm: '68px', md: '72px', lg: '76px' },
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                                   margin: '0 auto 2rem auto',
                                   boxShadow: `0 12px 30px ${bookACabCard.shadowColor}`
-                                }}>
-                                  {React.createElement(bookACabCard.icon, { sx: { fontSize: '2.25rem', color: 'white' } })}
-                                </Box>
+                        }}>
+                                  {React.createElement(bookACabCard.icon, { sx: { fontSize: { xs: '2rem', sm: '2.125rem', md: '2.25rem', lg: '2.375rem' }, color: 'white' } })}
+                        </Box>
                               </motion.div>
-                              
-                              <Typography 
+                        
+                        <Typography 
                                 variant="h5" 
-                                component="h3" 
-                                sx={{ 
-                                  fontWeight: 700,
+                          component="h3" 
+                          sx={{ 
+                            fontWeight: 700,
                                   marginBottom: '1rem',
                                   color: isDarkMode ? '#f8fafc' : '#0f172a',
-                                  fontSize: '1.375rem'
-                                }}
-                              >
-                                {bookACabCard.title}
-                              </Typography>
-                              
-                              <Typography 
+                                  fontSize: { xs: '1.25rem', sm: '1.3rem', md: '1.375rem', lg: '1.45rem' }
+                          }}
+                        >
+                          {bookACabCard.title}
+                        </Typography>
+                        
+                        <Typography 
                                 variant="body1" 
-                                sx={{ 
+                          sx={{ 
                                   color: isDarkMode ? '#cbd5e1' : '#64748b',
                                   lineHeight: 1.6,
-                                  fontSize: '1rem'
-                                }}
-                              >
-                                {bookACabCard.description}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      </Grid>
-                    ) : null
-                  }
-                </Box>
-              </motion.div>
+                                  fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1rem', lg: '1.05rem' }
+                          }}
+                        >
+                          {bookACabCard.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ) : null
+            }
+          </Box>
+        </motion.div>
 
               {/* Enhanced Quick Links Section */}
               <motion.div variants={itemVariants}>
-                <Box sx={{
-                  background: isDarkMode 
+          <Box sx={{
+            background: isDarkMode 
                     ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)'
                     : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
                   backdropFilter: 'blur(25px)',
                   borderRadius: '32px',
-                  padding: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                  padding: { xs: '2rem', sm: '3rem', md: '4rem', lg: '5rem' },
                   border: isDarkMode 
                     ? '1px solid rgba(148, 163, 184, 0.1)' 
                     : '1px solid rgba(226, 232, 240, 0.3)',
                   boxShadow: isDarkMode
                     ? '0 25px 50px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     : '0 25px 50px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
+            position: 'relative',
+            overflow: 'hidden',
+            mb: { xs: 3, sm: 4, md: 5, lg: 6 }
+          }}>
                   {/* Enhanced background decoration */}
-                  <Box sx={{
-                    position: 'absolute',
+            <Box sx={{
+              position: 'absolute',
                     top: '-40%',
                     right: '-30%',
                     width: '400px',
                     height: '400px',
                     background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    borderRadius: '50%',
+              borderRadius: '50%',
                     opacity: 0.04,
                     filter: 'blur(80px)',
-                    zIndex: 0
-                  }} />
+              zIndex: 0
+            }} />
 
-                  <Typography 
+            <Typography 
                     variant="h4" 
-                    component="h2" 
-                    sx={{ 
-                      textAlign: 'center',
+              component="h2" 
+              sx={{ 
+                textAlign: 'center',
                       fontWeight: 800,
-                      marginBottom: '3rem',
+                      marginBottom: { xs: '2rem', sm: '2.5rem', md: '3rem', lg: '3.5rem' },
                       background: isDarkMode 
                         ? 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)'
                         : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      position: 'relative',
+                position: 'relative',
                       zIndex: 1,
                       fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                    }}
-                  >
-                    Quick Access Links
+              }}
+            >
+              Quick Access Links
                     <Box sx={{
                       position: 'absolute',
                       bottom: '-8px',
@@ -1103,39 +1114,39 @@ const Home = () => {
                       borderRadius: '2px',
                       background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
                     }} />
-                  </Typography>
-                  
-                  <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
-                    {quickLinks.map((link, index) => (
-                      <Grid item xs={12} sm={6} md={3} key={link.url}>
-                        <motion.div
+            </Typography>
+            
+                  <Grid container spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }} sx={{ position: 'relative', zIndex: 1 }}>
+              {quickLinks.map((link, index) => (
+                <Grid item xs={12} sm={6} md={3} key={link.url}>
+                  <motion.div
                           initial={{ opacity: 0, y: 30 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.1 + (index * 0.05), duration: 0.5, ease: [0.25, 0.25, 0, 1] }}
                           whileHover={{ scale: 1.05, y: -4 }}
                           whileTap={{ scale: 0.98 }}
-                        >
-                          <Button
-                            onClick={() => window.open(link.url, '_blank')}
-                            sx={{
-                              width: '100%',
-                              height: '120px',
+                  >
+                    <Button
+                      onClick={() => window.open(link.url, '_blank')}
+                      sx={{
+                        width: '100%',
+                              height: { xs: '100px', sm: '110px', md: '120px', lg: '130px' },
                               borderRadius: '20px',
-                              background: isDarkMode 
+                        background: isDarkMode 
                                 ? 'linear-gradient(135deg, rgba(51, 65, 85, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%)'
-                                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
                               backdropFilter: 'blur(15px)',
                               border: isDarkMode 
                                 ? '1px solid rgba(148, 163, 184, 0.2)' 
                                 : '1px solid rgba(226, 232, 240, 0.4)',
                               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
                               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                              display: 'flex',
-                              flexDirection: 'column',
+                        display: 'flex',
+                        flexDirection: 'column',
                               gap: 1,
-                              position: 'relative',
-                              overflow: 'hidden',
-                              '&:hover': {
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&:hover': {
                                 background: link.gradient,
                                 border: 'none',
                                 boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)',
@@ -1144,63 +1155,69 @@ const Home = () => {
                                   transform: 'scale(1.1)'
                                 },
                                 '& .link-text': {
-                                  color: 'white !important'
-                                },
+                          color: 'white !important'
+                        },
                                 '& .link-category': {
                                   color: 'rgba(255, 255, 255, 0.9) !important',
                                   borderColor: 'rgba(255, 255, 255, 0.3) !important'
                                 }
-                              }
-                            }}
-                          >
-                            <link.icon 
-                              className="link-icon"
-                              sx={{ 
-                                fontSize: '2rem', 
-                                color: isDarkMode ? '#94a3b8' : '#6b7280',
+                        }
+                      }}
+                    >
+                      <link.icon 
+                        className="link-icon"
+                        sx={{ 
+                                fontSize: { xs: '1.75rem', sm: '1.875rem', md: '2rem', lg: '2.125rem' }, 
+                          color: isDarkMode ? '#94a3b8' : '#6b7280',
                                 transition: 'all 0.3s ease'
-                              }} 
-                            />
-                            <Typography 
-                              className="link-text"
-                              variant="body2" 
-                              sx={{ 
+                        }} 
+                      />
+                      <Typography 
+                        className="link-text"
+                        variant="body2" 
+                        sx={{ 
                                 fontWeight: 700,
-                                color: isDarkMode ? '#f3f4f6' : '#1f2937',
-                                textAlign: 'center',
-                                fontSize: '0.875rem',
-                                transition: 'color 0.3s ease'
-                              }}
-                            >
-                              {link.label}
-                            </Typography>
-                            <Chip 
-                              className="link-category"
-                              label={link.category}
-                              size="small"
-                              sx={{
-                                fontSize: '0.75rem',
-                                height: '20px',
-                                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                backgroundColor: 'transparent',
-                                border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
+                          color: isDarkMode ? '#f3f4f6' : '#1f2937',
+                          textAlign: 'center',
+                                fontSize: { xs: '0.8rem', sm: '0.85rem', md: '0.875rem', lg: '0.9rem' },
+                          transition: 'color 0.3s ease'
+                        }}
+                      >
+                        {link.label}
+                      </Typography>
+                      <Chip 
+                        className="link-category"
+                        label={link.category}
+                        size="small"
+                        sx={{
+                                fontSize: { xs: '0.7rem', sm: '0.725rem', md: '0.75rem', lg: '0.775rem' },
+                                height: { xs: '18px', sm: '19px', md: '20px', lg: '21px' },
+                          color: isDarkMode ? '#9ca3af' : '#6b7280',
+                          backgroundColor: 'transparent',
+                          border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
                                 transition: 'all 0.3s ease',
                                 fontWeight: 600
-                              }}
-                            />
-                          </Button>
-                        </motion.div>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Box>
-              </motion.div>
+                        }}
+                      />
+                    </Button>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Add bottom spacing to prevent unused space */}
+        <Box sx={{ 
+          height: { xs: '2rem', sm: '3rem', md: '4rem', lg: '5rem' },
+          flexShrink: 0
+        }} />
       </Container>
     </Box>
   );
 };
 
-export default Home;
+export default Home; 

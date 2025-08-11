@@ -9,6 +9,19 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true); // Loading state for initial check
   const [error, setError] = useState(null);
 
+  // Admin rule: domain allowlist OR explicit metadata.role === 'admin'
+  const isAdmin = React.useMemo(() => {
+    const email = user?.email?.toLowerCase?.() || '';
+    const domains = ['@othainsoft.com', '@jerseytechpartners.com', '@markenzoworldwide.com', '@example.com'];
+    const hasDomain = domains.some(d => email.endsWith(d));
+    const hasRole = (user?.user_metadata && user.user_metadata.role === 'admin');
+    
+    // Add debugging
+    
+    
+    return Boolean(user && (hasDomain || hasRole));
+  }, [user]);
+
   // Check initial session and set up listener
   useEffect(() => {
     setIsLoading(true);
@@ -131,6 +144,39 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // --- NEW: Admin password reset helpers (call Edge Function) ---
+  const callResetFunction = async (body) => {
+    // Uses the logged-in user's access token so the function can enforce admin
+    const accessToken = session?.access_token;
+    if (!accessToken) throw new Error("Not authenticated");
+
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://sethhceiojxrevvpzupf.supabase.co';
+    const res = await fetch(`${supabaseUrl}/functions/v1/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json?.error || 'Failed to reset password');
+    }
+    return json;
+  };
+
+  const resetUserPasswordById = useCallback(async (userId, newPassword) => {
+    if (!isAdmin) throw new Error("Only admins can reset passwords");
+    return callResetFunction({ user_id: userId, new_password: newPassword });
+  }, [isAdmin, session]);
+
+  const resetUserPasswordByEmail = useCallback(async (email, newPassword) => {
+    if (!isAdmin) throw new Error("Only admins can reset passwords");
+    return callResetFunction({ email, new_password: newPassword });
+  }, [isAdmin, session]);
+
   // Value provided to consuming components
   const value = {
     session,
@@ -142,6 +188,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     signup,
     signInWithMicrosoft: auth.signInWithMicrosoft,
+    // NEW
+    isAdmin,
+    resetUserPasswordById,
+    resetUserPasswordByEmail,
   };
 
   return (
@@ -156,4 +206,70 @@ export const AuthProvider = ({ children }) => {
 // Hook to use auth context
 export const useAuth = () => {
   return useContext(AuthContext);
+};
+
+// --- OPTIONAL: Tiny admin-only UI you can drop anywhere ---
+export const AdminPasswordResetPanel = () => {
+  const { isAdmin, resetUserPasswordByEmail } = useAuth();
+  const [email, setEmail] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [status, setStatus] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setStatus(null);
+    if (!email || !pwd) return setStatus({ type: 'error', msg: 'Email and new password required' });
+    if (pwd !== confirm) return setStatus({ type: 'error', msg: 'Passwords do not match' });
+    try {
+      setBusy(true);
+      await resetUserPasswordByEmail(email.trim(), pwd);
+      setStatus({ type: 'ok', msg: 'Password reset successfully' });
+      setEmail(''); setPwd(''); setConfirm('');
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} style={{ border: '1px solid #e5e7eb', padding: 16, borderRadius: 8, maxWidth: 480 }}>
+      <h3 style={{ marginBottom: 12 }}>Admin: Reset User Password</h3>
+      <div style={{ display: 'grid', gap: 8 }}>
+        <input
+          type="email"
+          placeholder="User email (exact)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ padding: 8, borderRadius: 6, border: '1px solid #d1d5db' }}
+        />
+        <input
+          type="password"
+          placeholder="New password"
+          value={pwd}
+          onChange={(e) => setPwd(e.target.value)}
+          style={{ padding: 8, borderRadius: 6, border: '1px solid #d1d5db' }}
+        />
+        <input
+          type="password"
+          placeholder="Confirm new password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          style={{ padding: 8, borderRadius: 6, border: '1px solid #d1d5db' }}
+        />
+        <button type="submit" disabled={busy} style={{ padding: 10, borderRadius: 6, background: '#111827', color: 'white' }}>
+          {busy ? 'Resetting…' : 'Reset Password'}
+        </button>
+        {status && (
+          <div style={{ color: status.type === 'ok' ? 'green' : 'crimson', fontSize: 14 }}>
+            {status.msg}
+          </div>
+        )}
+      </div>
+    </form>
+  );
 }; 
