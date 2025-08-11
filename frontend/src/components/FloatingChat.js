@@ -39,9 +39,11 @@ const FloatingChat = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [autoAttentionMode, setAutoAttentionMode] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const tooltipTimerRef = useRef(null);
+  const autoAttentionTimerRef = useRef(null);
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -205,6 +207,43 @@ const FloatingChat = () => {
     };
   }, []);
 
+  // Auto-attention mechanism - show hover and tooltip every minute
+  useEffect(() => {
+    if (!isOpen) {
+      // Start auto-attention timer when chat is closed
+      autoAttentionTimerRef.current = setInterval(() => {
+        if (!isOpen && !isHovered) {
+          setAutoAttentionMode(true);
+          setIsHovered(true);
+          setShowTooltip(true);
+          
+          // Keep the attention for 3 seconds
+          setTimeout(() => {
+            if (autoAttentionMode) {
+              setIsHovered(false);
+              setShowTooltip(false);
+              setAutoAttentionMode(false);
+            }
+          }, 3000);
+        }
+      }, 60000); // Every 60 seconds (1 minute)
+    } else {
+      // Clear auto-attention timer when chat is open
+      if (autoAttentionTimerRef.current) {
+        clearInterval(autoAttentionTimerRef.current);
+        autoAttentionTimerRef.current = null;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (autoAttentionTimerRef.current) {
+        clearInterval(autoAttentionTimerRef.current);
+        autoAttentionTimerRef.current = null;
+      }
+    };
+  }, [isOpen, isHovered]);
+
   // Display the status badge
   const getStatusBadge = () => {
     if (serverError) {
@@ -253,10 +292,15 @@ const FloatingChat = () => {
       setMessages([]);
       setError(null);
       setServerError(false);
+      // Clear auto-attention when opening chat
+      setAutoAttentionMode(false);
+      setIsHovered(false);
+      setShowTooltip(false);
     } else {
       // Reset tooltip state when closing chat
       setShowTooltip(false);
       setIsHovered(false);
+      setAutoAttentionMode(false);
       // Clear any pending tooltip timer
       if (tooltipTimerRef.current) {
         clearTimeout(tooltipTimerRef.current);
@@ -268,6 +312,7 @@ const FloatingChat = () => {
   const handleMouseEnter = () => {
     setIsHovered(true);
     setShowTooltip(false);
+    setAutoAttentionMode(false); // Disable auto-attention when user manually hovers
     // Clear any existing timer
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
