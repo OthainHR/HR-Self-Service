@@ -30,6 +30,7 @@ import { useDarkMode } from '../contexts/DarkModeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
+import { profileService } from '../services/profileService';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ const Home = () => {
   const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
+  const [userProfilePicture, setUserProfilePicture] = useState(null);
   
   // Mini chat state
   const [miniChatInput, setMiniChatInput] = useState('');
@@ -139,6 +141,44 @@ const Home = () => {
     };
     fetchCabServiceVisibility();
   }, []);
+
+  // Fetch user profile picture
+  useEffect(() => {
+    const fetchUserProfilePicture = async () => {
+      if (!user?.id) {
+        setUserProfilePicture(null);
+        return;
+      }
+
+      try {
+        const profilePictureUrl = await profileService.getProfilePicture(user.id);
+        setUserProfilePicture(profilePictureUrl);
+      } catch (error) {
+        console.error('Error fetching user profile picture in Home:', error);
+        setUserProfilePicture(null);
+      }
+    };
+
+    fetchUserProfilePicture();
+
+    // Subscribe to profile changes to update home page in real-time
+    let subscription = null;
+    if (user?.id) {
+      subscription = profileService.subscribeToProfileChanges(user.id, (payload) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          setUserProfilePicture(payload.new?.profile_picture_url || null);
+        } else if (payload.eventType === 'DELETE') {
+          setUserProfilePicture(null);
+        }
+      });
+    }
+
+    return () => {
+      if (subscription) {
+        profileService.unsubscribeFromProfileChanges(subscription);
+      }
+    };
+  }, [user?.id]);
 
   // Mini chat handlers
   const handleMiniChatSubmit = async (e) => {
@@ -490,10 +530,11 @@ const Home = () => {
                               src={isDarkMode ? '/othainlogopreview.png' : '/OthainOcolor.png'}
                               alt="Othain Logo"
                               style={{ 
-                                width: '64px', 
-                                height: '64px', 
+                                width: '50px', 
+                                height: '50px', 
                                 objectFit: 'contain',
-                                filter: 'drop-shadow(0 8px 25px rgba(0, 0, 0, 0.15))'
+                                filter: 'drop-shadow(0 8px 25px rgba(0, 0, 0, 0.15))',
+                                marginBottom: '-5px'
                               }} 
                             />
                             <motion.div
@@ -501,8 +542,8 @@ const Home = () => {
                                 position: 'absolute',
                                 top: '-8px',
                                 right: '-8px',
-                                width: '24px',
-                                height: '24px',
+                                width: '20px',
+                                height: '20px',
                 borderRadius: '50%',
                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 display: 'flex',
@@ -523,6 +564,47 @@ const Home = () => {
                             </motion.div>
               </Box>
                         </Box>
+                      </motion.div>
+                      
+                      {/* User Profile Picture */}
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.25, 0, 1] }}
+                        style={{ 
+                          display: 'flex', 
+                          justifyContent: 'center',
+                          marginBottom: '1.5rem'
+                        }}
+                      >
+                        <Avatar
+                          src={userProfilePicture}
+                          sx={{
+                            width: { xs: 100, sm: 100, md: 100 },
+                            height: { xs: 100, sm: 100, md: 100 },
+                            fontSize: '2.5rem',
+                            fontWeight: 700,
+                            background: userProfilePicture
+                              ? 'none'
+                              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: isDarkMode
+                              ? 'none'
+                              : 'none',
+                            border: `4px solid ${isDarkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(255, 255, 255, 0.9)'}`,
+                            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&:hover': {
+                              transform: 'scale(1.05)',
+                              boxShadow: isDarkMode
+                                ? 'none'
+                                : 'none'
+                            },
+                            // Ensure circular mask clips the image
+                          }}
+                        >
+                          {!userProfilePicture && displayName.charAt(0).toUpperCase()}
+                        </Avatar>
                       </motion.div>
                       
                       {displayName && (

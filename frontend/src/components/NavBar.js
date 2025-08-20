@@ -33,12 +33,14 @@ import {
   ConfirmationNumber,
   DirectionsCar,
   Receipt,
-  Close
+  Close,
+  Person
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import DarkModeSwitch from './DarkModeSwitch';
 import { supabase } from '../services/supabase';
+import { profileService } from '../services/profileService';
 
 const NavBar = () => {
   const { user, logout, isLoading } = useAuth();
@@ -51,6 +53,7 @@ const NavBar = () => {
   const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
+  const [userProfilePicture, setUserProfilePicture] = useState(null);
 
   const EXPENSE_APPROVER_EMAILS = [
     'accounts@othainsoft.com',
@@ -113,6 +116,44 @@ const NavBar = () => {
     };
     fetchCabServiceVisibility();
   }, []);
+
+  // Fetch user profile picture
+  useEffect(() => {
+    const fetchUserProfilePicture = async () => {
+      if (!user?.id) {
+        setUserProfilePicture(null);
+        return;
+      }
+
+      try {
+        const profilePictureUrl = await profileService.getProfilePicture(user.id);
+        setUserProfilePicture(profilePictureUrl);
+      } catch (error) {
+        console.error('Error fetching user profile picture in NavBar:', error);
+        setUserProfilePicture(null);
+      }
+    };
+
+    fetchUserProfilePicture();
+
+    // Subscribe to profile changes to update navbar in real-time
+    let subscription = null;
+    if (user?.id) {
+      subscription = profileService.subscribeToProfileChanges(user.id, (payload) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          setUserProfilePicture(payload.new?.profile_picture_url || null);
+        } else if (payload.eventType === 'DELETE') {
+          setUserProfilePicture(null);
+        }
+      });
+    }
+
+    return () => {
+      if (subscription) {
+        profileService.unsubscribeFromProfileChanges(subscription);
+      }
+    };
+  }, [user?.id]);
 
   const isAdmin = user?.email === 'admin@example.com';
   const navigate = useNavigate();
@@ -496,13 +537,18 @@ const NavBar = () => {
               gap: 1
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                <Avatar sx={{ 
-                  width: 32, 
-                  height: 32, 
-                  fontSize: '0.9rem',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
-                }}>
-                  {user?.email?.charAt(0).toUpperCase()}
+                <Avatar 
+                  src={userProfilePicture}
+                  sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    fontSize: '0.9rem',
+                    background: userProfilePicture
+                      ? 'none'
+                      : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                  }}
+                >
+                  {!userProfilePicture && user?.email?.charAt(0).toUpperCase()}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ 
@@ -767,18 +813,18 @@ const NavBar = () => {
               aria-haspopup="true"
               onClick={handleMenu}
               sx={{
-                    width: 44,
-                    height: 44,
-                    background: isDarkMode ? 'rgba(71, 85, 105, 0.4)' : 'rgba(248, 250, 252, 0.6)',
+                    width: 52,
+                    height: 52,
+                    background: isDarkMode ? 'rgba(71, 85, 105, 0.6)' : 'rgba(248, 250, 252, 0.9)',
                 backdropFilter: 'blur(10px)',
-                    border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.4)'}`,
-                    borderRadius: '12px',
+                    border: `1px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.4)' : 'rgba(203, 213, 225, 0.6)'}`,
+                    borderRadius: '50%',
                     color: isDarkMode ? '#e2e8f0' : '#334155',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
                 overflow: 'hidden',
                 '&:hover': {
-                      background: isDarkMode ? 'rgba(71, 85, 105, 0.6)' : 'rgba(248, 250, 252, 0.8)',
+                      background: isDarkMode ? 'rgba(71, 85, 105, 0.7)' : 'rgba(248, 250, 252, 1)',
                       transform: 'scale(1.05)',
                       boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
                 },
@@ -800,14 +846,19 @@ const NavBar = () => {
                 }
               }}
             >
-                  <Avatar sx={{ 
-                    width: 28, 
-                    height: 28, 
-                    fontSize: '0.8rem',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    border: '2px solid rgba(255,255,255,0.2)'
-                  }}>
-                    {user?.email?.charAt(0).toUpperCase()}
+                  <Avatar 
+                    src={userProfilePicture}
+                    sx={{ 
+                      width: 40, 
+                      height: 40, 
+                      fontSize: '1rem',
+                      background: userProfilePicture 
+                        ? 'none' 
+                        : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      border: '2px solid rgba(255,255,255,0.35)'
+                    }}
+                  >
+                    {!userProfilePicture && user?.email?.charAt(0).toUpperCase()}
                   </Avatar>
             </IconButton>
               </Tooltip>
@@ -861,15 +912,20 @@ const NavBar = () => {
                   zIndex: 1
                 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ 
-                      width: 48, 
-                      height: 48,
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                      boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)',
-                      fontSize: '1.2rem',
-                      fontWeight: 700
-                    }}>
-                      {user?.email?.charAt(0).toUpperCase()}
+                    <Avatar 
+                      src={userProfilePicture}
+                      sx={{ 
+                        width: 48, 
+                        height: 48,
+                        background: userProfilePicture
+                          ? 'none'
+                          : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)',
+                        fontSize: '1.2rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      {!userProfilePicture && user?.email?.charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>
                       <Typography sx={{ 
@@ -912,30 +968,56 @@ const NavBar = () => {
 
                 {/* Menu Items */}
                 <Box sx={{ py: 1 }}>
-              <MenuItem 
-                onClick={handleLogout}
-                sx={{
+                  <MenuItem 
+                    component={RouterLink}
+                    to="/profile"
+                    onClick={handleClose}
+                    sx={{
                       mx: 2,
                       my: 0.5,
-                  borderRadius: '12px',
+                      borderRadius: '12px',
                       py: 1.5,
                       px: 2,
                       color: isDarkMode ? '#e2e8f0' : '#334155',
                       transition: 'all 0.3s ease',
-                  '&:hover': {
-                        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
-                        color: '#ef4444',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                        color: '#6366f1',
                         transform: 'translateX(4px)'
                       }
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Logout sx={{ fontSize: '1.2rem' }} />
+                      <Person sx={{ fontSize: '1.2rem' }} />
                       <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                Logout
+                        Profile
                       </Typography>
                     </Box>
-              </MenuItem>
+                  </MenuItem>
+                  <MenuItem 
+                    onClick={handleLogout}
+                    sx={{
+                          mx: 2,
+                          my: 0.5,
+                      borderRadius: '12px',
+                          py: 1.5,
+                          px: 2,
+                          color: isDarkMode ? '#e2e8f0' : '#334155',
+                          transition: 'all 0.3s ease',
+                      '&:hover': {
+                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+                            color: '#ef4444',
+                            transform: 'translateX(4px)'
+                          }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Logout sx={{ fontSize: '1.2rem' }} />
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                    Logout
+                          </Typography>
+                        </Box>
+                  </MenuItem>
                 </Box>
             </Menu>
           </div>

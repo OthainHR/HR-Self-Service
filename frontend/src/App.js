@@ -36,6 +36,7 @@ const TicketDetailPage = lazy(() => import('./features/ticketing/pages/TicketDet
 const CabService = lazy(() => import('./pages/CabService'));
 const TicketDashboard = lazy(() => import('./pages/TicketDashboard'));
 const ExpenseTicketing = lazy(() => import('./pages/ExpenseTicketing'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 
 // --- THEME DEFINITION --- 
@@ -314,6 +315,7 @@ const AppContent = () => {
                 <Route path="/chat/:chatId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/knowledge" element={<ProtectedRoute><Knowledge /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
                 <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                 <Route path="/tickets" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />

@@ -207,7 +207,7 @@ const FloatingChat = () => {
     };
   }, []);
 
-  // Auto-attention mechanism - show hover and tooltip every minute
+  // Auto-attention mechanism - show hover and tooltip every 30 seconds
   useEffect(() => {
     if (!isOpen) {
       // Start auto-attention timer when chat is closed
@@ -238,7 +238,7 @@ const FloatingChat = () => {
           }
           tooltipTimerRef.current = hideTimeout;
         }
-      }, 60000); // Every 60 seconds (1 minute)
+      }, 30000); // Every 30 seconds
     } else {
       // Clear auto-attention timer when chat is open
       if (autoAttentionTimerRef.current) {
@@ -396,7 +396,7 @@ const FloatingChat = () => {
             }
             tooltipTimerRef.current = hideTimeout;
           }
-        }, 60000); // Every 60 seconds
+        }, 30000); // Every 30 seconds
       }
     }, 1300); // 300ms for shrink + 1000ms pause
   };

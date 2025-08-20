@@ -30,6 +30,8 @@ import {
 import MessageItem from './MessageItem';
 import { chatApi } from '../services/api';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
 import { motion } from 'framer-motion';
 
 const ChatWindow = ({ sessionId, onSessionChange }) => {
@@ -38,17 +40,40 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [userProfilePicture, setUserProfilePicture] = useState(null);
   const [error, setError] = useState(null);
   const [serverError, setServerError] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const { isDarkMode } = useDarkMode();
+  const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const currentAssistantMessageId = useRef(null);
   const bufferedContentRef = useRef('');
   const updateTimerRef = useRef(null);
   const isFirstChunkRef = useRef(true);
+
+  // Helper function to get display name
+  const getDisplayName = () => {
+    if (user?.name) {
+      return user.name;
+    }
+    if (user?.email) {
+      try {
+        const emailParts = user.email.split('@');
+        const namePart = emailParts[0];
+        const firstName = namePart.split('.')[0];
+        if (firstName) {
+          return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+        }
+      } catch (e) {
+        return user.email;
+      }
+      return user.email;
+    }
+    return 'User';
+  };
 
   // Set to false since we're removing offline mode
   const offlineMode = false;
@@ -243,6 +268,23 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
       }
     };
   }, []);
+
+  // Fetch user profile picture
+  useEffect(() => {
+    const fetchUserProfilePicture = async () => {
+      if (!user?.id) return;
+
+      try {
+        const profilePictureUrl = await profileService.getProfilePicture(user.id);
+        setUserProfilePicture(profilePictureUrl);
+      } catch (error) {
+        console.error('Error fetching user profile picture:', error);
+        // Don't show error to user, just silently fail
+      }
+    };
+
+    fetchUserProfilePicture();
+  }, [user?.id]);
 
   // Handle sending a message (Updated for Streaming with Batching)
   const handleSubmit = useCallback(async (e) => {
@@ -676,6 +718,48 @@ const ChatWindow = ({ sessionId, onSessionChange }) => {
                       style={{ width: '70%', height: '70%', objectFit: 'contain' }}
                     />
                   </Avatar>
+                  
+                  {/* User Profile Picture */}
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      marginBottom: '1rem',
+                      gap: '12px'
+                    }}
+                  >
+                    <Avatar
+                      src={userProfilePicture}
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        background: userProfilePicture
+                          ? 'none'
+                          : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)',
+                        border: `3px solid ${isDarkMode ? 'rgba(71, 85, 105, 0.3)' : 'rgba(255, 255, 255, 0.8)'}`,
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {!userProfilePicture && getDisplayName().charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontWeight: 600,
+                        color: isDarkMode ? '#e2e8f0' : '#334155',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      Welcome, {getDisplayName()}!
+                    </Typography>
+                  </motion.div>
                   
                   <Typography variant="h5" sx={{ 
                     mb: 2, 
