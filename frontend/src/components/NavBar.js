@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppBar, 
@@ -54,6 +54,10 @@ const NavBar = () => {
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
   const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
   const [userProfilePicture, setUserProfilePicture] = useState(null);
+  const [showProfileTooltip, setShowProfileTooltip] = useState(false);
+  const [profileTooltipHovered, setProfileTooltipHovered] = useState(false);
+  const profileTooltipTimerRef = useRef(null);
+  const profileAutoAttentionTimerRef = useRef(null);
 
   const EXPENSE_APPROVER_EMAILS = [
     'accounts@othainsoft.com',
@@ -154,6 +158,98 @@ const NavBar = () => {
       }
     };
   }, [user?.id]);
+
+  // Auto-tooltip mechanism for profile picture upload (only if no profile picture)
+  useEffect(() => {
+    if (isAuthenticated && !userProfilePicture) {
+      // Start auto-attention timer when user has no profile picture
+      profileAutoAttentionTimerRef.current = setInterval(() => {
+        // Only trigger if not already showing tooltip and not hovered
+        if (!showProfileTooltip && !profileTooltipHovered) {
+          setShowProfileTooltip(true);
+          
+          // Keep the tooltip for 3 seconds, then hide it
+          const hideTimeout = setTimeout(() => {
+            setShowProfileTooltip(false);
+          }, 3000);
+          
+          // Store the timeout reference for cleanup
+          if (profileTooltipTimerRef.current) {
+            clearTimeout(profileTooltipTimerRef.current);
+          }
+          profileTooltipTimerRef.current = hideTimeout;
+        }
+      }, 30000); // Every 30 seconds
+    } else {
+      // Clear auto-attention timer when user has profile picture or not authenticated
+      if (profileAutoAttentionTimerRef.current) {
+        clearInterval(profileAutoAttentionTimerRef.current);
+        profileAutoAttentionTimerRef.current = null;
+      }
+      // Also clear any pending hide timeout
+      if (profileTooltipTimerRef.current) {
+        clearTimeout(profileTooltipTimerRef.current);
+        profileTooltipTimerRef.current = null;
+      }
+      setShowProfileTooltip(false);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (profileAutoAttentionTimerRef.current) {
+        clearInterval(profileAutoAttentionTimerRef.current);
+        profileAutoAttentionTimerRef.current = null;
+      }
+      if (profileTooltipTimerRef.current) {
+        clearTimeout(profileTooltipTimerRef.current);
+        profileTooltipTimerRef.current = null;
+      }
+    };
+  }, [isAuthenticated, userProfilePicture, showProfileTooltip, profileTooltipHovered]);
+
+  const handleProfileMouseEnter = () => {
+    if (!userProfilePicture) {
+      setProfileTooltipHovered(true);
+      setShowProfileTooltip(true);
+      
+      // Clear any existing auto-attention timers
+      if (profileAutoAttentionTimerRef.current) {
+        clearInterval(profileAutoAttentionTimerRef.current);
+        profileAutoAttentionTimerRef.current = null;
+      }
+      
+      // Clear any existing tooltip timer
+      if (profileTooltipTimerRef.current) {
+        clearTimeout(profileTooltipTimerRef.current);
+        profileTooltipTimerRef.current = null;
+      }
+    }
+  };
+
+  const handleProfileMouseLeave = () => {
+    if (!userProfilePicture) {
+      setProfileTooltipHovered(false);
+      setShowProfileTooltip(false);
+      
+      // Restart auto-attention timer after user stops hovering (only if no profile picture)
+      if (!profileAutoAttentionTimerRef.current) {
+        profileAutoAttentionTimerRef.current = setInterval(() => {
+          if (!showProfileTooltip && !profileTooltipHovered) {
+            setShowProfileTooltip(true);
+            
+            const hideTimeout = setTimeout(() => {
+              setShowProfileTooltip(false);
+            }, 3000);
+            
+            if (profileTooltipTimerRef.current) {
+              clearTimeout(profileTooltipTimerRef.current);
+            }
+            profileTooltipTimerRef.current = hideTimeout;
+          }
+        }, 30000); // Every 30 seconds
+      }
+    }
+  };
 
   const isAdmin = user?.email === 'admin@example.com';
   const navigate = useNavigate();
@@ -806,12 +902,57 @@ const NavBar = () => {
           {/* Enhanced User Menu */}
         {isAuthenticated ? (
           <div>
-              <Tooltip title="Account settings" arrow>
+              <Tooltip
+                title={
+                  <Box sx={{ textAlign: 'left', paddingRight: '10px', paddingLeft: '10px' }}>
+                    <Typography variant="body1" sx={{ 
+                      fontWeight: 700, 
+                      color: 'white', 
+                      mb: 2, 
+                      fontSize: '1rem',
+                      lineHeight: 0.4,
+                      paddingTop: '18px'
+                    }}>
+                      Profile Settings
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      color: 'rgba(255, 255, 255, 0.9)', 
+                      fontSize: '0.875rem',
+                      lineHeight: 1.5,
+                      paddingBottom: '10px'
+                    }}>
+                      Click to upload your profile picture
+                    </Typography>
+                  </Box>
+                }
+                placement="bottom-start"
+                arrow
+                open={!userProfilePicture && (showProfileTooltip || profileTooltipHovered)}
+                onClose={() => setShowProfileTooltip(false)}
+                enterDelay={profileTooltipHovered ? 0 : 500}
+                sx={{
+                  '& .MuiTooltip-tooltip': {
+                    background: 'rgba(0, 0, 0, 0.9)',
+                    borderRadius: '12px',
+                    padding: '20px 24px',
+                    fontSize: '0.875rem',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)',
+                    minWidth: '220px'
+                  },
+                  '& .MuiTooltip-arrow': {
+                    color: 'rgba(0, 0, 0, 0.9)'
+                  }
+                }}
+              >
             <IconButton
               aria-label="account of current user"
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleMenu}
+              onMouseEnter={handleProfileMouseEnter}
+              onMouseLeave={handleProfileMouseLeave}
               sx={{
                     width: 52,
                     height: 52,
