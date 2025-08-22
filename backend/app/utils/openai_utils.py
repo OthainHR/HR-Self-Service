@@ -15,7 +15,7 @@ client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Check if we should use mock embeddings (for testing without OpenAI credits)
 USE_MOCK_EMBEDDINGS = os.getenv("USE_MOCK_EMBEDDINGS", "false").lower() == "true"
 
-async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4.1-mini"):
+async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-5-mini"):
     """
     Get a chat completion from OpenAI API.
     
@@ -38,7 +38,7 @@ async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-
         print(f"Error calling OpenAI API: {e}")
         return f"Sorry, I encountered an error: {str(e)}"
 
-async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-4.1-mini"):
+async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-5-mini"):
     """
     Get a chat completion stream from OpenAI API (async).
     
