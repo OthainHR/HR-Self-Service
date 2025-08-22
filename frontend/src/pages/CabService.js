@@ -55,7 +55,8 @@ import {
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
   WbSunny as MorningIcon, // Added MorningIcon
-  NightsStay as EveningIcon // Added EveningIcon
+  NightsStay as EveningIcon, // Added EveningIcon
+  Delete as DeleteIcon // Added DeleteIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -135,6 +136,13 @@ const CabService = () => {
   // State for reminder buttons (HR admin)
   const [loadingMorningReminder, setLoadingMorningReminder] = useState(false);
   const [loadingEveningReminder, setLoadingEveningReminder] = useState(false);
+
+  // State for location grouping (Excel export)
+  const [locationGroups, setLocationGroups] = useState({});
+  const [availableLocations, setAvailableLocations] = useState([]);
+  const [showGroupConfig, setShowGroupConfig] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
     // Use ref to track permission state to prevent race conditions
   const permissionStateRef = useRef('unknown');
@@ -560,12 +568,21 @@ const CabService = () => {
     }
   };
 
-  // Export to Excel (for admin)
+  // Export to Excel with location grouping (for admin)
   const exportToExcel = async () => {
     if (!isAdmin || bookings.length === 0) return;
 
-    // Prepare data for Excel
-    const excelData = bookings.map(booking => [
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    
+    // Common headers
+    const headers = [
+      'Date', 'First Name', 'Last Name', 'Email', 'Pickup Time',
+      'Pickup Location', 'Drop-off Location', 'Department', 'Needs Escort', 'Booking Time'
+    ];
+
+    // Helper function to format booking data
+    const formatBookingData = (booking) => [
       new Date(booking.booking_date).toLocaleDateString(),
       booking.first_name
         ? capitalizeFirstLetter(booking.first_name)
@@ -580,66 +597,206 @@ const CabService = () => {
       booking.department,
       booking.needs_escort ? 'Yes' : 'No',
       new Date(booking.created_at).toLocaleString()
-    ]);
-
-    // Create workbook and worksheet
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Cab Bookings');
-
-    // Add headers
-    const headers = [
-      'Date', 'First Name', 'Last Name', 'Email', 'Pickup Time',
-      'Pickup Location', 'Drop-off Location', 'Department', 'Needs Escort', 'Booking Time'
-    ];
-    worksheet.addRow(headers);
-
-    // Add data rows
-    excelData.forEach(row => worksheet.addRow(row));
-
-    // Set column widths
-    worksheet.columns = [
-      { width: 12 }, // Date
-      { width: 15 }, // First Name
-      { width: 15 }, // Last Name
-      { width: 25 }, // Email
-      { width: 12 }, // Pickup Time
-      { width: 18 }, // Pickup Location
-      { width: 20 }, // Drop-off Location
-      { width: 12 }, // Department
-      { width: 12 }, // Needs Escort
-      { width: 20 }  // Booking Time
     ];
 
-    // Style the header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: '4CAF50' }
+    // Helper function to style worksheet
+    const styleWorksheet = (worksheet) => {
+      // Set column widths
+      worksheet.columns = [
+        { width: 12 }, // Date
+        { width: 15 }, // First Name
+        { width: 15 }, // Last Name
+        { width: 25 }, // Email
+        { width: 12 }, // Pickup Time
+        { width: 18 }, // Pickup Location
+        { width: 20 }, // Drop-off Location
+        { width: 12 }, // Department
+        { width: 12 }, // Needs Escort
+        { width: 20 }  // Booking Time
+      ];
+
+      // Style the header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4CAF50' }
+      };
+      headerRow.alignment = { horizontal: 'center' };
     };
-    headerRow.alignment = { horizontal: 'center' };
 
-    // Generate filename with filters
+    // Check if groups are configured
+    const groupKeys = Object.keys(locationGroups);
+    const hasConfiguredGroups = groupKeys.some(key => 
+      Array.isArray(locationGroups[key]) && locationGroups[key].length > 0
+    );
+
+    if (hasConfiguredGroups) {
+      // Group bookings by location groups
+      const groupedBookings = {};
+      
+      // Create groups for each configured group
+      groupKeys.forEach(groupKey => {
+        if (Array.isArray(locationGroups[groupKey])) {
+          groupedBookings[groupKey] = bookings.filter(booking => 
+            locationGroups[groupKey].includes(booking.dropoff_location)
+          );
+        }
+      });
+      
+      // Add unassigned locations
+      const assignedLocations = [];
+      groupKeys.forEach(key => {
+        if (Array.isArray(locationGroups[key])) {
+          assignedLocations.push(...locationGroups[key]);
+        }
+      });
+      
+      groupedBookings.unassigned = bookings.filter(booking => 
+        !assignedLocations.includes(booking.dropoff_location)
+      );
+
+      // Create a single worksheet with all groups
+      const worksheet = workbook.addWorksheet('Cab Bookings by Groups');
+      let currentRow = 1;
+
+      // Add overall title
+      worksheet.addRow(['📋 Cab Bookings Organized by Location Groups']);
+      worksheet.mergeCells(1, 1, 1, headers.length);
+      const titleRow = worksheet.getRow(1);
+      titleRow.font = { bold: true, size: 16, color: { argb: '2563eb' } };
+      titleRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'EEF2FF' }
+      };
+      titleRow.alignment = { horizontal: 'center' };
+      currentRow = 2;
+
+      // Add summary section
+      worksheet.addRow([]);
+      worksheet.addRow(['📊 Summary:']);
+      const summaryTitleRow = worksheet.getRow(currentRow + 1);
+      summaryTitleRow.font = { bold: true, size: 12, color: { argb: '059669' } };
+      currentRow += 2;
+
+      Object.entries(groupedBookings).forEach(([groupKey, groupBookings]) => {
+        if (groupBookings.length > 0) {
+          const groupName = groupKey === 'unassigned' ? '📍 Unassigned Locations' : `🏢 ${getGroupDisplayName(groupKey)}`;
+          worksheet.addRow([`${groupName}: ${groupBookings.length} bookings`]);
+          currentRow++;
+        }
+      });
+
+      // Add extra spacing
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      currentRow += 2;
+
+      // Process each group with bookings
+      Object.entries(groupedBookings).forEach(([groupKey, groupBookings]) => {
+        if (groupBookings.length > 0) {
+          const groupName = groupKey === 'unassigned' ? 'Unassigned Locations' : getGroupDisplayName(groupKey);
+          
+          // Add group header
+          const groupHeaderText = groupKey === 'unassigned' 
+            ? `📍 ${groupName} (${groupBookings.length} bookings)`
+            : `🏢 ${groupName} (${groupBookings.length} bookings)`;
+          
+          worksheet.addRow([groupHeaderText]);
+          const groupHeaderRow = worksheet.getRow(currentRow);
+          worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
+          groupHeaderRow.font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+          groupHeaderRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: groupKey === 'unassigned' ? 'F59E0B' : '8B5CF6' }
+          };
+          groupHeaderRow.alignment = { horizontal: 'center' };
+          currentRow++;
+
+          // Add group location info if not unassigned
+          if (groupKey !== 'unassigned') {
+            const groupLocations = locationGroups[groupKey];
+            worksheet.addRow([`Locations: ${groupLocations.join(', ')}`]);
+            const locationInfoRow = worksheet.getRow(currentRow);
+            worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
+            locationInfoRow.font = { italic: true, size: 10 };
+            locationInfoRow.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'F3E8FF' }
+            };
+            locationInfoRow.alignment = { horizontal: 'center' };
+            currentRow++;
+          }
+          
+          // Add headers for this group
+          worksheet.addRow(headers);
+          const headerRow = worksheet.getRow(currentRow);
+          headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+          headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '4CAF50' }
+          };
+          headerRow.alignment = { horizontal: 'center' };
+          currentRow++;
+          
+          // Add booking data for this group
+          groupBookings.forEach(booking => {
+            worksheet.addRow(formatBookingData(booking));
+            currentRow++;
+          });
+          
+          // Add spacing between groups
+          worksheet.addRow([]);
+          worksheet.addRow([]);
+          currentRow += 2;
+        }
+      });
+      
+      // Style the worksheet
+      styleWorksheet(worksheet);
+
+    } else {
+      // No groups configured, create single sheet as before
+      const worksheet = workbook.addWorksheet('Cab Bookings');
+      
+      // Add headers
+      worksheet.addRow(headers);
+      
+      // Add data rows
+      bookings.forEach(booking => {
+        worksheet.addRow(formatBookingData(booking));
+      });
+      
+      styleWorksheet(worksheet);
+    }
+
+    // Generate filename with filters and group info
     const filterSuffix = [
       selectedPickupTime && `time-${selectedPickupTime.replace(':', '')}`,
       selectedPickupLocation && `location-${selectedPickupLocation.replace(/[^a-zA-Z0-9]/g, '')}`
     ].filter(Boolean).join('_');
     
+    const groupSuffix = hasConfiguredGroups ? '_by_groups' : '';
     const filename = filterSuffix 
-      ? `cab_bookings_${selectedDate}_${filterSuffix}_${bookings.length}_entries.xlsx`
-      : `cab_bookings_${selectedDate}_${bookings.length}_entries.xlsx`;
+      ? `cab_bookings_${selectedDate}_${filterSuffix}${groupSuffix}_${bookings.length}_entries.xlsx`
+      : `cab_bookings_${selectedDate}${groupSuffix}_${bookings.length}_entries.xlsx`;
 
     // Write and download the file
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, filename);
 
-    // Enhanced success message with filter info
+    // Enhanced success message with filter and group info
     const filterInfo = [
       `Date: ${new Date(selectedDate).toLocaleDateString()}`,
       selectedPickupTime && `Time: ${selectedPickupTime}`,
-      selectedPickupLocation && `Location: ${selectedPickupLocation}`
+      selectedPickupLocation && `Location: ${selectedPickupLocation}`,
+      hasConfiguredGroups && 'Organized by location groups in single sheet'
     ].filter(Boolean).join(', ');
 
     setSnackbarWithLogging({
@@ -801,6 +958,373 @@ const CabService = () => {
     }
   };
 
+  // Fetch unique locations from whitelist for grouping
+  const fetchAvailableLocations = async () => {
+    if (!isHrAdmin) return;
+    try {
+      const { data, error } = await supabase
+        .from('cab_booking_whitelist')
+        .select('drop_off_location')
+        .not('drop_off_location', 'is', null);
+      if (error) throw error;
+      
+      // Get unique locations and filter out null/empty values
+      const uniqueLocations = [...new Set(
+        data
+          .map(item => item.drop_off_location)
+          .filter(location => location && location.trim() !== '')
+      )].sort();
+      
+      setAvailableLocations(uniqueLocations);
+    } catch (err) {
+      console.error('Error fetching available locations:', err);
+    }
+  };
+
+  // Debug function to check all location groups (including inactive)
+  const debugLocationGroups = async () => {
+    if (!isHrAdmin) return;
+    try {
+      console.log('=== DEBUGGING LOCATION GROUPS ===');
+      
+      // Check all records in the table (including inactive)
+      const { data: allData, error: allError } = await supabase
+        .from('cab_location_groups')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (allError) {
+        console.error('Error fetching all location groups:', allError);
+      } else {
+        console.log('All location groups in table:', allData);
+      }
+      
+      // Check only active records
+      const { data: activeData, error: activeError } = await supabase
+        .from('v_active_cab_location_groups')
+        .select('*')
+        .order('group_name', { ascending: true });
+      
+      if (activeError) {
+        console.error('Error fetching active location groups:', activeError);
+      } else {
+        console.log('Active location groups from view:', activeData);
+      }
+      
+      console.log('Current user email:', user.email);
+      console.log('Is HR Admin:', isHrAdmin);
+      console.log('Available locations:', availableLocations);
+      console.log('=== END DEBUG ===');
+      
+    } catch (err) {
+      console.error('Debug error:', err);
+    }
+  };
+
+  // Fetch location groups from Supabase
+  const fetchLocationGroups = async () => {
+    if (!isHrAdmin) return;
+    setLoadingGroups(true);
+    try {
+      console.log('Fetching location groups for user:', user.email);
+      
+      // Run debug check
+      await debugLocationGroups();
+      
+      const { data, error } = await supabase
+        .from('v_active_cab_location_groups')
+        .select('*')
+        .order('group_name', { ascending: true });
+      
+      if (error) throw error;
+      
+      console.log('Fetched location groups data:', data);
+      
+      // Convert array to object format for easier handling
+      const groupsObject = {};
+      if (data && data.length > 0) {
+        data.forEach(group => {
+          groupsObject[group.group_key] = group.locations || [];
+        });
+      }
+      
+      console.log('Processed groups object:', groupsObject);
+      setLocationGroups(groupsObject);
+    } catch (err) {
+      console.error('Error fetching location groups:', err);
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Failed to load location groups',
+        severity: 'error'
+      });
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Save location group to Supabase
+  const saveLocationGroupToSupabase = async (groupKey, groupName, locations) => {
+    try {
+      console.log('Saving location group:', { groupKey, groupName, locations, userEmail: user.email });
+      
+      // First, check if there's an existing record with this group_key (active or inactive)
+      const { data: existingData, error: existingError } = await supabase
+        .from('cab_location_groups')
+        .select('*')
+        .eq('group_key', groupKey);
+      
+      if (existingError) {
+        console.error('Error checking existing groups:', existingError);
+        throw existingError;
+      }
+      
+      console.log('Existing groups with key:', existingData);
+      
+      let result;
+      
+      if (existingData && existingData.length > 0) {
+        // Update existing record (whether active or inactive)
+        const existingRecord = existingData[0];
+        console.log('Updating existing record:', existingRecord.id);
+        
+        result = await supabase
+          .from('cab_location_groups')
+          .update({
+            group_name: groupName,
+            locations: locations,
+            updated_by: user.email,
+            updated_at: new Date().toISOString(),
+            is_active: true // Reactivate if it was soft-deleted
+          })
+          .eq('id', existingRecord.id)
+          .select();
+      } else {
+        // Insert new record
+        console.log('Inserting new record');
+        
+        result = await supabase
+          .from('cab_location_groups')
+          .insert({
+            group_key: groupKey,
+            group_name: groupName,
+            locations: locations,
+            created_by: user.email,
+            updated_by: user.email,
+            is_active: true
+          })
+          .select();
+      }
+      
+      if (result.error) {
+        console.error('Supabase operation error details:', result.error);
+        throw result.error;
+      }
+      
+      console.log('Location group saved successfully:', result.data);
+      return true;
+    } catch (err) {
+      console.error('Error saving location group:', err);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to save location group';
+      if (err.message) {
+        if (err.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please ensure you have HR admin privileges.';
+        } else if (err.message.includes('unique')) {
+          errorMessage = 'A location group with this name already exists.';
+        } else if (err.message.includes('violates row-level security')) {
+          errorMessage = 'Access denied. Please ensure you are logged in as an HR admin.';
+        } else {
+          errorMessage = `Failed to save location group: ${err.message}`;
+        }
+      }
+      
+      setSnackbarWithLogging({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+      return false;
+    }
+  };
+
+  // Delete location group from Supabase (soft delete)
+  const deleteLocationGroupFromSupabase = async (groupKey) => {
+    try {
+      console.log('Deleting location group:', { groupKey, userEmail: user.email });
+      
+      const { data, error } = await supabase
+        .from('cab_location_groups')
+        .update({ 
+          is_active: false,
+          updated_by: user.email,
+          updated_at: new Date().toISOString()
+        })
+        .eq('group_key', groupKey)
+        .eq('is_active', true)
+        .select(); // Add select to get confirmation
+      
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.warn('No location group was deleted - group may not exist or already deleted');
+        setSnackbarWithLogging({
+          open: true,
+          message: 'Location group not found or already deleted',
+          severity: 'warning'
+        });
+        return false;
+      }
+      
+      console.log('Location group deleted successfully:', data);
+      return true;
+    } catch (err) {
+      console.error('Error deleting location group:', err);
+      
+      let errorMessage = 'Failed to delete location group';
+      if (err.message) {
+        if (err.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please ensure you have HR admin privileges.';
+        } else {
+          errorMessage = `Failed to delete location group: ${err.message}`;
+        }
+      }
+      
+      setSnackbarWithLogging({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+      return false;
+    }
+  };
+
+  // Location group management functions
+  const handleAddLocationToGroup = async (groupKey, location) => {
+    const newGroups = { ...locationGroups };
+    
+    // Remove location from other groups first
+    Object.keys(newGroups).forEach(key => {
+      if (Array.isArray(newGroups[key])) {
+        newGroups[key] = newGroups[key].filter(loc => loc !== location);
+      }
+    });
+    
+    // Add to selected group if not already present
+    if (!newGroups[groupKey]) {
+      newGroups[groupKey] = [];
+    }
+    if (!newGroups[groupKey].includes(location)) {
+      newGroups[groupKey] = [...newGroups[groupKey], location].sort();
+    }
+    
+    // Save to Supabase
+    const groupName = getGroupDisplayName(groupKey);
+    const success = await saveLocationGroupToSupabase(groupKey, groupName, newGroups[groupKey]);
+    
+    if (success) {
+      setLocationGroups(newGroups);
+      
+      // Also update other groups that had this location removed
+      for (const key of Object.keys(newGroups)) {
+        if (key !== groupKey && Array.isArray(newGroups[key])) {
+          await saveLocationGroupToSupabase(key, getGroupDisplayName(key), newGroups[key]);
+        }
+      }
+    }
+  };
+
+  const handleRemoveLocationFromGroup = async (groupKey, location) => {
+    const newGroups = { ...locationGroups };
+    if (newGroups[groupKey]) {
+      newGroups[groupKey] = newGroups[groupKey].filter(loc => loc !== location);
+    }
+    
+    // Save to Supabase
+    const groupName = getGroupDisplayName(groupKey);
+    const success = await saveLocationGroupToSupabase(groupKey, groupName, newGroups[groupKey]);
+    
+    if (success) {
+      setLocationGroups(newGroups);
+    }
+  };
+
+  const handleCreateNewGroup = async () => {
+    if (!newGroupName.trim()) {
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Please enter a group name',
+        severity: 'error'
+      });
+      return;
+    }
+
+    const groupKey = newGroupName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    
+    // Check if group already exists
+    if (locationGroups[groupKey]) {
+      setSnackbarWithLogging({
+        open: true,
+        message: 'A group with this name already exists',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Save to Supabase
+    const success = await saveLocationGroupToSupabase(groupKey, newGroupName.trim(), []);
+    
+    if (success) {
+      const newGroups = { ...locationGroups };
+      newGroups[groupKey] = [];
+      
+      setLocationGroups(newGroups);
+      setNewGroupName('');
+      
+      setSnackbarWithLogging({
+        open: true,
+        message: `Group "${newGroupName}" created successfully`,
+        severity: 'success'
+      });
+    }
+  };
+
+  const handleDeleteGroup = async (groupKey) => {
+    const success = await deleteLocationGroupFromSupabase(groupKey);
+    
+    if (success) {
+      const newGroups = { ...locationGroups };
+      delete newGroups[groupKey];
+      
+      setLocationGroups(newGroups);
+      
+      setSnackbarWithLogging({
+        open: true,
+        message: 'Group deleted successfully',
+        severity: 'success'
+      });
+    }
+  };
+
+  const getUnassignedLocations = () => {
+    const assignedLocations = [];
+    Object.keys(locationGroups).forEach(key => {
+      if (Array.isArray(locationGroups[key])) {
+        assignedLocations.push(...locationGroups[key]);
+      }
+    });
+    return availableLocations.filter(location => !assignedLocations.includes(location));
+  };
+
+  const getGroupDisplayName = (groupKey) => {
+    return groupKey.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   const fetchAllSystemUsers = async () => {
     if (!isHrAdmin) return;
     setLoadingWhitelistManagement(true);
@@ -953,6 +1477,8 @@ const CabService = () => {
     if (isHrAdmin) {
       // Fetch whitelist data for HR admins
       fetchWhitelistedEmails();
+      fetchAvailableLocations();
+      fetchLocationGroups();
     }
   }, [isAdmin, isHrAdmin]);
 
@@ -1933,6 +2459,222 @@ const CabService = () => {
                 </Button>
               </Box>
             </Box>
+
+            {/* Location Grouping Configuration (HR Admin Only) */}
+            {isHrAdmin && (
+              <Box sx={{ mb: 3 }}>
+                <Card
+                  sx={{
+                    background: isDarkMode
+                      ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+                      : 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                    border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+                    borderRadius: 3,
+                    p: 3
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+                        borderRadius: 2,
+                        p: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <BusinessIcon sx={{ color: 'white', fontSize: 20 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Excel Export - Location Groups Configuration
+                    </Typography>
+                    <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        onClick={fetchLocationGroups}
+                        disabled={loadingGroups}
+                        startIcon={<RefreshIcon />}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Refresh
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => setShowGroupConfig(!showGroupConfig)}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        {showGroupConfig ? 'Hide Config' : 'Configure Groups'}
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  {showGroupConfig && (
+                    <>
+                      <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                        Configure location groups for organized Excel export. Each group will create a separate sheet.
+                        {availableLocations.length === 0 && (
+                          <><br/><strong>Note:</strong> No drop-off locations found in whitelist. Add users to whitelist with drop-off locations first to enable location grouping.</>
+                        )}
+                      </Typography>
+
+                      {/* Debug Info Panel */}
+                      <Box sx={{ mb: 3, p: 2, background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)', borderRadius: 2, border: `1px solid ${isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}` }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#3b82f6' }}>
+                          📊 Debug Information
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                          Available Locations: {availableLocations.length} | 
+                          Existing Groups: {Object.keys(locationGroups).length} | 
+                          HR Admin: {isHrAdmin ? 'Yes' : 'No'} | 
+                          User: {user?.email}
+                        </Typography>
+                      </Box>
+
+                      {/* Create New Group */}
+                      <Box sx={{ mb: 3, p: 2, background: isDarkMode ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)', borderRadius: 2, border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}` }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#8b5cf6' }}>
+                          Create New Group
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <TextField
+                            size="small"
+                            label="Group Name"
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            placeholder="e.g., North Zone, South Zone"
+                            sx={{ flexGrow: 1 }}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleCreateNewGroup();
+                              }
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handleCreateNewGroup}
+                            disabled={!newGroupName.trim()}
+                            sx={{
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
+                              }
+                            }}
+                          >
+                            <AddIcon sx={{ mr: 1 }} />
+                            Create Group
+                          </Button>
+                        </Box>
+                      </Box>
+
+                      {/* Dynamic Groups */}
+                      {loadingGroups ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                          <CircularProgress />
+                          <Typography sx={{ ml: 2 }}>Loading location groups...</Typography>
+                        </Box>
+                      ) : (
+                        <Grid container spacing={3}>
+                          {Object.keys(locationGroups).map((groupKey, index) => {
+                          const colors = [
+                            { bg: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)', border: isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' },
+                            { bg: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)', border: isDarkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)', color: '#10b981' },
+                            { bg: isDarkMode ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)', border: isDarkMode ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' },
+                            { bg: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)', border: isDarkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)', color: '#ef4444' },
+                            { bg: isDarkMode ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)', border: isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(168, 85, 247, 0.2)', color: '#a855f7' },
+                          ];
+                          const colorScheme = colors[index % colors.length];
+                          
+                          return (
+                            <Grid item xs={12} md={4} key={groupKey}>
+                              <Paper sx={{ 
+                                p: 2, 
+                                background: colorScheme.bg,
+                                border: `1px solid ${colorScheme.border}`
+                              }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                  <Typography variant="h6" sx={{ fontWeight: 600, color: colorScheme.color }}>
+                                    {getGroupDisplayName(groupKey)} ({locationGroups[groupKey]?.length || 0})
+                                  </Typography>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteGroup(groupKey)}
+                                    sx={{ color: '#ef4444' }}
+                                  >
+                                    <DeleteIcon />
+                                  </IconButton>
+                                </Box>
+                                
+                                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                                  <InputLabel>Add Location to {getGroupDisplayName(groupKey)}</InputLabel>
+                                  <Select
+                                    value=""
+                                    onChange={(e) => handleAddLocationToGroup(groupKey, e.target.value)}
+                                    label={`Add Location to ${getGroupDisplayName(groupKey)}`}
+                                  >
+                                    {getUnassignedLocations().map(location => (
+                                      <MenuItem key={location} value={location}>
+                                        {location}
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                  {(locationGroups[groupKey] || []).map(location => (
+                                    <Chip
+                                      key={location}
+                                      label={location}
+                                      onDelete={() => handleRemoveLocationFromGroup(groupKey, location)}
+                                      variant="outlined"
+                                      size="small"
+                                      sx={{
+                                        borderColor: colorScheme.color,
+                                        color: colorScheme.color,
+                                        '& .MuiChip-deleteIcon': {
+                                          color: colorScheme.color
+                                        }
+                                      }}
+                                    />
+                                  ))}
+                                </Box>
+                              </Paper>
+                            </Grid>
+                          );
+                        })}
+                        </Grid>
+                      )}
+
+                      {/* Unassigned Locations */}
+                      {getUnassignedLocations().length > 0 && (
+                        <Box sx={{ mt: 3 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                            Available Locations ({getUnassignedLocations().length})
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {getUnassignedLocations().map(location => (
+                              <Chip
+                                key={location}
+                                label={location}
+                                variant="outlined"
+                                size="small"
+                                sx={{ 
+                                  opacity: 0.7,
+                                  '&:hover': { opacity: 1 }
+                                }}
+                              />
+                            ))}
+                          </Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
+                            These locations will appear in the "Unassigned Locations" sheet if they have bookings
+                          </Typography>
+                        </Box>
+                      )}
+                    </>
+                  )}
+                </Card>
+              </Box>
+            )}
 
             {/* Admin Date Filter */}
             {isAdmin && (
