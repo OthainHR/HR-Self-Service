@@ -161,6 +161,11 @@ const CabService = () => {
     pickup_time: '', 
   });
 
+  // Add error state for whitelist form validation
+  const [whitelistFormErrors, setWhitelistFormErrors] = useState({
+    drop_off_location: ''
+  });
+
   // Auto drop-off feature (Capacitor background geofence) – coming soon
   const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(() => localStorage.getItem('autoDropoff') === 'true');
 
@@ -818,6 +823,15 @@ const CabService = () => {
 
   const handleAddEmailToWhitelist = async (emailToAdd) => {
     if (!isHrAdmin || !emailToAdd) return;
+    
+    // Validate drop-off location before submission
+    const dropoffError = validateDropoffLocation(newWhitelistedUserDetails.drop_off_location);
+    if (dropoffError) {
+      setWhitelistFormErrors(prev => ({...prev, drop_off_location: dropoffError}));
+      setSnackbarWithLogging({ open: true, message: 'Please fix validation errors before adding to whitelist.', severity: 'error' });
+      return;
+    }
+    
     setLoadingWhitelistManagement(true);
     try {
       // Check if already whitelisted to prevent duplicate error
@@ -842,6 +856,7 @@ const CabService = () => {
       fetchWhitelistedEmails(); // Refresh list
       setSelectedUserToWhitelist(null); // Reset selection
       setNewWhitelistedUserDetails({ pick_up_location: '', drop_off_location: '', pickup_time: '' }); // Reset details
+      setWhitelistFormErrors({ drop_off_location: '' }); // Clear validation errors
     } catch (err) {
       console.error('Error adding to whitelist:', err);
       setSnackbarWithLogging({ open: true, message: `Failed to add ${emailToAdd} to whitelist.`, severity: 'error' });
@@ -1046,10 +1061,20 @@ const CabService = () => {
       pickup_time: entry.pickup_time || '', // Added pickup_time
     });
     setShowEditWhitelistEntryDialog(true);
+    setWhitelistFormErrors({ drop_off_location: '' }); // Clear validation errors when opening dialog
   };
 
   const handleSaveWhitelistEntryUpdate = async () => {
     if (!editingWhitelistEntry || !editingWhitelistEntry.email) return;
+    
+    // Validate drop-off location before submission
+    const dropoffError = validateDropoffLocation(editingWhitelistEntry.drop_off_location);
+    if (dropoffError) {
+      setWhitelistFormErrors(prev => ({...prev, drop_off_location: dropoffError}));
+      setSnackbarWithLogging({ open: true, message: 'Please fix validation errors before saving changes.', severity: 'error' });
+      return;
+    }
+    
     setLoadingWhitelistManagement(true);
     try {
       const { error } = await supabase
@@ -1066,6 +1091,7 @@ const CabService = () => {
       fetchWhitelistedEmails();
       setShowEditWhitelistEntryDialog(false);
       setEditingWhitelistEntry(null);
+      setWhitelistFormErrors({ drop_off_location: '' }); // Clear validation errors
     } catch (err) {
       console.error('Error updating whitelist entry:', err);
       setSnackbarWithLogging({ open: true, message: `Failed to update whitelist entry for ${editingWhitelistEntry.email}.`, severity: 'error' });
@@ -1376,6 +1402,43 @@ const CabService = () => {
         Math.cos(toRad(lat2)) *
         Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  // Validation function for drop-off location
+  const validateDropoffLocation = (location) => {
+    if (!location || location.trim() === '') return ''; // Empty is valid (optional field)
+    
+    const trimmedLocation = location.trim();
+    if (trimmedLocation.length === 0) return ''; // Only whitespace is also valid (optional field)
+    
+    // Check minimum length
+    if (trimmedLocation.length < 2) {
+      return 'Drop-off location must be at least 2 characters long';
+    }
+    
+    // Check maximum length
+    if (trimmedLocation.length > 100) {
+      return 'Drop-off location must be less than 100 characters';
+    }
+    
+    const firstChar = trimmedLocation.charAt(0);
+    if (firstChar !== firstChar.toUpperCase()) {
+      return 'Drop-off location must start with a capital letter';
+    }
+    
+    // Check if the location contains only letters, numbers, spaces, and common punctuation
+    const validPattern = /^[A-Z][a-zA-Z0-9\s\-.,()&]+$/;
+    if (!validPattern.test(trimmedLocation)) {
+      return 'Drop-off location contains invalid characters. Use only letters, numbers, spaces, and common punctuation.';
+    }
+    
+    return '';
+  };
+
+  // Helper function to auto-capitalize first letter
+  const autoCapitalizeFirstLetter = (value) => {
+    if (!value || value.length === 0) return value;
+    return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
   return (
@@ -2314,6 +2377,8 @@ const CabService = () => {
                   value={selectedUserToWhitelist}
                   onChange={(event, newValue) => {
                     setSelectedUserToWhitelist(newValue);
+                    // Clear validation errors when user selection changes
+                    setWhitelistFormErrors({ drop_off_location: '' });
                   }}
                   isOptionEqualToValue={(option, value) => option.email === value.email}
                   renderInput={(params) => 
@@ -2338,7 +2403,7 @@ const CabService = () => {
                 <Button 
                   variant="contained" 
                   onClick={() => selectedUserToWhitelist && handleAddEmailToWhitelist(selectedUserToWhitelist.email)}
-                  disabled={!selectedUserToWhitelist || loadingWhitelistManagement}
+                  disabled={!selectedUserToWhitelist || loadingWhitelistManagement || !!whitelistFormErrors.drop_off_location}
                   sx={{
                     height: 56, // Match Autocomplete height
                     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -2372,16 +2437,71 @@ const CabService = () => {
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth variant="outlined">
                       <InputLabel>Default Drop-off Location (Optional)</InputLabel>
-                      <Select
-                        value={newWhitelistedUserDetails.drop_off_location}
-                        onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, drop_off_location: e.target.value}))}
-                        label="Default Drop-off Location (Optional)"
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {dropoffLocations.map((loc) => (
-                          <MenuItem key={loc} value={loc}>{loc}</MenuItem>
-                        ))}
-                      </Select>
+                      <Tooltip title="Location must start with a capital letter and contain only letters, numbers, spaces, and common punctuation (2-100 characters)">
+                        <TextField
+                          value={newWhitelistedUserDetails.drop_off_location}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Auto-capitalize first letter if it's the first character being typed
+                            const processedValue = value.length === 1 ? autoCapitalizeFirstLetter(value) : value;
+                            setNewWhitelistedUserDetails(prev => ({...prev, drop_off_location: processedValue}));
+                            // Validate and update error state
+                            const error = validateDropoffLocation(processedValue);
+                            setWhitelistFormErrors(prev => ({...prev, drop_off_location: error}));
+                          }}
+                          label="Default Drop-off Location (Optional)"
+                          variant="outlined"
+                          error={!!whitelistFormErrors.drop_off_location}
+                          placeholder="Enter drop-off location (e.g., Home, Office)"
+                          inputProps={{
+                            maxLength: 100
+                          }}
+                          FormHelperTextProps={{
+                            sx: {
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }
+                          }}
+                          helperText={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                              <span>
+                                {whitelistFormErrors.drop_off_location ? (
+                                  <span style={{ color: '#d32f2f' }}>⚠️ {whitelistFormErrors.drop_off_location}</span>
+                                ) : editingWhitelistEntry?.drop_off_location && !whitelistFormErrors.drop_off_location ? (
+                                  <span style={{ color: '#2e7d32' }}>✓ Valid location</span>
+                                ) : ''}
+                              </span>
+                              {newWhitelistedUserDetails.drop_off_location && (
+                                <Chip
+                                  label={`${newWhitelistedUserDetails.drop_off_location.length}/100`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: '0.7rem',
+                                    height: 20,
+                                    '& .MuiChip-label': {
+                                      px: 1
+                                    }
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          }
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                              '&.Mui-focused': {
+                                borderColor: newWhitelistedUserDetails.drop_off_location && !whitelistFormErrors.drop_off_location ? '#10b981' : undefined
+                              }
+                            },
+                            '& .MuiFormHelperText-root': {
+                              color: newWhitelistedUserDetails.drop_off_location && !whitelistFormErrors.drop_off_location ? '#10b981' : undefined
+                            }
+                          }}
+                        />
+                      </Tooltip>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6}> {/* Added Pickup Time for new user */}
@@ -3036,7 +3156,11 @@ const CabService = () => {
 
       {/* Edit Whitelist Entry Dialog */}
       {editingWhitelistEntry && (
-        <Dialog open={showEditWhitelistEntryDialog} onClose={() => { setShowEditWhitelistEntryDialog(false); setEditingWhitelistEntry(null); }} maxWidth="sm" fullWidth>
+        <Dialog open={showEditWhitelistEntryDialog} onClose={() => { 
+          setShowEditWhitelistEntryDialog(false); 
+          setEditingWhitelistEntry(null); 
+          setWhitelistFormErrors({ drop_off_location: '' }); // Clear validation errors
+        }} maxWidth="sm" fullWidth>
           <DialogTitle>Edit Whitelist for {editingWhitelistEntry.email}</DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{mt: 1}}>
@@ -3058,16 +3182,67 @@ const CabService = () => {
               <Grid item xs={12}>
                 <FormControl fullWidth variant="outlined">
                   <InputLabel>Default Drop-off Location</InputLabel>
-                  <Select
-                    value={editingWhitelistEntry.drop_off_location || ''}
-                    onChange={(e) => setEditingWhitelistEntry(prev => ({ ...prev, drop_off_location: e.target.value }))}
-                    label="Default Drop-off Location"
-                  >
-                    <MenuItem value=""><em>None / Not Set</em></MenuItem>
-                    {dropoffLocations.map((loc) => (
-                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
-                    ))}
-                  </Select>
+                  <Tooltip title="Location must start with a capital letter and contain only letters, numbers, spaces, and common punctuation (2-100 characters)">
+                    <TextField
+                      value={editingWhitelistEntry.drop_off_location || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Auto-capitalize first letter if it's the first character being typed
+                        const processedValue = value.length === 1 ? autoCapitalizeFirstLetter(value) : value;
+                        setEditingWhitelistEntry(prev => ({ ...prev, drop_off_location: processedValue }));
+                        // Validate and update error state
+                        const error = validateDropoffLocation(processedValue);
+                        setWhitelistFormErrors(prev => ({...prev, drop_off_location: error}));
+                      }}
+                      label="Default Drop-off Location"
+                      variant="outlined"
+                      error={!!whitelistFormErrors.drop_off_location}
+                      placeholder="Enter drop-off location (e.g., Home, Office)"
+                      inputProps={{
+                        maxLength: 100
+                      }}
+                      FormHelperTextProps={{
+                        sx: {
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }
+                      }}
+                      helperText={
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                          <span>
+                            {whitelistFormErrors.drop_off_location || (editingWhitelistEntry?.drop_off_location && !whitelistFormErrors.drop_off_location ? '✓ Valid location' : '')}
+                          </span>
+                          {editingWhitelistEntry?.drop_off_location && (
+                            <Chip
+                              label={`${editingWhitelistEntry.drop_off_location.length}/100`}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                fontSize: '0.7rem',
+                                height: 20,
+                                '& .MuiChip-label': {
+                                  px: 1
+                                }
+                              }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                          '&.Mui-focused': {
+                            borderColor: editingWhitelistEntry?.drop_off_location && !whitelistFormErrors.drop_off_location ? '#10b981' : undefined
+                          }
+                        },
+                        '& .MuiFormHelperText-root': {
+                          color: editingWhitelistEntry?.drop_off_location && !whitelistFormErrors.drop_off_location ? '#10b981' : undefined
+                        }
+                      }}
+                    />
+                  </Tooltip>
                 </FormControl>
               </Grid>
               <Grid item xs={12}> {/* Added Pickup Time to Edit Dialog */}
@@ -3091,7 +3266,7 @@ const CabService = () => {
             <Button onClick={() => { setShowEditWhitelistEntryDialog(false); setEditingWhitelistEntry(null); }} color="inherit">
               Cancel
             </Button>
-            <Button onClick={handleSaveWhitelistEntryUpdate} variant="contained" disabled={loadingWhitelistManagement}>
+            <Button onClick={handleSaveWhitelistEntryUpdate} variant="contained" disabled={loadingWhitelistManagement || !!whitelistFormErrors.drop_off_location}>
               {loadingWhitelistManagement ? <CircularProgress size={24} /> : 'Save Changes'}
             </Button>
           </DialogActions>
