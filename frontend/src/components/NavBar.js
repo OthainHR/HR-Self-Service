@@ -930,6 +930,7 @@ const NavBar = () => {
                 open={!userProfilePicture && (showProfileTooltip || profileTooltipHovered)}
                 onClose={() => setShowProfileTooltip(false)}
                 enterDelay={profileTooltipHovered ? 0 : 500}
+                leaveDelay={300}
                 sx={{
                   '& .MuiTooltip-tooltip': {
                     background: 'rgba(0, 0, 0, 0.9)',
