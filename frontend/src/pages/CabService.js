@@ -760,6 +760,56 @@ const CabService = () => {
       // Style the worksheet
       styleWorksheet(worksheet);
 
+      // Add a separate sheet with all bookings for the day (ungrouped)
+      const allBookingsSheet = workbook.addWorksheet('All Bookings');
+      
+      // Add title for all bookings sheet
+      allBookingsSheet.addRow(['📋 All Cab Bookings for the Day']);
+      allBookingsSheet.mergeCells(1, 1, 1, headers.length);
+      const allBookingsTitleRow = allBookingsSheet.getRow(1);
+      allBookingsTitleRow.font = { bold: true, size: 16, color: { argb: '059669' } };
+      allBookingsTitleRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ECFDF5' }
+      };
+      allBookingsTitleRow.alignment = { horizontal: 'center' };
+
+      // Add spacing
+      allBookingsSheet.addRow([]);
+
+      // Add summary info
+      allBookingsSheet.addRow([`Total Bookings: ${bookings.length}`]);
+      const summaryRow = allBookingsSheet.getRow(3);
+      summaryRow.font = { bold: true, size: 12, color: { argb: '047857' } };
+      summaryRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'F0FDF4' }
+      };
+
+      // Add spacing
+      allBookingsSheet.addRow([]);
+
+      // Add headers
+      allBookingsSheet.addRow(headers);
+      const allBookingsHeaderRow = allBookingsSheet.getRow(5);
+      allBookingsHeaderRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+      allBookingsHeaderRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4CAF50' }
+      };
+      allBookingsHeaderRow.alignment = { horizontal: 'center' };
+
+      // Add all booking data
+      bookings.forEach(booking => {
+        allBookingsSheet.addRow(formatBookingData(booking));
+      });
+
+      // Style the all bookings worksheet
+      styleWorksheet(allBookingsSheet);
+
     } else {
       // No groups configured, create single sheet as before
       const worksheet = workbook.addWorksheet('Cab Bookings');
@@ -796,7 +846,7 @@ const CabService = () => {
       `Date: ${new Date(selectedDate).toLocaleDateString()}`,
       selectedPickupTime && `Time: ${selectedPickupTime}`,
       selectedPickupLocation && `Location: ${selectedPickupLocation}`,
-      hasConfiguredGroups && 'Organized by location groups in single sheet'
+      hasConfiguredGroups && 'Two sheets: Grouped bookings + All bookings'
     ].filter(Boolean).join(', ');
 
     setSnackbarWithLogging({
@@ -2512,7 +2562,7 @@ const CabService = () => {
                   {showGroupConfig && (
                     <>
                       <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-                        Configure location groups for organized Excel export. Each group will create a separate sheet.
+                        Configure location groups for organized Excel export. When groups are configured, the export will create two sheets: one with bookings organized by groups, and another with all bookings for easy reference.
                         {availableLocations.length === 0 && (
                           <><br/><strong>Note:</strong> No drop-off locations found in whitelist. Add users to whitelist with drop-off locations first to enable location grouping.</>
                         )}
