@@ -15,16 +15,7 @@ client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Check if we should use mock embeddings (for testing without OpenAI credits)
 USE_MOCK_EMBEDDINGS = os.getenv("USE_MOCK_EMBEDDINGS", "false").lower() == "true"
 
-# Check if streaming should be disabled (useful for organizations that don't support it)
-# Set DISABLE_STREAMING=true in your .env file if you encounter organization verification errors
-DISABLE_STREAMING = os.getenv("DISABLE_STREAMING", "false").lower() == "true"
-
-# Note: If you get "organization must be verified" errors with streaming:
-# 1. Set DISABLE_STREAMING=true in your .env file (recommended for immediate fix)
-# 2. Or verify your organization at: https://platform.openai.com/settings/organization/general
-# 3. The system will automatically fall back to non-streaming mode if streaming fails
-
-async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-5-mini"):
+async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-4.1-mini"):
     """
     Get a chat completion from OpenAI API.
     
@@ -47,7 +38,7 @@ async def get_chat_completion(messages: List[Dict[str, str]], model: str = "gpt-
         print(f"Error calling OpenAI API: {e}")
         return f"Sorry, I encountered an error: {str(e)}"
 
-async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-5-mini"):
+async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str = "gpt-4.1-mini"):
     """
     Get a chat completion stream from OpenAI API (async).
     
@@ -58,23 +49,6 @@ async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str 
     Yields:
         Chunks of the assistant's response text as they arrive.
     """
-    # If streaming is disabled, fall back to non-streaming mode immediately
-    if DISABLE_STREAMING:
-        try:
-            response = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                stream=False,
-            )
-            content = response.choices[0].message.content.strip()
-            # Yield the content as a single chunk to maintain streaming interface
-            yield content
-            return
-        except Exception as e:
-            print(f"Error in non-streaming fallback: {e}")
-            yield f"Sorry, I encountered an error. Please try again later."
-            return
-    
     try:
         # Use await with the async client
         stream = await client.chat.completions.create(
@@ -87,27 +61,8 @@ async def get_chat_completion_stream(messages: List[Dict[str, str]], model: str 
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
     except Exception as e:
-        error_message = str(e)
-        
-        # Check if it's an organization verification error
-        if "organization must be verified" in error_message.lower() or "unsupported_value" in error_message.lower():
-            print(f"Streaming not supported due to organization verification. Falling back to non-streaming mode.")
-            try:
-                # Fallback to non-streaming mode
-                response = await client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    stream=False,
-                )
-                content = response.choices[0].message.content.strip()
-                # Yield the content as a single chunk to maintain streaming interface
-                yield content
-            except Exception as fallback_error:
-                print(f"Fallback also failed: {fallback_error}")
-                yield f"Sorry, I encountered an error. Please try again later or contact support if the issue persists."
-        else:
-            print(f"Error calling OpenAI stream API: {e}")
-            yield f"Sorry, I encountered an error during streaming: {str(e)}"
+        print(f"Error calling OpenAI stream API: {e}")
+        yield f"Sorry, I encountered an error during streaming: {str(e)}"
 
 def get_mock_embedding(text: str, dimension: int = 1536) -> List[float]:
     """
