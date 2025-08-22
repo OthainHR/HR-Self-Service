@@ -2436,22 +2436,23 @@ const CabService = () => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth variant="outlined">
-                      <InputLabel>Default Drop-off Location (Optional)</InputLabel>
+                      <InputLabel></InputLabel>
                       <Tooltip title="Location must start with a capital letter and contain only letters, numbers, spaces, and common punctuation (2-100 characters)">
-                                              <TextField
-                        value={newWhitelistedUserDetails.drop_off_location}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Auto-capitalize first letter if it's the first character being typed
-                          const processedValue = value.length === 1 ? autoCapitalizeFirstLetter(value) : value;
-                          setNewWhitelistedUserDetails(prev => ({...prev, drop_off_location: processedValue}));
-                          // Validate and update error state
-                          const error = validateDropoffLocation(processedValue);
-                          setWhitelistFormErrors(prev => ({...prev, drop_off_location: error}));
-                        }}
-                        variant="outlined"
-                        error={!!whitelistFormErrors.drop_off_location}
-                        placeholder="Enter drop-off location (e.g., Home, Office)"
+                        <TextField
+                          value={newWhitelistedUserDetails.drop_off_location}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Auto-capitalize first letter if it's the first character being typed
+                            const processedValue = value.length === 1 ? autoCapitalizeFirstLetter(value) : value;
+                            setNewWhitelistedUserDetails(prev => ({...prev, drop_off_location: processedValue}));
+                            // Validate and update error state
+                            const error = validateDropoffLocation(processedValue);
+                            setWhitelistFormErrors(prev => ({...prev, drop_off_location: error}));
+                          }}
+                          label="Default Drop-off Location (Optional)"
+                          variant="outlined"
+                          error={!!whitelistFormErrors.drop_off_location}
+                          placeholder=""
                           inputProps={{
                             maxLength: 100
                           }}
@@ -3193,9 +3194,10 @@ const CabService = () => {
                         const error = validateDropoffLocation(processedValue);
                         setWhitelistFormErrors(prev => ({...prev, drop_off_location: error}));
                       }}
+                      label="Default Drop-off Location"
                       variant="outlined"
                       error={!!whitelistFormErrors.drop_off_location}
-                      placeholder="Enter drop-off location (e.g., Home, Office)"
+                      placeholder=""
                       inputProps={{
                         maxLength: 100
                       }}
