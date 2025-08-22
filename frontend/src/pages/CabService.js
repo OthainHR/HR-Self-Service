@@ -3944,7 +3944,7 @@ const CabService = () => {
               </Grid>
               <Grid item xs={12}>
                 <FormControl fullWidth variant="outlined">
-                  <InputLabel>Default Drop-off Location</InputLabel>
+                  <InputLabel></InputLabel>
                   <Tooltip title="Location must start with a capital letter and contain only letters, numbers, spaces, and common punctuation (2-100 characters)">
                     <TextField
                       value={editingWhitelistEntry.drop_off_location || ''}
