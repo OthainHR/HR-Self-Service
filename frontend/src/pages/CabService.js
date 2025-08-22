@@ -1031,64 +1031,18 @@ const CabService = () => {
     }
   };
 
-  // Debug function to check all location groups (including inactive)
-  const debugLocationGroups = async () => {
-    if (!isHrAdmin) return;
-    try {
-      console.log('=== DEBUGGING LOCATION GROUPS ===');
-      
-      // Check all records in the table (including inactive)
-      const { data: allData, error: allError } = await supabase
-        .from('cab_location_groups')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (allError) {
-        console.error('Error fetching all location groups:', allError);
-      } else {
-        console.log('All location groups in table:', allData);
-      }
-      
-      // Check only active records
-      const { data: activeData, error: activeError } = await supabase
-        .from('v_active_cab_location_groups')
-        .select('*')
-        .order('group_name', { ascending: true });
-      
-      if (activeError) {
-        console.error('Error fetching active location groups:', activeError);
-      } else {
-        console.log('Active location groups from view:', activeData);
-      }
-      
-      console.log('Current user email:', user.email);
-      console.log('Is HR Admin:', isHrAdmin);
-      console.log('Available locations:', availableLocations);
-      console.log('=== END DEBUG ===');
-      
-    } catch (err) {
-      console.error('Debug error:', err);
-    }
-  };
 
   // Fetch location groups from Supabase
   const fetchLocationGroups = async () => {
     if (!isHrAdmin) return;
     setLoadingGroups(true);
     try {
-      console.log('Fetching location groups for user:', user.email);
-      
-      // Run debug check
-      await debugLocationGroups();
-      
       const { data, error } = await supabase
         .from('v_active_cab_location_groups')
         .select('*')
         .order('group_name', { ascending: true });
       
       if (error) throw error;
-      
-      console.log('Fetched location groups data:', data);
       
       // Convert array to object format for easier handling
       const groupsObject = {};
@@ -1098,7 +1052,6 @@ const CabService = () => {
         });
       }
       
-      console.log('Processed groups object:', groupsObject);
       setLocationGroups(groupsObject);
     } catch (err) {
       console.error('Error fetching location groups:', err);
@@ -2568,19 +2521,6 @@ const CabService = () => {
                         )}
                       </Typography>
 
-                      {/* Debug Info Panel */}
-                      <Box sx={{ mb: 3, p: 2, background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)', borderRadius: 2, border: `1px solid ${isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}` }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#3b82f6' }}>
-                          📊 Debug Information
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                          Available Locations: {availableLocations.length} | 
-                          Existing Groups: {Object.keys(locationGroups).length} | 
-                          HR Admin: {isHrAdmin ? 'Yes' : 'No'} | 
-                          User: {user?.email}
-                        </Typography>
-                      </Box>
-
                       {/* Create New Group */}
                       <Box sx={{ mb: 3, p: 2, background: isDarkMode ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)', borderRadius: 2, border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}` }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#8b5cf6' }}>
@@ -3994,7 +3934,8 @@ const CabService = () => {
               </Grid>
               <Grid item xs={12}>
                 <FormControl fullWidth variant="outlined">
-                  <InputLabel></InputLabel>
+                  <InputLabel>
+                  </InputLabel>
                   <Tooltip title="Location must start with a capital letter and contain only letters, numbers, spaces, and common punctuation (2-100 characters)">
                     <TextField
                       value={editingWhitelistEntry.drop_off_location || ''}
