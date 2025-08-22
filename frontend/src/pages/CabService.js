@@ -1603,7 +1603,7 @@ const CabService = () => {
                         ? 'rgba(255, 255, 255, 0.08)' 
                         : 'rgba(255, 255, 255, 0.9)',
                       border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
-                      borderRadius: 2,
+                      borderRadius: 3,
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         transform: 'translateY(-2px)',
@@ -1638,7 +1638,7 @@ const CabService = () => {
                             : isDarkMode 
                               ? 'rgba(255, 255, 255, 0.1)'
                               : 'rgba(0, 0, 0, 0.05)',
-                          borderRadius: 2,
+                          borderRadius: 3,
                           p: 1.5,
                           minWidth: 200
                         }}>
@@ -1718,7 +1718,7 @@ const CabService = () => {
                     <Box
                       sx={{
                         background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                          borderRadius: '50%',
+                          borderRadius: 10,
                           width: 56,
                           height: 56,
                           display: 'flex',
@@ -1761,6 +1761,7 @@ const CabService = () => {
                     startIcon={<CarIcon />}
                       disabled={!canUserAccessCabService}
                     sx={{
+                      borderRadius: 1.5,
                       background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                       '&:hover': {
                         background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
@@ -1799,7 +1800,7 @@ const CabService = () => {
                     <Box
                       sx={{
                         background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                          borderRadius: '50%',
+                          borderRadius: 10,
                           width: 56,
                           height: 56,
                           display: 'flex',
@@ -1835,6 +1836,7 @@ const CabService = () => {
                       startIcon={<ReplayIcon />}
                       disabled={!lastBooking || !canUserAccessCabService}
                     sx={{
+                      borderRadius: 1.5,
                       background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                       '&:hover': {
                         background: 'linear-gradient(135deg, #047857 0%, #059669 100%)'
@@ -1904,6 +1906,7 @@ const CabService = () => {
                     onClick={exportToExcel}
                     disabled={bookings.length === 0}
                     sx={{
+                      borderRadius: 1.5,
                       background: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                       '&:hover': {
                         background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
@@ -1919,6 +1922,7 @@ const CabService = () => {
                   onClick={isAdmin ? loadAdminReport : loadBookings}
                   disabled={loadingBookings}
                   sx={{
+                    borderRadius: 1.5,
                     background: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                     '&:hover': {
                       background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
@@ -1939,7 +1943,7 @@ const CabService = () => {
                       ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
                       : 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
                     border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
-                    borderRadius: 2,
+                    borderRadius: 3,
                     p: 3
                   }}
                 >
@@ -1947,7 +1951,7 @@ const CabService = () => {
                     <Box
                       sx={{
                         background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                        borderRadius: '50%',
+                        borderRadius: 2,
                         p: 1,
                         display: 'flex',
                         alignItems: 'center',
@@ -1977,7 +1981,7 @@ const CabService = () => {
                           size="small"
                           sx={{
                             '& .MuiOutlinedInput-root': {
-                              borderRadius: 2,
+                              borderRadius: 1.2,
                               background: isDarkMode 
                                 ? 'rgba(255, 255, 255, 0.05)'
                                 : 'rgba(255, 255, 255, 0.9)',
@@ -2000,7 +2004,7 @@ const CabService = () => {
                             onChange={(e) => handlePickupTimeFilter(e.target.value)}
                             displayEmpty
                             sx={{
-                              borderRadius: 2,
+                              borderRadius: 1.2,
                               background: isDarkMode 
                                 ? 'rgba(255, 255, 255, 0.05)'
                                 : 'rgba(255, 255, 255, 0.9)',
@@ -2030,7 +2034,7 @@ const CabService = () => {
                             onChange={(e) => handlePickupLocationFilter(e.target.value)}
                             displayEmpty
                             sx={{
-                              borderRadius: 2,
+                              borderRadius: 1.2,
                               background: isDarkMode 
                                 ? 'rgba(255, 255, 255, 0.05)'
                                 : 'rgba(255, 255, 255, 0.9)',
@@ -2056,6 +2060,7 @@ const CabService = () => {
                           color="primary"
                           variant="outlined"
                           sx={{
+                            borderRadius: 1,
                             background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
                             borderColor: '#3b82f6'
                           }}
@@ -2081,6 +2086,7 @@ const CabService = () => {
                             color="success"
                             size="small"
                             sx={{
+                              borderRadius: .8,
                               background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                               color: 'white',
                               fontWeight: 600
@@ -2332,6 +2338,7 @@ const CabService = () => {
                   onClick={() => handleSendReminder('morning')}
                   disabled={loadingMorningReminder || loadingEveningReminder}
                   sx={{ 
+                    borderRadius: 1.5,
                     borderColor: isDarkMode ? '#facc15' : '#eab308',
                     color: isDarkMode ? '#facc15' : '#eab308',
                     '&:hover': {
@@ -2348,6 +2355,7 @@ const CabService = () => {
                   onClick={() => handleSendReminder('evening')}
                   disabled={loadingMorningReminder || loadingEveningReminder}
                   sx={{
+                    borderRadius: 1.5,
                     borderColor: isDarkMode ? '#818cf8' : '#6366f1',
                     color: isDarkMode ? '#818cf8' : '#6366f1',
                     '&:hover': {
@@ -2363,6 +2371,9 @@ const CabService = () => {
                   startIcon={<DownloadIcon />}
                   onClick={exportWhitelistToExcel}
                   disabled={whitelistedEmails.length === 0}
+                  sx={{
+                    borderRadius: 1.5,
+                  }}
                 >
                   Export Whitelist ({whitelistedEmails.length})
                 </Button>
@@ -2405,6 +2416,7 @@ const CabService = () => {
                   onClick={() => selectedUserToWhitelist && handleAddEmailToWhitelist(selectedUserToWhitelist.email)}
                   disabled={!selectedUserToWhitelist || loadingWhitelistManagement || !!whitelistFormErrors.drop_off_location}
                   sx={{
+                    borderRadius: 1.5,
                     height: 56, // Match Autocomplete height
                     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                      '&:hover': {
@@ -2425,6 +2437,9 @@ const CabService = () => {
                       <Select
                         value={newWhitelistedUserDetails.pick_up_location}
                         onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, pick_up_location: e.target.value}))}
+                        sx={{
+                          borderRadius: 2,
+                        }}
                         label="Default Pickup Location (Optional)"
                       >
                         <MenuItem value=""><em>None</em></MenuItem>
@@ -2510,6 +2525,9 @@ const CabService = () => {
                       <Select
                         value={newWhitelistedUserDetails.pickup_time}
                         onChange={(e) => setNewWhitelistedUserDetails(prev => ({...prev, pickup_time: e.target.value}))}
+                        sx={{
+                          borderRadius: 2,
+                        }}
                         label="Default Pickup Time (Optional)"
                       >
                         <MenuItem value=""><em>None</em></MenuItem>
@@ -2531,7 +2549,7 @@ const CabService = () => {
               ) : (
                 <TableContainer component={Paper} sx={{ 
                   background: isDarkMode ? 'rgba(255,255,255,0.03)': 'rgba(0,0,0,0.01)',
-                  borderRadius: 2 
+                  borderRadius: 3,
                 }}>
                   <Table size="small">
                     <TableHead>
@@ -2564,6 +2582,9 @@ const CabService = () => {
                               size="small"
                               onClick={() => handleRemoveEmailFromWhitelist(item.email)}
                               disabled={loadingWhitelistManagement}
+                              sx={{
+                                borderRadius: 1.5,
+                              }}
                             >
                               Remove
                             </Button>
@@ -2611,7 +2632,7 @@ const CabService = () => {
                   <Box
                     sx={{
                       background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                      borderRadius: '50%',
+                      borderRadius: 2,
                       width: 56,
                       height: 56,
                       display: 'flex',
@@ -2637,7 +2658,7 @@ const CabService = () => {
                       sx={{
                         minWidth: 140,
                         height: 56,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         fontSize: '1rem',
                         fontWeight: 600,
                         textTransform: 'none',
@@ -2694,7 +2715,7 @@ const CabService = () => {
                         sx={{
                           minWidth: 140,
                           height: 56,
-                          borderRadius: 3,
+                          borderRadius: 2,
                           fontSize: '1rem',
                           fontWeight: 600,
                           textTransform: 'none'
@@ -2714,7 +2735,7 @@ const CabService = () => {
                         sx={{
                           minWidth: 140,
                           height: 56,
-                          borderRadius: 3,
+                          borderRadius: 2,
                           fontSize: '1rem',
                           fontWeight: 600,
                           textTransform: 'none',
@@ -2781,7 +2802,7 @@ const CabService = () => {
                   <Box
                     sx={{
                       background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                      borderRadius: '50%',
+                      borderRadius: 2,
                       p: 1,
                       mr: 2,
                       display: 'flex',
@@ -2803,7 +2824,7 @@ const CabService = () => {
                       sx={{
                         minWidth: 140,
                         height: 56,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         fontSize: '1rem',
                         fontWeight: 600,
                         textTransform: 'none',
@@ -2875,7 +2896,7 @@ const CabService = () => {
                   <Box
                     sx={{
                       background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-                      borderRadius: '50%',
+                      borderRadius: 2,
                       p: 1,
                       mr: 2,
                       display: 'flex',
@@ -2900,7 +2921,7 @@ const CabService = () => {
                       sx={{
                         minWidth: 160,
                         height: 56,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         fontSize: '1rem',
                         fontWeight: 600,
                         textTransform: 'none',
@@ -2957,7 +2978,7 @@ const CabService = () => {
                         sx={{
                           minWidth: 160,
                           height: 56,
-                          borderRadius: 3,
+                          borderRadius: 2,
                           fontSize: '1rem',
                           fontWeight: 600,
                           textTransform: 'none'
@@ -2977,7 +2998,7 @@ const CabService = () => {
                         sx={{
                           minWidth: 160,
                           height: 56,
-                          borderRadius: 3,
+                          borderRadius: 2,
                           fontSize: '1rem',
                           fontWeight: 600,
                           textTransform: 'none',
@@ -3044,7 +3065,7 @@ const CabService = () => {
                   <Box
                     sx={{
                       background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-                      borderRadius: '50%',
+                      borderRadius: 2,
                       p: 1,
                       mr: 2,
                       display: 'flex',
@@ -3061,7 +3082,7 @@ const CabService = () => {
                   disabled={!isHrAdmin && userCabConfig.isConfigured && !userCabConfig.preferredDropoff} // Disable completely if whitelisted and no dropoff is set by HR
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 3,
+                      borderRadius: 2,
                       height: 56,
                       background: isDarkMode 
                         ? 'rgba(255, 255, 255, 0.05)'
