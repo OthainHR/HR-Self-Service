@@ -4,10 +4,19 @@ import { supabase } from './supabase';
 // Use the same API base URL as other services
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com';
 const HR_API_URL = `${API_BASE_URL}/api/hr`;
+const KEKA_AUTH_API_URL = `${API_BASE_URL}/api/keka-auth`;
 
 // Create axios instance for HR API calls
 const hrApiClient = axios.create({
   baseURL: HR_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Create axios instance for Keka Auth API calls (different router prefix)
+const kekaAuthApiClient = axios.create({
+  baseURL: KEKA_AUTH_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,6 +42,22 @@ hrApiClient.interceptors.request.use(
   (error) => {
     return Promise.reject(error);
   }
+);
+
+// Include Supabase auth token for Keka Auth API too
+kekaAuthApiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!error && session?.access_token) {
+        config.headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } catch (error) {
+      console.error('Error in Keka Auth API request interceptor:', error);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 // Enhanced error handling function
@@ -88,7 +113,7 @@ class HRService {
   // Keka OAuth Methods
   async getKekaAuthUrl() {
     try {
-      const response = await hrApiClient.get('/keka-auth/authorization-url');
+      const response = await kekaAuthApiClient.get('/authorization-url');
       return {
         success: true,
         data: response.data
@@ -101,7 +126,7 @@ class HRService {
 
   async checkKekaAuthStatus() {
     try {
-      const response = await hrApiClient.get('/keka-auth/status');
+      const response = await kekaAuthApiClient.get('/status');
       return {
         success: true,
         data: response.data
@@ -114,7 +139,7 @@ class HRService {
 
   async disconnectKekaAccount() {
     try {
-      const response = await hrApiClient.post('/keka-auth/disconnect');
+      const response = await kekaAuthApiClient.post('/disconnect');
       return {
         success: true,
         data: response.data
