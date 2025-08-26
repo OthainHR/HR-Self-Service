@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routers import auth, chat, knowledge, feedback
+from app.routers import auth, chat, knowledge, feedback, hr, keka_auth
 from app.db.init_db import init_db
 
 # Load environment variables
@@ -96,7 +96,7 @@ async def public_chat_endpoint(request: Request):
         )
         
         # Process the request through the real chat service
-        response = chat_service.process_chat_request(chat_request)
+        response = await chat_service.process_chat_request(chat_request)
         
         return {
             "response": response.message,
@@ -119,7 +119,11 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["Knowledge"])
 app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["Feedback"])
+app.include_router(hr.router, prefix="/api/hr", tags=["HR"])
+app.include_router(keka_auth.router, prefix="/api/keka-auth", tags=["Keka Authentication"])
 print("--- DEBUG: Included feedback router with prefix /api/v1/feedback ---")
+print("--- DEBUG: Included HR router with prefix /api/hr ---")
+print("--- DEBUG: Included Keka Auth router with prefix /api/keka-auth ---")
 
 @app.get("/")
 async def root():

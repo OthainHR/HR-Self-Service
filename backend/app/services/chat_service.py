@@ -12,6 +12,8 @@ from app.models.chat import ChatSession, Message, ChatRequest, ChatResponse
 # Import OpenAI and vector store utils
 from app.utils.openai_utils import get_chat_completion, get_chat_completion_stream
 from app.utils.vector_store import vector_store
+# Import HR chat service for enhanced context
+from app.services.hr_chat_service import hr_chat_service
 # Import Supabase chat utility functions
 from app.utils.supabase_chat_utils import (
     db_create_chat_session,
@@ -58,7 +60,7 @@ def get_relevant_context(query: str, top_k: int = 3) -> str:
     
     return context
 
-def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
+async def process_chat_request(request: ChatRequest, user_email: Optional[str] = None) -> ChatResponse:
     session_id = request.session_id or str(uuid.uuid4())
     user_id = request.user_id
     message = request.message.strip()
@@ -66,62 +68,81 @@ def process_chat_request(request: ChatRequest, user_email: Optional[str] = None)
     # 1️⃣ Log the user message
     db_add_chat_message(session_id, "user", message, user_email=user_email)
 
-    # 2️⃣ Build and send to OpenAI as before
-    # Build OpenAI messages (same as before)
+    # 2️⃣ Check for HR-related queries and get context
+    hr_context_data = ""
+    if user_email:
+        try:
+            hr_query_context = hr_chat_service.detect_hr_query(message)
+            if hr_query_context.query_type != 'general' or any(keyword in message.lower() for keywords in hr_chat_service.hr_keywords.values() for keyword in keywords):
+                # This is an HR-related query, get relevant HR context
+                hr_data = await hr_chat_service.get_hr_context_for_chat(user_email, message)
+                hr_context_data = hr_chat_service.format_hr_data_for_context(hr_data.get('hr_data', {}))
+        except Exception as e:
+            # Log error but continue with regular processing
+            print(f"Error getting HR context: {str(e)}")
+
+    # 3️⃣ Build OpenAI messages with enhanced HR context
     recent_messages_db = db_get_chat_messages(session_id, user_id)
     if recent_messages_db is None:
         raise HTTPException(status_code=404, detail="Chat session not found or access denied")
     openai_messages = []
+    
+    base_system_content = (
+        "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
+        "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
+        "based on the provided context. "
+        "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
+        "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
+        "If the user asks about something the chatbot itself cannot directly resolve, you must:\n\n"
+        "1. **Classify the issue** into the single *most specific* category from the list below.  \n"
+        "2. **Respond** with the fallback template exactly as specified.\n\n"
+        "────────────────────────────────────────────────────────\n"
+        "CATEGORIES (pick one)                 \n"
+        "────────────────────────────────────────────────────────\n"
+        "• IT Requests  \n"
+        "• HR Requests  \n"
+        "• Payroll Requests  \n"
+        "• Operations  \n"
+        "• Expense Management  \n"
+        "• AI Requests  \n"
+        "────────────────────────────────────────────────────────\n"
+        "RESPONSE FORMAT (**exactly**)                          \n"
+        "────────────────────────────────────────────────────────\n"
+        "🚩 Ticket type: <Category>\n\n"
+        "<Rotating opener from the list below, restating **only** the key issue>\n\n"
+        "Don't worry, our support heroes are standing by!\n\n"
+        "👉 Create a ticket so they can dive in right away.\n"
+        "────────────────────────────────────────────────────────\n"
+        "APPROVED ROTATING OPENERS (use in this order, then loop)\n"
+        "────────────────────────────────────────────────────────\n"
+        "1. 😣 Oh no, that **<issue>** is a pain.  \n"
+        "2. 😣 Oh no—**<issue>** is the worst.  \n"
+        "3. 😭 Bummer, that **<issue>** sounds rough.  \n"
+        "4. 🤔 Uh-oh, that **<issue>** must be annoying.  \n"
+        "5. 😟 Yikes, **<issue>** must be so frustrating.  \n"
+        "6. 😟 That **<issue>** is tough—sorry you're experiencing it.  \n\n"
+        "────────────────────────────────────────────────────────\n"
+        "NOTES\n"
+        "────────────────────────────────────────────────────────\n"
+        "• Never add extra text before or after the format; our code appends the ticket-creation link.  \n"
+        "• Replace **<issue>** with a concise noun-phrase (\"blue-screen\", \"benefits inquiry\", etc.).  \n"
+        "• Cycle through the six openers in order; do not invent new ones.  \n"
+        "• If the user's question is covered by built-in knowledge, answer normally—only invoke this fallback when escalation is needed.\n\n"
+        "Othain Cab Service FAQ (handle directly; do NOT trigger fallback):\n"
+        "• Othain Cab Service lets employees schedule a cab to and from work.\n"
+        "• Book a cab via the Book A Cab page by selecting a pickup time and location. You must book a cab at least 3 hours in advance.\n"
+        "• The service is available to all Othain employees.\n"
+    )
+    
+    # Enhance system message with HR context if available
+    if hr_context_data:
+        system_content = hr_chat_service.enhance_system_message_with_hr_context(base_system_content, hr_context_data)
+    else:
+        system_content = base_system_content
+    
     system_message = {
         "role": "system",
-        "content": (
-            "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
-            "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
-            "based on the provided context. "
-            "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
-            "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
-
-            "If the user asks about something the chatbot itself cannot directly resolve, you must:\n\n"
-            "1. **Classify the issue** into the single *most specific* category from the list below.  \n"
-            "2. **Respond** with the fallback template exactly as specified.\n\n"
-            "────────────────────────────────────────────────────────\n"
-            "CATEGORIES (pick one)                 \n"
-            "────────────────────────────────────────────────────────\n"
-            "• IT Requests  \n"
-            "• HR Requests  \n"
-            "• Payroll Requests  \n"
-            "• Operations  \n"
-            "• Expense Management  \n"
-            "• AI Requests  \n"
-            "────────────────────────────────────────────────────────\n"
-            "RESPONSE FORMAT (**exactly**)                          \n"
-            "────────────────────────────────────────────────────────\n"
-            "🚩 Ticket type: <Category>\n\n"
-            "<Rotating opener from the list below, restating **only** the key issue>\n\n"
-            "Don’t worry, our support heroes are standing by!\n\n"
-            "👉 Create a ticket so they can dive in right away.\n"
-            "────────────────────────────────────────────────────────\n"
-            "APPROVED ROTATING OPENERS (use in this order, then loop)\n"
-            "────────────────────────────────────────────────────────\n"
-            "1. 😣 Oh no, that **<issue>** is a pain.  \n"
-            "2. 😣 Oh no—**<issue>** is the worst.  \n"
-            "3. 😭 Bummer, that **<issue>** sounds rough.  \n"
-            "4. 🤔 Uh-oh, that **<issue>** must be annoying.  \n"
-            "5. 😟 Yikes, **<issue>** must be so frustrating.  \n"
-            "6. 😟 That **<issue>** is tough—sorry you're experiencing it.  \n\n"
-            "────────────────────────────────────────────────────────\n"
-            "NOTES\n"
-            "────────────────────────────────────────────────────────\n"
-            "• Never add extra text before or after the format; our code appends the ticket-creation link.  \n"
-            "• Replace **<issue>** with a concise noun-phrase (“blue-screen”, “benefits inquiry”, etc.).  \n"
-            "• Cycle through the six openers in order; do not invent new ones.  \n"
-            "• If the user’s question is covered by built-in knowledge, answer normally—only invoke this fallback when escalation is needed.\n"
-            
-            "Othain Cab Service FAQ (handle directly; do NOT trigger fallback):\n"
-            "• Othain Cab Service lets employees schedule a cab to and from work.\n"
-            "• Book a cab via the Book A Cab page by selecting a pickup time and location. You must book a cab at least 3 hours in advance.\n"
-            "• The service is available to all Othain employees.\n"
-        )
+        "content": system_content
     }
     openai_messages.append(system_message)
     context = get_relevant_context(message)
@@ -150,24 +171,36 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
     # 1️⃣ Log the user message
     db_add_chat_message(session_id, "user", message, user_email=user_email)
 
-    # 2️⃣ Build context and stream from OpenAI
+    # 2️⃣ Check for HR-related queries and get context (same as non-streaming version)
+    hr_context_data = ""
+    if user_email:
+        try:
+            hr_query_context = hr_chat_service.detect_hr_query(message)
+            if hr_query_context.query_type != 'general' or any(keyword in message.lower() for keywords in hr_chat_service.hr_keywords.values() for keyword in keywords):
+                # This is an HR-related query, get relevant HR context
+                hr_data = await hr_chat_service.get_hr_context_for_chat(user_email, message)
+                hr_context_data = hr_chat_service.format_hr_data_for_context(hr_data.get('hr_data', {}))
+        except Exception as e:
+            # Log error but continue with regular processing
+            print(f"Error getting HR context: {str(e)}")
+
+    # 3️⃣ Build context and stream from OpenAI
     recent_messages_db = db_get_chat_messages(session_id, user_id)
     if recent_messages_db is None:
         raise HTTPException(status_code=404, detail="Chat session not found or access denied")
     openai_messages = []
-    system_message = {
-        "role": "system",
-        "content": (
-            "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
-            "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
-            "based on the provided context. "
-            "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
-            "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
+    
+    base_system_content = (
+        "You are an HR assistant for Othain, branded as \"Othain Self Service.\" "
+        "Answer questions about Othain's HR policies, benefits, leave, payroll, and other HR-related topics "
+        "based on the provided context. "
+        "If you don't know the answer or the information isn't in the context, say so politely and direct the user to contact hr@othainsoft.com. "
+        "Always refer to the company as \"Othain\" and never discuss other companies, products, or topics.\n\n"
 
-            "If the user asks about something the chatbot itself cannot directly resolve, you must:\n\n"
-            "1. **Classify the issue** into the single *most specific* category from the list below.  \n"
-            "2. **Respond** with the fallback template exactly as specified.\n\n"
-            "────────────────────────────────────────────────────────\n"
+        "If the user asks about something the chatbot itself cannot directly resolve, you must:\n\n"
+        "1. **Classify the issue** into the single *most specific* category from the list below.  \n"
+        "2. **Respond** with the fallback template exactly as specified.\n\n"
+        "────────────────────────────────────────────────────────\n"
             "CATEGORIES (pick one)                 \n"
             "────────────────────────────────────────────────────────\n"
             "• IT Requests  \n"
@@ -204,7 +237,17 @@ async def process_chat_request_stream(request: ChatRequest, user_email: Optional
             "• Othain Cab Service lets employees schedule a cab to and from work.\n"
             "• Book a cab via the Book A Cab page by selecting a pickup time and location. You must book a cab at least 3 hours in advance.\n"
             "• The service is available to all Othain employees.\n"
-        )
+    )
+    
+    # Enhance system message with HR context if available
+    if hr_context_data:
+        system_content = hr_chat_service.enhance_system_message_with_hr_context(base_system_content, hr_context_data)
+    else:
+        system_content = base_system_content
+    
+    system_message = {
+        "role": "system",
+        "content": system_content
     }
     openai_messages.append(system_message)
     context = get_relevant_context(message)

@@ -34,7 +34,7 @@ async def chat_public(request: ChatRequest):
             request.user_id = f"guest-{request.session_id}"
             
         # Process the request
-        response = chat_service.process_chat_request(request)
+        response = await chat_service.process_chat_request(request)
         return response
     except Exception as e:
         # Log the error
@@ -127,7 +127,7 @@ async def send_test_message(
         user_id="test-user"
     )
     
-    response = chat_service.process_chat_request(request)
+    response = await chat_service.process_chat_request(request)
     
     # Return user and assistant messages
     return {
@@ -146,7 +146,7 @@ async def chat(request: ChatRequest,
     """Process a chat message using the updated service."""
     request.user_id = current_user.get('id') 
     # Call the main processing function which now uses Supabase
-    response = chat_service.process_chat_request(request)
+    response = await chat_service.process_chat_request(request)
     return response
 
 @router.get("/sessions")

@@ -34,7 +34,8 @@ import {
   DirectionsCar,
   Receipt,
   Close,
-  Person
+  Person,
+  Work
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -304,6 +305,7 @@ const NavBar = () => {
       gradient: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)',
       show: isAuthenticated
     },
+
     {
       label: 'Tickets',
       path: '/tickets',
