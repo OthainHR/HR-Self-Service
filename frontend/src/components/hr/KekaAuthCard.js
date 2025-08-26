@@ -75,10 +75,18 @@ const KekaAuthCard = ({ onAuthStatusChange }) => {
           'width=500,height=600,scrollbars=yes,resizable=yes'
         );
 
+        // If popup blocked or failed, fallback to full-page redirect
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          window.location.href = result.data.authorization_url;
+          return;
+        }
+
         // Listen for OAuth completion
         const handleMessage = (event) => {
           if (event.data.type === 'keka-oauth-result') {
-            popup.close();
+            if (popup && !popup.closed) {
+              popup.close();
+            }
             window.removeEventListener('message', handleMessage);
             
             if (event.data.status === 'success') {
@@ -97,7 +105,11 @@ const KekaAuthCard = ({ onAuthStatusChange }) => {
 
         // Check if popup was closed manually
         const checkClosed = setInterval(() => {
-          if (popup.closed) {
+          if (!popup) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            setConnecting(false);
+          } else if (popup.closed) {
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
             setConnecting(false);
