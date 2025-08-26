@@ -39,6 +39,7 @@ import HRAttendance from '../components/hr/HRAttendance';
 import HRPayslips from '../components/hr/HRPayslips';
 import HRHolidays from '../components/hr/HRHolidays';
 import HRDashboard from '../components/hr/HRDashboard';
+import KekaAuthCard from '../components/hr/KekaAuthCard';
 
 const HRSelfService = () => {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ const HRSelfService = () => {
     recentAttendance: [],
     upcomingHolidays: []
   });
+  const [kekaAuthStatus, setKekaAuthStatus] = useState(null);
 
   // Tab configuration
   const tabs = [
@@ -103,6 +105,17 @@ const HRSelfService = () => {
 
       if (!healthResult.success) {
         throw new Error('HR service is not available');
+      }
+
+      // Check Keka authentication status
+      try {
+        const kekaStatus = await hrService.checkKekaAuthStatus();
+        if (kekaStatus.success) {
+          setKekaAuthStatus(kekaStatus.data);
+        }
+      } catch (err) {
+        console.warn('Could not check Keka auth status:', err);
+        setKekaAuthStatus({ connected: false });
       }
 
       // Load dashboard data
@@ -243,6 +256,13 @@ const HRSelfService = () => {
           </IconButton>
         </Tooltip>
       </Box>
+
+      {/* Keka Authentication Status */}
+      {kekaAuthStatus && !kekaAuthStatus.connected && (
+        <Box sx={{ mb: 3 }}>
+          <KekaAuthCard onAuthStatusChange={setKekaAuthStatus} />
+        </Box>
+      )}
 
       {/* Navigation Tabs */}
       <Paper elevation={1} sx={{ mb: 3 }}>

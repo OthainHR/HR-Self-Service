@@ -26,22 +26,28 @@ class KekaOAuthService:
         self.client_id = os.getenv('KEKA_CLIENT_ID')
         self.client_secret = os.getenv('KEKA_CLIENT_SECRET')
         self.redirect_uri = os.getenv('KEKA_REDIRECT_URI')
-        self.keka_base_url = os.getenv('KEKA_API_BASE_URL', 'https://api.keka.com')
-        self.keka_auth_base_url = os.getenv('KEKA_AUTH_BASE_URL', 'https://auth.keka.com')
+        self.company_name = os.getenv('KEKA_COMPANY_NAME')
+        self.environment = os.getenv('KEKA_ENVIRONMENT', 'keka')  # "keka" for production, "kekademo" for sandbox
         
-        # OAuth2 endpoints
-        self.auth_endpoint = f"{self.keka_auth_base_url}/oauth2/authorize"
-        self.token_endpoint = f"{self.keka_auth_base_url}/oauth2/token"
-        self.user_info_endpoint = f"{self.keka_base_url}/v1/user/me"
+        # CORRECTED OAuth2 endpoints based on keka_endpoints.md
+        if self.environment == 'keka':
+            # Production
+            self.auth_endpoint = "https://login.keka.com/connect/authorize"
+            self.token_endpoint = "https://login.keka.com/connect/token"
+        else:
+            # Sandbox
+            self.auth_endpoint = "https://login.kekademo.com/connect/authorize"
+            self.token_endpoint = "https://login.kekademo.com/connect/token"
         
-        # OAuth2 scopes for HR data access
-        self.default_scopes = [
-            "read:profile",
-            "read:leaves", 
-            "read:attendance",
-            "read:payroll",
-            "read:performance"
-        ]
+        # Corrected API base URL structure
+        if self.company_name:
+            self.api_base_url = f"https://{self.company_name}.{self.environment}.com/api/v1"
+        else:
+            self.api_base_url = os.getenv('KEKA_API_BASE_URL', 'https://api.keka.com/v1')
+            
+        # OAuth2 scopes for HR data access (based on official Keka documentation)
+        # CRITICAL: offline_access is required for refresh tokens
+        self.default_scopes = ["kekaapi", "offline_access"]
         
         # Validate configuration
         self._validate_config()
@@ -130,8 +136,8 @@ class KekaOAuthService:
             # Exchange code for tokens
             tokens = self._exchange_code_for_tokens(code)
             
-            # Get user info from Keka
-            user_info = self._get_keka_user_info(tokens['access_token'])
+            # Get user info from Keka by searching with email
+            user_info = self._get_keka_user_info(tokens['access_token'], user_email)
             
             # Store tokens in database
             self._store_user_tokens(user_email, tokens, user_info)
@@ -145,7 +151,8 @@ class KekaOAuthService:
                 'success': True,
                 'user_email': user_email,
                 'keka_user_id': user_info.get('id'),
-                'keka_employee_code': user_info.get('employee_code'),
+                'keka_employee_id': user_info.get('employeeId') or user_info.get('id'),
+                'keka_employee_code': user_info.get('employeeCode') or user_info.get('employee_code'),
                 'message': 'Keka account connected successfully'
             }
             
@@ -196,45 +203,77 @@ class KekaOAuthService:
             
             return tokens
 
-    def _get_keka_user_info(self, access_token: str) -> Dict[str, Any]:
-        """Get user information from Keka API"""
+    def _get_keka_user_info(self, access_token: str, user_email: str) -> Dict[str, Any]:
+        """Get user information from Keka API by searching employees by email"""
         headers = {'Authorization': f'Bearer {access_token}'}
         
         with httpx.Client() as client:
-            response = client.get(self.user_info_endpoint, headers=headers)
+            try:
+                # Search employees by email (no /hris/me endpoint exists)
+                api_base = f"https://{self.company_name}.{self.environment}.com/api/v1"
+                search_url = f"{api_base}/hris/employees"
+                
+                response = client.get(
+                    search_url,
+                    headers=headers,
+                    params={'email': user_email}
+                )
+                
+                if response.status_code == 200:
+                    employees = response.json()
+                    # Handle both direct array and data wrapper
+                    employee_list = employees if isinstance(employees, list) else employees.get('data', [])
+                    
+                    if employee_list and len(employee_list) > 0:
+                        employee = employee_list[0]
+                        logger.info(f"Found employee info for {user_email}: ID {employee.get('id')}")
+                        return {
+                            "id": employee.get('id'),
+                            "employeeId": employee.get('id'),  # Use ID as employee ID
+                            "employeeCode": employee.get('employeeCode') or employee.get('code'),
+                            "fullName": employee.get('fullName'),
+                            "email": employee.get('email')
+                        }
+                    else:
+                        logger.warning(f"No employee found with email: {user_email}")
+                else:
+                    logger.error(f"Employee search failed: {response.status_code} - {response.text}")
+                
+            except Exception as e:
+                logger.error(f"Error searching for employee: {str(e)}")
             
-            if response.status_code != 200:
-                logger.error(f"User info request failed: {response.status_code} - {response.text}")
-                raise Exception(f"Failed to get user info from Keka: {response.text}")
-            
-            return response.json()
+            # Return minimal info if search fails
+            logger.warning(f"Could not get employee info for {user_email}, using minimal data")
+            return {"id": None, "employeeId": None, "employeeCode": None}
 
     def _store_user_tokens(self, user_email: str, tokens: Dict[str, Any], user_info: Dict[str, Any]):
-        """Store or update user's Keka tokens in database"""
+        """Store or update user's Keka tokens in database with employee ID mapping"""
         try:
             with get_db_connection() as conn:
-                # Prepare token data (adapted to existing schema column names)
+                # Prepare token data with employee ID mapping
                 token_data = {
                     'user_email': user_email,
                     'access_token': tokens['access_token'],
                     'refresh_token': tokens.get('refresh_token'),
                     'expires_at': tokens['expires_at'],
                     'keka_user_id': user_info.get('id'),
-                    'keka_employee_code': user_info.get('employee_code'),
+                    'keka_employee_id': user_info.get('employeeId') or user_info.get('id'),  # Store employee ID
+                    'keka_employee_code': user_info.get('employeeCode') or user_info.get('employee_code'),
                     'scope': tokens.get('scope', ' '.join(self.default_scopes))
                 }
                 
-                # Use UPSERT to handle existing records (adapted to existing schema)
+                # Use UPSERT to handle existing records with new keka_employee_id column
                 upsert_query = text("""
                     INSERT INTO user_keka_tokens 
-                    (user_email, access_token, refresh_token, expires_at, keka_user_id, keka_employee_code, scope)
-                    VALUES (:user_email, :access_token, :refresh_token, :expires_at, :keka_user_id, :keka_employee_code, :scope)
+                    (user_email, access_token, refresh_token, expires_at, keka_user_id, keka_employee_id, keka_employee_code, scope)
+                    VALUES (:user_email, :access_token, :refresh_token, :expires_at, :keka_user_id, :keka_employee_id, :keka_employee_code, :scope)
                     ON CONFLICT (user_email) 
                     DO UPDATE SET
                         access_token = EXCLUDED.access_token,
                         refresh_token = EXCLUDED.refresh_token,
                         expires_at = EXCLUDED.expires_at,
                         keka_user_id = EXCLUDED.keka_user_id,
+                        keka_employee_id = EXCLUDED.keka_employee_id,
                         keka_employee_code = EXCLUDED.keka_employee_code,
                         scope = EXCLUDED.scope,
                         updated_at = NOW()
@@ -243,7 +282,7 @@ class KekaOAuthService:
                 conn.execute(upsert_query, token_data)
                 conn.commit()
                 
-                logger.info(f"Stored Keka tokens for user: {user_email}")
+                logger.info(f"Stored Keka tokens and employee ID for user: {user_email}")
                 
         except Exception as e:
             logger.error(f"Failed to store tokens for {user_email}: {str(e)}")
@@ -263,7 +302,7 @@ class KekaOAuthService:
             with get_db_connection() as conn:
                 query = text("""
                     SELECT access_token, refresh_token, expires_at, keka_user_id, 
-                           keka_employee_code, scope, 
+                           keka_employee_id, keka_employee_code, scope, 
                            (expires_at < NOW()) as is_expired
                     FROM user_keka_tokens 
                     WHERE user_email = :user_email
@@ -279,6 +318,7 @@ class KekaOAuthService:
                     'refresh_token': result.refresh_token,
                     'expires_at': result.expires_at,
                     'keka_user_id': result.keka_user_id,
+                    'keka_employee_id': result.keka_employee_id,
                     'keka_employee_code': result.keka_employee_code,
                     'token_scope': result.scope,  # Map existing 'scope' column to 'token_scope'
                     'is_expired': result.is_expired

@@ -1,33 +1,47 @@
--- User Keka Tokens Schema for HR Data Access
--- This table stores Keka OAuth2 tokens for each user to access their HR data
+-- Migration script to safely update Keka schema
+-- Run this script to add the new keka_employee_id column
 
--- Extend existing user_keka_tokens table with additional columns for enhanced functionality
--- Note: This assumes the base table exists from database_schema_keka.sql
-
--- First, drop any existing views and functions that might conflict
+-- Step 1: Drop existing views that might conflict
 DROP VIEW IF EXISTS v_user_keka_token_status CASCADE;
+
+-- Step 2: Drop existing functions that need to be recreated
 DROP FUNCTION IF EXISTS get_user_keka_tokens(VARCHAR(255)) CASCADE;
 DROP FUNCTION IF EXISTS has_valid_keka_tokens(VARCHAR(255)) CASCADE;
 
--- Add new columns to existing table if they don't exist
-ALTER TABLE user_keka_tokens 
-ADD COLUMN IF NOT EXISTS keka_user_id VARCHAR(255);
+-- Step 3: Add new columns safely
+DO $$ 
+BEGIN
+    -- Add keka_user_id if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'user_keka_tokens' AND column_name = 'keka_user_id') THEN
+        ALTER TABLE user_keka_tokens ADD COLUMN keka_user_id VARCHAR(255);
+    END IF;
+    
+    -- Add keka_employee_id if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'user_keka_tokens' AND column_name = 'keka_employee_id') THEN
+        ALTER TABLE user_keka_tokens ADD COLUMN keka_employee_id VARCHAR(255);
+    END IF;
+    
+    -- Add keka_employee_code if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'user_keka_tokens' AND column_name = 'keka_employee_code') THEN
+        ALTER TABLE user_keka_tokens ADD COLUMN keka_employee_code VARCHAR(100);
+    END IF;
+    
+    -- Add last_used_at if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'user_keka_tokens' AND column_name = 'last_used_at') THEN
+        ALTER TABLE user_keka_tokens ADD COLUMN last_used_at TIMESTAMPTZ;
+    END IF;
+END $$;
 
-ALTER TABLE user_keka_tokens 
-ADD COLUMN IF NOT EXISTS keka_employee_id VARCHAR(255);
-
-ALTER TABLE user_keka_tokens 
-ADD COLUMN IF NOT EXISTS keka_employee_code VARCHAR(100);
-
-ALTER TABLE user_keka_tokens 
-ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
-
--- Create additional indexes for new columns
+-- Step 4: Create indexes safely
 CREATE INDEX IF NOT EXISTS idx_user_keka_tokens_keka_user_id ON user_keka_tokens(keka_user_id);
 CREATE INDEX IF NOT EXISTS idx_user_keka_tokens_keka_employee_id ON user_keka_tokens(keka_employee_id);
 CREATE INDEX IF NOT EXISTS idx_user_keka_tokens_last_used ON user_keka_tokens(last_used_at);
 
--- Create view for token status (recreated to handle new columns)
+-- Step 5: Recreate the view with new columns
 CREATE OR REPLACE VIEW v_user_keka_token_status AS
 SELECT 
     user_email,
@@ -47,7 +61,7 @@ SELECT
 FROM user_keka_tokens
 ORDER BY updated_at DESC;
 
--- Function to check if user has valid Keka tokens
+-- Step 6: Recreate functions with new return types
 CREATE OR REPLACE FUNCTION has_valid_keka_tokens(user_email_param VARCHAR(255))
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -60,7 +74,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to get user's Keka tokens (if valid)
 CREATE OR REPLACE FUNCTION get_user_keka_tokens(user_email_param VARCHAR(255))
 RETURNS TABLE (
     access_token TEXT,
@@ -82,30 +95,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Comments for documentation
+-- Step 7: Add comments
 COMMENT ON COLUMN user_keka_tokens.keka_user_id IS 'Keka internal user ID (if available)';
 COMMENT ON COLUMN user_keka_tokens.keka_employee_id IS 'Keka employee ID for API calls';
 COMMENT ON COLUMN user_keka_tokens.keka_employee_code IS 'Employee code from Keka (if available)';
 COMMENT ON COLUMN user_keka_tokens.last_used_at IS 'When tokens were last used for API calls';
 
--- Sample queries for testing:
-/*
--- Check if user has valid tokens:
-SELECT has_valid_keka_tokens('user@othainsoft.com');
-
--- Get user's tokens:
-SELECT * FROM get_user_keka_tokens('user@othainsoft.com');
-
--- View all token status:
-SELECT * FROM v_user_keka_token_status;
-
--- Find expired tokens:
-SELECT user_email, expires_at 
-FROM user_keka_tokens 
-WHERE expires_at < NOW();
-
--- Get tokens that expire soon (within 24 hours):
-SELECT user_email, expires_at 
-FROM user_keka_tokens 
-WHERE expires_at BETWEEN NOW() AND NOW() + INTERVAL '24 hours';
-*/
+-- Verification query
+SELECT 'Migration completed successfully' as status;

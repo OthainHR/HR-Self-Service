@@ -216,6 +216,7 @@ class UserKekaTokens(BaseModel):
     expires_at: datetime
     token_type: str = "Bearer"
     scope: Optional[str] = None
+    keka_employee_id: Optional[str] = None
 
 class KekaAuthRequest(BaseModel):
     """Request to initialize Keka authentication"""

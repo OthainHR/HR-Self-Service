@@ -21,8 +21,23 @@ class KekaTokenService:
     def __init__(self):
         self.client_id = os.getenv("KEKA_CLIENT_ID")
         self.client_secret = os.getenv("KEKA_CLIENT_SECRET")
-        self.api_base_url = os.getenv("KEKA_API_BASE_URL", "https://api.keka.com/v1")
         self.redirect_uri = os.getenv("KEKA_REDIRECT_URI")
+        self.company_name = os.getenv("KEKA_COMPANY_NAME")
+        self.environment = os.getenv("KEKA_ENVIRONMENT", "keka")
+        
+        # CORRECTED OAuth URLs based on keka_endpoints.md
+        if self.environment == 'keka':
+            self.token_endpoint = "https://login.keka.com/connect/token"
+            self.auth_endpoint = "https://login.keka.com/connect/authorize"
+        else:
+            self.token_endpoint = "https://login.kekademo.com/connect/token"
+            self.auth_endpoint = "https://login.kekademo.com/connect/authorize"
+        
+        # Corrected API base URL structure
+        if self.company_name:
+            self.api_base_url = f"https://{self.company_name}.{self.environment}.com/api/v1"
+        else:
+            self.api_base_url = os.getenv("KEKA_API_BASE_URL", "https://api.keka.com/v1")
         
     async def get_user_tokens(self, user_email: str) -> Optional[UserKekaTokens]:
         """
@@ -38,7 +53,8 @@ class KekaTokenService:
                     refresh_token=response.data["refresh_token"],
                     expires_at=datetime.fromisoformat(response.data["expires_at"]),
                     token_type=response.data.get("token_type", "Bearer"),
-                    scope=response.data.get("scope")
+                    scope=response.data.get("scope"),
+                    keka_employee_id=response.data.get("keka_employee_id")
                 )
         except Exception as e:
             logger.error(f"Error retrieving tokens for {user_email}: {str(e)}")
@@ -59,6 +75,7 @@ class KekaTokenService:
                 "expires_at": expires_at.isoformat(),
                 "token_type": tokens.get("token_type", "Bearer"),
                 "scope": tokens.get("scope"),
+                "keka_employee_id": tokens.get("keka_employee_id"),
                 "updated_at": datetime.now().isoformat()
             }
             
@@ -178,17 +195,17 @@ class KekaTokenService:
         if not all([self.client_id, self.redirect_uri]):
             return None
 
-        base_url = self.api_base_url.replace('/v1', '/oauth/authorize')
         params = {
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
-            "scope": "read:profile read:attendance read:leave read:payroll",
+            "scope": "kekaapi offline_access",
             "state": "hr_ess_integration"  # You might want to make this more secure
         }
         
-        param_string = "&".join([f"{k}={v}" for k, v in params.items()])
-        return f"{base_url}?{param_string}"
+        from urllib.parse import urlencode
+        param_string = urlencode(params)
+        return f"{self.auth_endpoint}?{param_string}"
 
     async def is_user_authenticated(self, user_email: str) -> bool:
         """
@@ -231,8 +248,9 @@ class KekaTokenService:
             if tokens:
                 try:
                     async with httpx.AsyncClient() as client:
+                        # Note: Revoke endpoint may not be available in Keka API
                         await client.post(
-                            f"{self.api_base_url.replace('/v1', '')}/oauth/revoke",
+                            f"{self.token_endpoint.replace('/connect/token', '/connect/revoke')}",
                             data={
                                 "token": tokens.access_token,
                                 "client_id": self.client_id,

@@ -9,8 +9,11 @@ Add these to your `.env` file in the backend directory:
 # Get these from your Keka admin panel under API settings
 KEKA_CLIENT_ID=your_keka_client_id_here
 KEKA_CLIENT_SECRET=your_keka_client_secret_here
-KEKA_REFRESH_TOKEN=your_keka_refresh_token_here
-KEKA_API_BASE_URL=https://your-keka-instance.keka.com/api/v1
+KEKA_REDIRECT_URI=https://your-domain.com/api/keka-auth/callback
+KEKA_COMPANY_NAME=your_company_name
+KEKA_ENVIRONMENT=keka
+# Optional: Holiday calendar ID (if you want to fetch holidays)
+KEKA_CALENDAR_ID=default
 ```
 
 ## How to Get Keka API Credentials
@@ -28,9 +31,11 @@ KEKA_API_BASE_URL=https://your-keka-instance.keka.com/api/v1
    - Copy the `Client ID` and `Client Secret`
    - Generate a `Refresh Token` for server-to-server authentication
 
-4. **Set Base URL**
-   - Your API base URL will be: `https://your-company-name.keka.com/api/v1`
-   - Replace `your-company-name` with your actual Keka instance name
+4. **Set Environment Variables**
+   - `KEKA_COMPANY_NAME`: Your Keka instance name (e.g., "yourcompany" for yourcompany.keka.com)
+   - `KEKA_ENVIRONMENT`: Use "keka" for production or "kekademo" for sandbox
+   - Your API base URL will be automatically constructed as: `https://{KEKA_COMPANY_NAME}.{KEKA_ENVIRONMENT}.com/api/v1`
+   - OAuth URLs will be: `https://login.keka.com/connect/token` (production) or `https://login.kekademo.com/connect/token` (sandbox)
 
 ## Testing the Configuration
 

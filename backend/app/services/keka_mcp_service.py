@@ -28,8 +28,16 @@ class KekaMCPServer:
     """
     
     def __init__(self):
-        # Keka API Configuration
-        self.api_base_url = os.getenv("KEKA_API_BASE_URL", "https://api.keka.com/v1")
+        # Keka API Configuration - CORRECTED
+        self.company_name = os.getenv("KEKA_COMPANY_NAME")  # e.g., "yourcompany"
+        self.environment = os.getenv("KEKA_ENVIRONMENT", "keka")  # "keka" for production, "kekademo" for sandbox
+        
+        # Correct base URL structure
+        if self.company_name:
+            self.api_base_url = f"https://{self.company_name}.{self.environment}.com/api/v1"
+        else:
+            # Fallback to environment variable if company name not provided
+            self.api_base_url = os.getenv("KEKA_API_BASE_URL", "https://api.keka.com/v1")
         
         # Current user context
         self.authenticated_user_email: Optional[str] = None
@@ -122,7 +130,7 @@ class KekaMCPServer:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.api_base_url}/employees",
+                    f"{self.api_base_url}/hris/employees",
                     headers={
                         "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json"
@@ -242,10 +250,59 @@ class KekaMCPServer:
             logger.warning(f"Failed to log API usage: {str(e)}")
 
     # Employee Profile Methods
+    async def _get_current_user_employee_id(self) -> str:
+        """Get employee ID for current authenticated user from stored tokens"""
+        if not self.authenticated_user_email:
+            raise HTTPException(status_code=401, detail="No authenticated user")
+        
+        try:
+            # Get from stored tokens first
+            tokens = await keka_token_service.get_user_tokens(self.authenticated_user_email)
+            if tokens and hasattr(tokens, 'keka_employee_id') and tokens.keka_employee_id:
+                return tokens.keka_employee_id
+                
+            # If not stored, search by email (no /hris/me endpoint exists)
+            logger.info(f"Employee ID not cached, searching by email: {self.authenticated_user_email}")
+            
+            try:
+                # Search employees by email - this is the correct approach
+                params = {'email': self.authenticated_user_email}
+                response = await self._make_keka_request("GET", "hris/employees", params=params)
+                
+                employees = response if isinstance(response, list) else response.get('data', [])
+                if employees and len(employees) > 0:
+                    employee_id = employees[0]['id']
+                    logger.info(f"Found employee ID: {employee_id} for {self.authenticated_user_email}")
+                    return employee_id
+                else:
+                    logger.error(f"No employee found with email: {self.authenticated_user_email}")
+                    raise HTTPException(
+                        status_code=404, 
+                        detail=f"Employee not found with email: {self.authenticated_user_email}"
+                    )
+            except HTTPException as e:
+                # Re-raise HTTP exceptions
+                raise e
+            except Exception as e:
+                logger.error(f"Error searching for employee by email: {str(e)}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Failed to search for employee information"
+                )
+                
+            raise HTTPException(
+                status_code=404, 
+                detail="Could not find employee ID for authenticated user"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting employee ID: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to get employee information")
+
     async def get_my_profile(self) -> EmployeeProfile:
         """Get the authenticated user's profile"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
-        data = await self._make_keka_request("GET", f"/employees/{employee_id}")
+        employee_id = await self._get_current_user_employee_id()
+        data = await self._make_keka_request("GET", f"hris/employees/{employee_id}")
         
         return EmployeeProfile(
             employee_id=data["id"],
@@ -263,36 +320,44 @@ class KekaMCPServer:
     # Leave Management Methods
     async def get_my_leave_balances(self, leave_type: Optional[str] = None) -> List[LeaveBalance]:
         """Get leave balances for the authenticated user"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
+        # Note: Keka API may not require employee_id for leave balance endpoint
+        # as it's authenticated per user
         
-        params = {"employee_id": employee_id}
+        params = {}
         if leave_type:
-            params["leave_type"] = leave_type
+            params["leaveType"] = leave_type
             
-        data = await self._make_keka_request("GET", "/leave-balances", params=params)
+        data = await self._make_keka_request("GET", "time/leavebalance", params=params)
+        
+        # Handle the response structure based on actual Keka API
+        balances = data if isinstance(data, list) else data.get('data', [])
         
         return [
             LeaveBalance(
                 leave_type=balance["leaveType"],
-                total_allocated=balance["totalAllocated"],
-                used=balance["used"],
-                remaining=balance["remaining"],
+                total_allocated=balance["allocated"],
+                used=balance["consumed"],
+                remaining=balance["balance"],
                 carry_forward=balance.get("carryForward")
-            ) for balance in data
+            ) for balance in balances
         ]
 
     async def get_my_leave_history(self, from_date: Optional[date] = None, 
                                  to_date: Optional[date] = None) -> List[LeaveHistory]:
         """Get leave history for the authenticated user"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
+        # Note: Keka API may not require employee_id for leave requests endpoint
+        # as it's authenticated per user
         
-        params = {"employee_id": employee_id}
+        params = {}
         if from_date:
-            params["from_date"] = from_date.isoformat()
+            params["from"] = from_date.isoformat()
         if to_date:
-            params["to_date"] = to_date.isoformat()
+            params["to"] = to_date.isoformat()
             
-        data = await self._make_keka_request("GET", "/leave-applications", params=params)
+        data = await self._make_keka_request("GET", "time/leaverequests", params=params)
+        
+        # Handle the response structure based on actual Keka API
+        requests = data if isinstance(data, list) else data.get('data', [])
         
         return [
             LeaveHistory(
@@ -307,26 +372,25 @@ class KekaMCPServer:
                 approved_date=datetime.fromisoformat(leave["approvedDate"]) if leave.get("approvedDate") else None,
                 approved_by=leave.get("approvedBy", {}).get("fullName") if leave.get("approvedBy") else None,
                 comments=leave.get("comments")
-            ) for leave in data
+            ) for leave in requests
         ]
 
     async def apply_my_leave(self, leave_application: LeaveApplication) -> Dict[str, Any]:
         """Apply for leave for the authenticated user"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
+        # Note: Employee ID may not be required as request is authenticated per user
         
         payload = {
-            "employee_id": employee_id,
-            "leave_type": leave_application.leave_type,
-            "from_date": leave_application.from_date.isoformat(),
-            "to_date": leave_application.to_date.isoformat(),
+            "leaveType": leave_application.leave_type,
+            "fromDate": leave_application.from_date.isoformat(),
+            "toDate": leave_application.to_date.isoformat(),
             "reason": leave_application.reason,
-            "is_half_day": leave_application.is_half_day
+            "isHalfDay": leave_application.is_half_day
         }
         
         if leave_application.is_half_day and leave_application.half_day_type:
-            payload["half_day_type"] = leave_application.half_day_type
+            payload["halfDayType"] = leave_application.half_day_type
             
-        data = await self._make_keka_request("POST", "/leave-applications", json=payload)
+        data = await self._make_keka_request("POST", "time/leaverequests", json=payload)
         
         return {
             "application_id": data["id"],
@@ -337,15 +401,17 @@ class KekaMCPServer:
     # Attendance Methods
     async def get_my_attendance(self, from_date: date, to_date: date) -> List[AttendanceRecord]:
         """Get attendance records for the authenticated user"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
+        # Note: Employee ID may not be required as request is authenticated per user
         
         params = {
-            "employee_id": employee_id,
-            "from_date": from_date.isoformat(),
-            "to_date": to_date.isoformat()
+            "from": from_date.isoformat(),
+            "to": to_date.isoformat()
         }
         
-        data = await self._make_keka_request("GET", "/attendance", params=params)
+        data = await self._make_keka_request("GET", "time/attendance", params=params)
+        
+        # Handle the response structure based on actual Keka API
+        records = data if isinstance(data, list) else data.get('data', [])
         
         return [
             AttendanceRecord(
@@ -357,45 +423,187 @@ class KekaMCPServer:
                 total_hours=record.get("totalHours"),
                 overtime_hours=record.get("overtimeHours"),
                 location=record.get("location")
-            ) for record in data
+            ) for record in records
         ]
 
-    # Payslip Methods
+    # Payslip Methods - Updated based on salary-variance implementation
+    async def get_my_payslips(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get user's payslips/salary information from pay register
+        Based on salary-variance implementation using correct Keka endpoints
+        """
+        try:
+            # First get pay groups to find the correct pay group ID
+            pay_groups_response = await self._make_keka_request("GET", "payroll/paygroups")
+            pay_groups = pay_groups_response.get("data", [])
+            
+            if not pay_groups:
+                return {
+                    "success": False,
+                    "error": "No pay groups found",
+                    "message": "No pay groups available for payslip retrieval"
+                }
+            
+            # Use the first available pay group
+            pay_group_id = pay_groups[0].get("payGroupId") or pay_groups[0].get("id")
+            
+            # Get pay cycles for this pay group
+            pay_cycles_response = await self._make_keka_request(
+                "GET", 
+                f"payroll/paygroups/{pay_group_id}/paycycles"
+            )
+            pay_cycles = pay_cycles_response.get("data", [])
+            
+            if not pay_cycles:
+                return {
+                    "success": False,
+                    "error": "No pay cycles found",
+                    "message": "No pay cycles available for payslip retrieval"
+                }
+            
+            # Filter cycles by date range if provided, otherwise get recent processed cycles
+            filtered_cycles = []
+            for cycle in pay_cycles:
+                if cycle.get('runStatus', 0) == 1:  # Only processed cycles
+                    if start_date and end_date:
+                        # Filter by date range if provided
+                        cycle_start = cycle.get('startDate', '')
+                        cycle_end = cycle.get('endDate', '')
+                        if start_date <= cycle_start and cycle_end <= end_date:
+                            filtered_cycles.append(cycle)
+                    else:
+                        filtered_cycles.append(cycle)
+            
+            # Sort by start date and take the most recent ones
+            filtered_cycles.sort(key=lambda x: x.get('startDate', ''), reverse=True)
+            recent_cycles = filtered_cycles[:6]  # Get last 6 months
+            
+            # Get employee ID
+            employee_id = await self._get_current_user_employee_id()
+            
+            payslips = []
+            for cycle in recent_cycles:
+                pay_cycle_id = cycle.get('payCycleId') or cycle.get('id') or cycle.get('identifier')
+                if not pay_cycle_id:
+                    continue
+                
+                try:
+                    # Get pay register for this cycle
+                    pay_register_response = await self._make_keka_request(
+                        "GET", 
+                        f"payroll/paygroups/{pay_group_id}/paycycles/{pay_cycle_id}/payregister",
+                        params={
+                            "pageNumber": 1,
+                            "pageSize": 200,
+                            "payrollStatus": "Processed",
+                            "includeOutSideCTCPayables": "false"
+                        }
+                    )
+                    
+                    pay_register = pay_register_response.get("data", [])
+                    
+                    # Find current user's record in pay register
+                    for record in pay_register:
+                        if (record.get("employeeId") == employee_id or 
+                            record.get("employeeNumber") == employee_id):
+                            user_payslip = {
+                                "payPeriod": cycle.get('month', ''),
+                                "startDate": cycle.get('startDate', ''),
+                                "endDate": cycle.get('endDate', ''),
+                                "grossAmount": record.get("grossAmount", 0),
+                                "netAmount": record.get("netAmount", 0),
+                                "workingDays": record.get("workingDays", 0),
+                                "lossOfPayDays": record.get("lossOfPayDays", 0),
+                                "noOfPayDays": record.get("noOfPayDays", 0),
+                                "earnings": record.get("earnings", []),
+                                "deductions": record.get("deductions", []),
+                                "contributions": record.get("contributions", []),
+                                "reimbursements": record.get("reimbursements", []),
+                                "paySlipId": pay_cycle_id,
+                                "status": "Processed"
+                            }
+                            payslips.append(user_payslip)
+                            break
+                            
+                except Exception as cycle_error:
+                    logger.warning(f"Error getting pay register for cycle {pay_cycle_id}: {str(cycle_error)}")
+                    continue
+            
+            return {
+                "success": True,
+                "data": payslips,
+                "message": f"Retrieved {len(payslips)} payslips successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting payslips: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to retrieve payslips"
+            }
+
     async def get_my_payslip(self, month: int, year: int) -> Payslip:
-        """Get payslip for the authenticated user"""
-        employee_id = await self.get_employee_id_by_email(self.authenticated_user_email)
-        
-        params = {
-            "employee_id": employee_id,
-            "month": month,
-            "year": year
-        }
-        
-        data = await self._make_keka_request("GET", "/payslips", params=params)
-        
-        if not data:
-            raise HTTPException(status_code=404, detail=f"Payslip not found for {month}/{year}")
-        
-        payslip_data = data[0] if isinstance(data, list) else data
-        
-        return Payslip(
-            employee_id=payslip_data["employeeId"],
-            month=payslip_data["month"],
-            year=payslip_data["year"],
-            pay_period=payslip_data["payPeriod"],
-            gross_salary=payslip_data["grossSalary"],
-            net_salary=payslip_data["netSalary"],
-            total_deductions=payslip_data["totalDeductions"],
-            earnings=payslip_data["earnings"],
-            deductions=payslip_data["deductions"],
-            ytd_gross=payslip_data.get("ytdGross"),
-            ytd_net=payslip_data.get("ytdNet")
-        )
+        """Get payslip for the authenticated user - Updated to use correct endpoints"""
+        try:
+            # Use the new payslips method to get all payslips, then filter
+            payslips_response = await self.get_my_payslips()
+            
+            if not payslips_response.get("success"):
+                raise HTTPException(status_code=404, detail=f"Failed to retrieve payslips: {payslips_response.get('error')}")
+            
+            payslips = payslips_response.get("data", [])
+            
+            # Find the payslip for the requested month/year
+            target_payslip = None
+            for payslip in payslips:
+                # Parse the payPeriod or startDate to match month/year
+                try:
+                    if payslip.get('startDate'):
+                        # Parse date format like "01 Jul 2024"
+                        date_parts = payslip['startDate'].split()
+                        if len(date_parts) >= 3:
+                            payslip_year = int(date_parts[2])
+                            month_map = {
+                                'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+                                'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+                            }
+                            payslip_month = month_map.get(date_parts[1], 0)
+                            
+                            if payslip_month == month and payslip_year == year:
+                                target_payslip = payslip
+                                break
+                except Exception as parse_error:
+                    logger.warning(f"Error parsing payslip date: {parse_error}")
+                    continue
+            
+            if not target_payslip:
+                raise HTTPException(status_code=404, detail=f"Payslip not found for {month}/{year}")
+            
+            return Payslip(
+                employee_id=await self._get_current_user_employee_id(),
+                month=month,
+                year=year,
+                pay_period=target_payslip.get("payPeriod", ""),
+                gross_salary=target_payslip.get("grossAmount", 0),
+                net_salary=target_payslip.get("netAmount", 0),
+                total_deductions=target_payslip.get("grossAmount", 0) - target_payslip.get("netAmount", 0),
+                earnings=target_payslip.get("earnings", []),
+                deductions=target_payslip.get("deductions", []),
+                ytd_gross=None,  # Not available in pay register
+                ytd_net=None     # Not available in pay register
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting payslip for {month}/{year}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve payslip: {str(e)}")
 
     # General Information Methods
     async def get_leave_types(self) -> List[Dict[str, Any]]:
         """Get available leave types"""
-        data = await self._make_keka_request("GET", "/leave-types")
+        data = await self._make_keka_request("GET", "time/leavetypes")
         return data
 
     async def get_upcoming_holidays(self, year: Optional[int] = None) -> List[Holiday]:
@@ -403,8 +611,16 @@ class KekaMCPServer:
         if not year:
             year = datetime.now().year
             
-        params = {"year": year}
-        data = await self._make_keka_request("GET", "/holidays", params=params)
+        # Note: Keka holidays endpoint requires calendar ID
+        # You may need to get calendar ID first or have it configured
+        calendar_id = os.getenv("KEKA_CALENDAR_ID", "default")
+        
+        try:
+            data = await self._make_keka_request("GET", f"time/holidayscalendar/{calendar_id}/holidays")
+        except HTTPException:
+            # Fallback if calendar ID is not configured
+            logger.warning("Holiday calendar endpoint failed, may need calendar ID configuration")
+            return []
         
         return [
             Holiday(

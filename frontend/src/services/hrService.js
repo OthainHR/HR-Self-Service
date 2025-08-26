@@ -85,6 +85,46 @@ hrApiClient.interceptors.response.use(
 // HR Service class
 class HRService {
   
+  // Keka OAuth Methods
+  async getKekaAuthUrl() {
+    try {
+      const response = await hrApiClient.get('/keka-auth/authorization-url');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Failed to get Keka auth URL:', error);
+      return handleApiError(error);
+    }
+  }
+
+  async checkKekaAuthStatus() {
+    try {
+      const response = await hrApiClient.get('/keka-auth/status');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Failed to check Keka auth status:', error);
+      return handleApiError(error);
+    }
+  }
+
+  async disconnectKekaAccount() {
+    try {
+      const response = await hrApiClient.post('/keka-auth/disconnect');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Failed to disconnect Keka account:', error);
+      return handleApiError(error);
+    }
+  }
+
   // Employee Profile
   async getMyProfile() {
     try {
