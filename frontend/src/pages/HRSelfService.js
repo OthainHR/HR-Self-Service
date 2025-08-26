@@ -1,324 +1,310 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  Container,
-  Typography,
+  AppBar,
+  Avatar,
   Box,
-  Grid,
+  Button,
   Card,
   CardContent,
-  CardActions,
-  Button,
   Chip,
-  Alert,
-  Skeleton,
-  Tabs,
-  Tab,
-  IconButton,
-  Tooltip,
-  Fade,
-  Paper,
+  CircularProgress,
+  Container,
   Divider,
-  Avatar,
+  IconButton,
+  LinearProgress,
   Stack,
-  useTheme,
+  Tab,
+  Tabs,
+  Toolbar,
+  Tooltip,
+  Typography,
   alpha,
-  Zoom,
-  Slide
+  useMediaQuery,
+  useTheme,
+  Fade,
+  Slide,
+  Zoom
 } from '@mui/material';
 import {
+  Dashboard as DashboardIcon,
   Person as PersonIcon,
   EventAvailable as LeaveIcon,
   Schedule as AttendanceIcon,
   Receipt as PayslipIcon,
   Event as HolidayIcon,
   Refresh as RefreshIcon,
-  Dashboard as DashboardIcon,
-  TrendingUp as TrendingUpIcon,
-  CheckCircle as CheckIcon,
   Warning as WarningIcon,
-  Notifications as NotificationIcon,
-  Settings as SettingsIcon
+  CheckCircle as CheckIcon,
+  Notifications as NotificationsIcon,
+  Settings as SettingsIcon,
+  Security as SecurityIcon,
+  TrendingUp as TrendingUpIcon,
+  Link as LinkIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { hrService } from '../services/hrService';
 
-// Import HR components
-import HRProfile from '../components/hr/HRProfile';
-import HRLeaveManagement from '../components/hr/HRLeaveManagement';
-import HRAttendance from '../components/hr/HRAttendance';
-import HRPayslips from '../components/hr/HRPayslips';
-import HRHolidays from '../components/hr/HRHolidays';
-import HRDashboard from '../components/hr/HRDashboard';
-import KekaAuthCard from '../components/hr/KekaAuthCard';
+// Lazy-load components for performance
+const HRProfile = React.lazy(() => import('../components/hr/HRProfile'));
+const HRLeaveManagement = React.lazy(() => import('../components/hr/HRLeaveManagement'));
+const HRAttendance = React.lazy(() => import('../components/hr/HRAttendance'));
+const HRPayslips = React.lazy(() => import('../components/hr/HRPayslips'));
+const HRHolidays = React.lazy(() => import('../components/hr/HRHolidays'));
+const HRDashboard = React.lazy(() => import('../components/hr/HRDashboard'));
+const KekaAuthCard = React.lazy(() => import('../components/hr/KekaAuthCard'));
 
 const HRSelfService = () => {
-  const { user } = useAuth();
   const theme = useTheme();
+  const { user } = useAuth();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hrHealthStatus, setHrHealthStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [hrHealthStatus, setHrHealthStatus] = useState(null);
+  const [kekaAuthStatus, setKekaAuthStatus] = useState(null);
   const [dashboardData, setDashboardData] = useState({
     profile: null,
     leaveBalances: [],
     recentAttendance: [],
     upcomingHolidays: []
   });
-  const [kekaAuthStatus, setKekaAuthStatus] = useState(null);
 
-  // Enhanced tab configuration with modern styling
-  const tabs = [
+  // Modern gradient themes for each tab
+  const tabThemes = useMemo(() => [
     {
-      label: 'Dashboard',
-      icon: <DashboardIcon />,
-      component: HRDashboard,
-      props: { data: dashboardData },
-      color: '#6366f1',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      name: 'Dashboard',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: '#667eea',
+      shadow: 'rgba(102, 126, 234, 0.4)'
     },
     {
-      label: 'Profile',
-      icon: <PersonIcon />,
-      component: HRProfile,
-      color: '#10b981',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      name: 'Profile', 
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      color: '#f093fb',
+      shadow: 'rgba(240, 147, 251, 0.4)'
     },
     {
-      label: 'Leave Management',
-      icon: <LeaveIcon />,
-      component: HRLeaveManagement,
-      color: '#f59e0b',
-      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
+      name: 'Leave',
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 
+      color: '#4facfe',
+      shadow: 'rgba(79, 172, 254, 0.4)'
     },
     {
-      label: 'Attendance',
-      icon: <AttendanceIcon />,
-      component: HRAttendance,
-      color: '#8b5cf6',
-      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+      name: 'Attendance',
+      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      color: '#43e97b', 
+      shadow: 'rgba(67, 233, 123, 0.4)'
     },
     {
-      label: 'Payslips',
-      icon: <PayslipIcon />,
-      component: HRPayslips,
-      color: '#06b6d4',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      name: 'Payslips',
+      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      color: '#fa709a',
+      shadow: 'rgba(250, 112, 154, 0.4)'
     },
     {
-      label: 'Holidays',
-      icon: <HolidayIcon />,
-      component: HRHolidays,
-      color: '#ef4444',
-      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
+      name: 'Holidays',
+      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      color: '#a8edea',
+      shadow: 'rgba(168, 237, 234, 0.4)'
     }
-  ];
+  ], []);
+
+  const tabs = useMemo(() => [
+    { label: 'Dashboard', icon: <DashboardIcon />, component: HRDashboard, props: { data: dashboardData } },
+    { label: 'Profile', icon: <PersonIcon />, component: HRProfile },
+    { label: 'Leave', icon: <LeaveIcon />, component: HRLeaveManagement },
+    { label: 'Attendance', icon: <AttendanceIcon />, component: HRAttendance },
+    { label: 'Payslips', icon: <PayslipIcon />, component: HRPayslips },
+    { label: 'Holidays', icon: <HolidayIcon />, component: HRHolidays }
+  ], [dashboardData]);
+
+  const currentTheme = tabThemes[activeTab];
 
   useEffect(() => {
-    initializeHRService();
+    initializeService();
   }, []);
 
-  const initializeHRService = async () => {
+  const initializeService = async () => {
     setLoading(true);
     setError(null);
-
+    
     try {
-      // Check HR service health with animation
+      // Check service health
       const healthResult = await hrService.checkHRServiceHealth();
       setHrHealthStatus(healthResult);
-
-      if (!healthResult.success) {
+      
+      if (!healthResult?.success) {
         throw new Error('HR service is not available');
       }
 
-      // Check Keka authentication status
+      // Check Keka auth status  
       try {
         const kekaStatus = await hrService.checkKekaAuthStatus();
-        if (kekaStatus.success) {
-          setKekaAuthStatus(kekaStatus.data);
-        }
-      } catch (err) {
-        console.warn('Could not check Keka auth status:', err);
+        setKekaAuthStatus(kekaStatus.success ? kekaStatus.data : { connected: false });
+      } catch {
         setKekaAuthStatus({ connected: false });
       }
 
-      // Load dashboard data with staggered loading
+      // Load initial dashboard data
       await loadDashboardData();
     } catch (err) {
-      console.error('Failed to initialize HR service:', err);
-      setError(err.message || 'Failed to connect to HR service');
+      setError(err.message || 'Failed to initialize HR service');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
-      // Load essential data for dashboard
-      const [profileResult, leaveBalancesResult, attendanceResult, holidaysResult] = await Promise.allSettled([
+      const [profile, leaveBalances, attendance, holidays] = await Promise.allSettled([
         hrService.getMyProfile(),
-        hrService.getMyLeaveBalances(),
+        hrService.getMyLeaveBalances(), 
         hrService.getCurrentMonthAttendance(),
         hrService.getUpcomingHolidays()
       ]);
 
       setDashboardData({
-        profile: profileResult.status === 'fulfilled' && profileResult.value.success 
-          ? profileResult.value.data : null,
-        leaveBalances: leaveBalancesResult.status === 'fulfilled' && leaveBalancesResult.value.success 
-          ? leaveBalancesResult.value.data : [],
-        recentAttendance: attendanceResult.status === 'fulfilled' && attendanceResult.value.success 
-          ? attendanceResult.value.data : [],
-        upcomingHolidays: holidaysResult.status === 'fulfilled' && holidaysResult.value.success 
-          ? holidaysResult.value.data : []
+        profile: profile.status === 'fulfilled' && profile.value.success ? profile.value.data : null,
+        leaveBalances: leaveBalances.status === 'fulfilled' && leaveBalances.value.success ? leaveBalances.value.data : [],
+        recentAttendance: attendance.status === 'fulfilled' && attendance.value.success ? attendance.value.data : [],
+        upcomingHolidays: holidays.status === 'fulfilled' && holidays.value.success ? holidays.value.data : []
       });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     }
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    if (activeTab === 0) {
-      await loadDashboardData();
-    } else {
-      window.dispatchEvent(new CustomEvent('hrRefresh'));
-    }
-    setTimeout(() => setRefreshing(false), 1000); // Minimum animation time
-  };
-
-  // Modern glassmorphism background
-  const modernBackgroundStyle = {
-    background: `
-      linear-gradient(135deg, 
-        ${alpha(theme.palette.primary.main, 0.1)} 0%, 
-        ${alpha(theme.palette.secondary.main, 0.05)} 100%
-      )
-    `,
-    minHeight: '100vh',
-    position: 'relative',
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: '300px',
-      background: `
-        radial-gradient(circle at 20% 80%, ${alpha(theme.palette.primary.main, 0.15)} 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, ${alpha(theme.palette.secondary.main, 0.15)} 0%, transparent 50%)
-      `,
-      zIndex: -1
+    try {
+      if (activeTab === 0) {
+        await loadDashboardData();
+      } else {
+        window.dispatchEvent(new CustomEvent('hrRefresh'));
+      }
+    } finally {
+      setTimeout(() => setRefreshing(false), 800);
     }
   };
 
+  // Loading state
   if (loading) {
     return (
-      <Box sx={modernBackgroundStyle}>
-        <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
-          <Box sx={{ mb: 4 }}>
-            <Skeleton 
-              variant="text" 
-              width={350} 
-              height={70} 
+      <Box sx={{
+        minHeight: '100vh',
+        background: `
+          radial-gradient(ellipse 800px 600px at 50% 0%, ${alpha('#667eea', 0.15)}, transparent),
+          radial-gradient(ellipse 600px 400px at 0% 100%, ${alpha('#f093fb', 0.1)}, transparent),
+          linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%)
+        `,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 3
+      }}>
+        <Card sx={{
+          maxWidth: 480,
+          width: '100%',
+          p: 4,
+          textAlign: 'center',
+          borderRadius: 6,
+          background: alpha(theme.palette.background.paper, 0.95),
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
+          border: `1px solid ${alpha(theme.palette.divider, 0.2)}`
+        }}>
+          <Box sx={{ mb: 3 }}>
+            <CircularProgress 
+              size={60} 
+              thickness={4}
               sx={{ 
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.1)
-              }} 
+                color: '#667eea',
+                mb: 2
+              }}
             />
-            <Skeleton 
-              variant="text" 
-              width={250} 
-              height={40} 
-              sx={{ 
-                mt: 1,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.05)
-              }} 
-            />
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              Connecting to HR Services
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Loading your profile, leave balances, and attendance data...
+            </Typography>
           </Box>
-          
-          <Paper 
-            elevation={0} 
+          <LinearProgress 
             sx={{ 
-              mb: 3, 
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.background.paper, 0.7),
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <Skeleton variant="rectangular" width="100%" height={72} sx={{ borderRadius: 3 }} />
-          </Paper>
-          
-          <Grid container spacing={3}>
-            {[1, 2, 3, 4].map((item) => (
-              <Grid item xs={12} md={6} key={item}>
-                <Zoom in timeout={300 + item * 100}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      height: 220,
-                      borderRadius: 4,
-                      bgcolor: alpha(theme.palette.background.paper, 0.7),
-                      backdropFilter: 'blur(10px)',
-                      border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
-                    }}
-                  >
-                    <Skeleton variant="rectangular" height="100%" sx={{ borderRadius: 4 }} />
-                  </Paper>
-                </Zoom>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
+              borderRadius: 2,
+              height: 6,
+              bgcolor: alpha('#667eea', 0.1),
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 2,
+                background: 'linear-gradient(90deg, #667eea, #764ba2)'
+              }
+            }} 
+          />
+        </Card>
       </Box>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <Box sx={modernBackgroundStyle}>
-        <Container maxWidth="lg" sx={{ pt: 4, pb: 4 }}>
-          <Slide in direction="down" timeout={500}>
-            <Alert 
-              severity="error"
+      <Box sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #fc466b 0%, #3f5efb 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 3
+      }}>
+        <Card sx={{
+          maxWidth: 500,
+          width: '100%',
+          borderRadius: 6,
+          background: alpha('#ffffff', 0.95),
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{
+            background: 'linear-gradient(135deg, #fc466b 0%, #3f5efb 100%)',
+            p: 4,
+            textAlign: 'center',
+            color: 'white'
+          }}>
+            <WarningIcon sx={{ fontSize: 60, mb: 2 }} />
+            <Typography variant="h4" fontWeight="bold">
+              Service Unavailable
+            </Typography>
+          </Box>
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {error}
+            </Typography>
+            <Button 
+              variant="contained"
+              size="large"
+              onClick={initializeService}
+              startIcon={<RefreshIcon />}
               sx={{
                 borderRadius: 3,
-                bgcolor: alpha(theme.palette.error.main, 0.1),
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-                '& .MuiAlert-icon': {
-                  color: theme.palette.error.main
-                }
+                px: 4,
+                py: 1.5,
+                background: 'linear-gradient(135deg, #fc466b 0%, #3f5efb 100%)',
+                boxShadow: '0 8px 25px rgba(252, 70, 107, 0.4)',
+                '&:hover': {
+                  boxShadow: '0 12px 35px rgba(252, 70, 107, 0.6)',
+                  transform: 'translateY(-2px)'
+                },
+                transition: 'all 0.3s ease'
               }}
-              action={
-                <Button 
-                  color="inherit" 
-                  size="small" 
-                  onClick={initializeHRService}
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: 'none'
-                  }}
-                >
-                  Retry Connection
-                </Button>
-              }
             >
-              <Typography variant="h6" gutterBottom fontWeight={600}>
-                HR Service Unavailable
-              </Typography>
-              <Typography variant="body2">
-                {error}
-              </Typography>
-            </Alert>
-          </Slide>
-        </Container>
+              Retry Connection
+            </Button>
+          </CardContent>
+        </Card>
       </Box>
     );
   }
@@ -326,346 +312,441 @@ const HRSelfService = () => {
   const ActiveComponent = tabs[activeTab].component;
 
   return (
-    <Box sx={modernBackgroundStyle}>
-      <Container maxWidth="lg" sx={{ pt: 3, pb: 4 }}>
-        {/* Modern Header */}
-        <Fade in timeout={600}>
-          <Box sx={{ 
-            mb: 4, 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: 2
+    <Box sx={{
+      minHeight: '100vh',
+      background: `
+        radial-gradient(ellipse 1200px 800px at 50% 0%, ${alpha(currentTheme.color, 0.12)}, transparent),
+        radial-gradient(ellipse 800px 600px at 0% 100%, ${alpha(currentTheme.color, 0.08)}, transparent),
+        radial-gradient(ellipse 600px 400px at 100% 50%, ${alpha(currentTheme.color, 0.06)}, transparent),
+        linear-gradient(180deg, #fafafa 0%, #f8fafc 100%)
+      `
+    }}>
+      {/* Modern App Bar */}
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          background: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          color: theme.palette.text.primary
+        }}
+      >
+        <Toolbar sx={{ gap: 2 }}>
+          {/* Logo */}
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 3,
+            background: currentTheme.gradient,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 4px 20px ${currentTheme.shadow}`
           }}>
-            <Box>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                gutterBottom 
+            <DashboardIcon sx={{ color: 'white', fontSize: 24 }} />
+          </Box>
+
+          <Typography variant="h6" fontWeight="bold" sx={{ flex: 1 }}>
+            HR Self Service
+          </Typography>
+
+          {/* Status Indicator */}
+          {hrHealthStatus && (
+            <Chip
+              icon={hrHealthStatus.success ? <CheckIcon /> : <WarningIcon />}
+              label={hrHealthStatus.success ? 'Connected' : 'Offline'}
+              size="small"
+              sx={{
+                background: hrHealthStatus.success 
+                  ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                  : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                color: 'white',
+                fontWeight: 600,
+                border: 'none',
+                '& .MuiChip-icon': { color: 'white' }
+              }}
+            />
+          )}
+
+          {/* Action Buttons */}
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Notifications">
+              <IconButton size="small">
+                <NotificationsIcon />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title={refreshing ? 'Refreshing...' : 'Refresh'}>
+              <IconButton 
+                size="small" 
+                onClick={handleRefresh}
+                disabled={refreshing}
                 sx={{
-                  fontWeight: 800,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  color: 'transparent',
-                  mb: 1
+                  ...(refreshing && {
+                    animation: 'spin 1s linear infinite',
+                    '@keyframes spin': {
+                      '0%': { transform: 'rotate(0deg)' },
+                      '100%': { transform: 'rotate(360deg)' }
+                    }
+                  })
                 }}
               >
-                HR Self Service
-              </Typography>
-              
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                <Avatar 
-                  sx={{ 
-                    width: 32, 
-                    height: 32,
-                    bgcolor: theme.palette.primary.main,
-                    fontSize: '0.875rem'
-                  }}
-                >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="Settings">
+              <IconButton size="small">
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Avatar 
+              sx={{ 
+                width: 36, 
+                height: 36,
+                background: currentTheme.gradient,
+                fontWeight: 'bold'
+              }}
+            >
+              {(user?.email || 'U').charAt(0).toUpperCase()}
+            </Avatar>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Welcome Section */}
+        <Fade in timeout={600}>
+          <Card sx={{
+            mb: 3,
+            borderRadius: 5,
+            background: alpha(theme.palette.background.paper, 0.9),
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{
+              background: currentTheme.gradient,
+              p: 3,
+              color: 'white'
+            }}>
+              <Stack direction="row" spacing={3} alignItems="center">
+                <Avatar sx={{
+                  width: 60,
+                  height: 60,
+                  background: alpha('#ffffff', 0.2),
+                  backdropFilter: 'blur(10px)',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
                   {(user?.email || 'U').charAt(0).toUpperCase()}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={600} color="text.primary">
+                  <Typography variant="h4" fontWeight="bold" gutterBottom>
                     Welcome back!
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
                     {user?.email || 'user@company.com'}
                   </Typography>
                 </Box>
               </Stack>
-              
-              {/* Enhanced HR Service Status */}
-              {hrHealthStatus && (
-                <Zoom in timeout={800}>
-                  <Chip
-                    icon={hrHealthStatus.success ? <CheckIcon /> : <WarningIcon />}
-                    label={
-                      hrHealthStatus.success 
-                        ? `Connected • ${hrHealthStatus.data?.status || 'Active'}` 
-                        : 'Service Offline'
-                    }
-                    sx={{
-                      background: hrHealthStatus.success 
-                        ? 'linear-gradient(135deg, #10b981, #059669)'
-                        : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                      color: 'white',
-                      fontWeight: 600,
-                      boxShadow: hrHealthStatus.success 
-                        ? `0 4px 14px 0 ${alpha('#10b981', 0.3)}`
-                        : `0 4px 14px 0 ${alpha('#ef4444', 0.3)}`,
-                      border: 'none',
-                      '& .MuiChip-icon': {
-                        color: 'white'
-                      }
-                    }}
-                  />
-                </Zoom>
-              )}
             </Box>
-            
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="Notifications" arrow>
-                <IconButton 
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.background.paper, 0.8),
-                    backdropFilter: 'blur(10px)',
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.15)}`
-                    },
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  <NotificationIcon />
-                </IconButton>
-              </Tooltip>
-              
-              <Tooltip title={refreshing ? "Refreshing..." : "Refresh Data"} arrow>
-                <IconButton 
-                  onClick={handleRefresh} 
-                  disabled={refreshing}
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    backdropFilter: 'blur(10px)',
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    color: theme.palette.primary.main,
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.2),
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.25)}`
-                    },
-                    '&:disabled': {
-                      bgcolor: alpha(theme.palette.action.disabled, 0.1)
-                    },
-                    transition: 'all 0.2s ease-in-out',
-                    ...(refreshing && {
-                      animation: 'spin 1s linear infinite',
-                      '@keyframes spin': {
-                        '0%': { transform: 'rotate(0deg)' },
-                        '100%': { transform: 'rotate(360deg)' }
-                      }
-                    })
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-              
-              <Tooltip title="Settings" arrow>
-                <IconButton 
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.background.paper, 0.8),
-                    backdropFilter: 'blur(10px)',
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 25px ${alpha(theme.palette.secondary.main, 0.15)}`
-                    },
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  <SettingsIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>
+          </Card>
         </Fade>
 
-        {/* Enhanced Keka Authentication Status */}
+        {/* Keka Auth Warning */}
         {kekaAuthStatus && !kekaAuthStatus.connected && (
           <Slide in direction="up" timeout={700}>
-            <Box sx={{ mb: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 4,
-                  background: `linear-gradient(135deg, 
-                    ${alpha(theme.palette.warning.main, 0.1)} 0%, 
-                    ${alpha(theme.palette.warning.main, 0.05)} 100%
-                  )`,
-                  backdropFilter: 'blur(15px)',
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                  overflow: 'hidden'
-                }}
-              >
-                <KekaAuthCard onAuthStatusChange={setKekaAuthStatus} />
-              </Paper>
-            </Box>
+            <Card sx={{
+              mb: 3,
+              borderRadius: 5,
+              background: 'linear-gradient(135deg, rgba(255,152,0,0.1), rgba(255,193,7,0.05))',
+              backdropFilter: 'blur(20px)',
+              border: `2px solid ${alpha('#ff9800', 0.3)}`,
+              boxShadow: '0 8px 30px rgba(255,152,0,0.2)'
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Stack direction="row" spacing={2} alignItems="flex-start">
+                  <Box sx={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, #ff9800, #ffc107)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(255,152,0,0.3)'
+                  }}>
+                    <SecurityIcon sx={{ color: 'white', fontSize: 24 }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="h6" fontWeight="bold">
+                        Keka Account
+                      </Typography>
+                      <Chip 
+                        label="Not Connected" 
+                        size="small"
+                        sx={{
+                          background: 'linear-gradient(135deg, #ff9800, #ffc107)',
+                          color: 'white',
+                          fontWeight: 600
+                        }}
+                      />
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Connect your Keka account to access your HR data including leave balances, 
+                      attendance records, and payslips. You'll be redirected to Keka's secure login page.
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        variant="contained"
+                        startIcon={<LinkIcon />}
+                        sx={{
+                          background: 'linear-gradient(135deg, #ff9800, #ffc107)',
+                          borderRadius: 3,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          boxShadow: '0 4px 20px rgba(255,152,0,0.4)',
+                          '&:hover': {
+                            boxShadow: '0 6px 25px rgba(255,152,0,0.6)',
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                      >
+                        Connect Keka Account
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 3,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          borderColor: alpha('#ff9800', 0.5),
+                          color: '#ff9800'
+                        }}
+                      >
+                        Refresh Status
+                      </Button>
+                    </Stack>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
           </Slide>
         )}
 
-        {/* Modern Navigation Tabs */}
-        <Slide in direction="up" timeout={500}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              mb: 4,
-              borderRadius: 4,
-              bgcolor: alpha(theme.palette.background.paper, 0.8),
-              backdropFilter: 'blur(15px)',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              overflow: 'hidden',
-              position: 'relative'
-            }}
-          >
+        {/* Main Content Card */}
+        <Card sx={{
+          borderRadius: 6,
+          background: alpha(theme.palette.background.paper, 0.95),
+          backdropFilter: 'blur(25px)',
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: '0 12px 50px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+          minHeight: 600
+        }}>
+          {/* Enhanced Tabs */}
+          <Box sx={{ borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
             <Tabs
               value={activeTab}
-              onChange={handleTabChange}
-              variant="scrollable"
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              variant={isMobile ? 'scrollable' : 'standard'}
               scrollButtons="auto"
               sx={{
+                px: 1,
                 '& .MuiTab-root': {
-                  minHeight: 72,
                   textTransform: 'none',
-                  fontSize: '0.95rem',
                   fontWeight: 600,
-                  color: theme.palette.text.secondary,
-                  transition: 'all 0.3s ease-in-out',
-                  borderRadius: 2,
+                  fontSize: '0.95rem',
+                  minHeight: 64,
+                  borderRadius: 3,
                   margin: '8px 4px',
+                  color: theme.palette.text.secondary,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    color: theme.palette.primary.main,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    transform: 'translateY(-2px)'
+                    background: alpha(currentTheme.color, 0.08),
+                    color: currentTheme.color,
+                    transform: 'translateY(-1px)'
                   },
                   '&.Mui-selected': {
-                    color: theme.palette.primary.main,
+                    background: alpha(currentTheme.color, 0.1),
+                    color: currentTheme.color,
                     fontWeight: 700,
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`
+                    boxShadow: `0 4px 20px ${alpha(currentTheme.color, 0.2)}`
                   }
                 },
                 '& .MuiTabs-indicator': {
                   height: 3,
-                  borderRadius: 1.5,
-                  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+                  borderRadius: 2,
+                  background: currentTheme.gradient
                 }
               }}
             >
               {tabs.map((tab, index) => (
                 <Tab
                   key={index}
-                  icon={
-                    <Box sx={{ 
-                      color: activeTab === index ? tab.color : 'inherit',
-                      transition: 'color 0.3s ease'
-                    }}>
-                      {tab.icon}
-                    </Box>
-                  }
+                  icon={tab.icon}
                   label={tab.label}
                   iconPosition="start"
-                  sx={{ 
-                    display: 'flex',
+                  sx={{
                     flexDirection: 'row',
                     gap: 1.5
                   }}
                 />
               ))}
             </Tabs>
-          </Paper>
-        </Slide>
+          </Box>
 
-        {/* Enhanced Tab Content */}
-        <Fade in timeout={400} key={activeTab}>
-          <Paper
-            elevation={0}
-            sx={{
-              borderRadius: 4,
-              bgcolor: alpha(theme.palette.background.paper, 0.6),
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-              overflow: 'hidden',
-              minHeight: '500px',
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: tabs[activeTab].gradient,
-                zIndex: 1
-              }
-            }}
-          >
-            <Box sx={{ p: 3 }}>
-              <ActiveComponent {...(tabs[activeTab].props || {})} />
-            </Box>
-          </Paper>
-        </Fade>
-
-        {/* Modern Footer */}
-        <Fade in timeout={1000}>
-          <Box sx={{ 
-            mt: 6, 
-            pt: 3,
-            textAlign: 'center'
+          {/* Content Header */}
+          <Box sx={{
+            p: 3,
+            background: alpha(currentTheme.color, 0.04),
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`
           }}>
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.background.paper, 0.4),
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                py: 2,
-                px: 3
-              }}
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box sx={{
+                width: 50,
+                height: 50,
+                borderRadius: 4,
+                background: currentTheme.gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 6px 25px ${currentTheme.shadow}`
+              }}>
+                {tabs[activeTab].icon}
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight="bold">
+                  {tabs[activeTab].label}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Manage your {tabs[activeTab].label.toLowerCase()} information and settings
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          {/* Tab Content */}
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <React.Suspense 
+              fallback={
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress sx={{ color: currentTheme.color }} />
+                </Box>
+              }
             >
+              <ActiveComponent {...(tabs[activeTab].props || {})} />
+            </React.Suspense>
+          </CardContent>
+        </Card>
+
+        {/* Enhanced Footer */}
+        <Box sx={{ mt: 4 }}>
+          <Card sx={{
+            borderRadius: 5,
+            background: alpha(theme.palette.background.paper, 0.8),
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.06)'
+          }}>
+            <CardContent sx={{ p: 3 }}>
               <Stack 
                 direction={{ xs: 'column', sm: 'row' }} 
-                justifyContent="center" 
+                justifyContent="space-between" 
                 alignItems="center" 
                 spacing={2}
               >
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary" 
-                  fontWeight={500}
-                >
-                  HR Self Service powered by Keka Integration
-                </Typography>
-                
-                {hrHealthStatus?.data?.keka_configured === false && (
-                  <Chip 
-                    label="Keka Setup Required" 
-                    size="small" 
-                    color="warning" 
-                    variant="outlined"
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <DashboardIcon sx={{ color: 'white', fontSize: 24 }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold">
+                      HR Self Service
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Powered by Keka Integration
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack direction="row" spacing={2} alignItems="center">
+                  {hrHealthStatus?.data?.keka_configured === false && (
+                    <Chip 
+                      icon={<WarningIcon />}
+                      label="Setup Required" 
+                      size="small"
+                      sx={{
+                        background: 'linear-gradient(135deg, #f59e0b, #eab308)',
+                        color: 'white',
+                        fontWeight: 600,
+                        '& .MuiChip-icon': { color: 'white' }
+                      }}
+                    />
+                  )}
+                  
+                  <Chip
+                    icon={<TrendingUpIcon />}
+                    label="v2.2.0"
+                    size="small"
                     sx={{
-                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
                       fontWeight: 600,
-                      bgcolor: alpha(theme.palette.warning.main, 0.1),
-                      borderColor: alpha(theme.palette.warning.main, 0.3)
+                      '& .MuiChip-icon': { color: 'white' }
                     }}
                   />
-                )}
-                
-                <Chip
-                  icon={<TrendingUpIcon />}
-                  label="v2.1.0"
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    borderColor: alpha(theme.palette.primary.main, 0.2),
-                    color: theme.palette.primary.main
-                  }}
-                />
+                </Stack>
               </Stack>
-            </Paper>
-          </Box>
-        </Fade>
+            </CardContent>
+          </Card>
+        </Box>
       </Container>
+
+      {/* Mobile FAB */}
+      {isMobile && (
+        <Tooltip title={refreshing ? 'Refreshing...' : 'Refresh Data'}>
+          <IconButton
+            onClick={handleRefresh}
+            disabled={refreshing}
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              width: 56,
+              height: 56,
+              background: currentTheme.gradient,
+              color: 'white',
+              boxShadow: `0 8px 30px ${currentTheme.shadow}`,
+              '&:hover': {
+                boxShadow: `0 12px 40px ${currentTheme.shadow}`,
+                transform: 'scale(1.05)'
+              },
+              transition: 'all 0.3s ease',
+              zIndex: 1000
+            }}
+          >
+            {refreshing ? (
+              <CircularProgress size={24} sx={{ color: 'white' }} />
+            ) : (
+              <RefreshIcon />
+            )}
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 };
