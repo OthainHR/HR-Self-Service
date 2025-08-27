@@ -1,14 +1,61 @@
 import axios from 'axios';
 import { supabase } from './supabase';
 
-// Use the same API base URL as other services
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com';
-const HR_API_URL = `${API_BASE_URL}/api/hr`;
-const KEKA_AUTH_API_URL = `${API_BASE_URL}/api/keka-auth`;
+/**
+ * HR Service - Keka API Integration
+ * 
+ * Required Environment Variables:
+ * - REACT_APP_API_URL: Your backend API URL (e.g., http://localhost:8000)
+ * - REACT_APP_KEKA_API_URL: Your Keka company API URL (e.g., https://yourcompany.keka.com/api/v1)
+ * - REACT_APP_KEKA_CALENDAR_ID: Keka holidays calendar ID (optional, defaults to 'default')
+ * 
+ * Note: This service now directly calls Keka API endpoints according to their documentation
+ * at https://developers.keka.com/
+ */
 
-// Create axios instance for HR API calls
+// Keka API configuration
+const KEKA_API_URL = process.env.REACT_APP_KEKA_API_URL || 'https://yourcompany.keka.com/api/v1';
+const KEKA_AUTH_API_URL = `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/keka-auth`;
+
+// Create axios instance for Keka API calls
+const kekaApiClient = axios.create({
+  baseURL: KEKA_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor for Keka API to include access token
+kekaApiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      // Get Keka access token from your backend (stored after OAuth)
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!error && session?.access_token) {
+        // Call your backend to get the Keka access token for this user
+        const kekaTokenResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/keka-auth/token`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        
+        if (kekaTokenResponse.ok) {
+          const { access_token } = await kekaTokenResponse.json();
+          config.headers['Authorization'] = `Bearer ${access_token}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting Keka access token:', error);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Create axios instance for HR API calls (for backend-specific endpoints)
+// This is used for custom backend features like health checks, chat context, etc.
 const hrApiClient = axios.create({
-  baseURL: HR_API_URL,
+  baseURL: `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/hr`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -150,10 +197,19 @@ class HRService {
     }
   }
 
-  // Employee Profile
+  // Employee Profile - Get current user's profile
   async getMyProfile() {
     try {
-      const response = await hrApiClient.get('/profile');
+      // First get the current user's employee ID from Keka auth status
+      const authStatus = await this.checkKekaAuthStatus();
+      if (!authStatus.success || !authStatus.data?.keka_user_id) {
+        return {
+          success: false,
+          error: 'Keka account not connected or user ID not found'
+        };
+      }
+      
+      const response = await kekaApiClient.get(`/hris/employees/${authStatus.data.keka_user_id}`);
       return {
         success: true,
         data: response.data
@@ -166,8 +222,21 @@ class HRService {
   // Leave Management
   async getMyLeaveBalances(leaveType = null) {
     try {
-      const params = leaveType ? { leave_type: leaveType } : {};
-      const response = await hrApiClient.get('/leave/balances', { params });
+      // Get current user's employee ID
+      const authStatus = await this.checkKekaAuthStatus();
+      if (!authStatus.success || !authStatus.data?.keka_user_id) {
+        return {
+          success: false,
+          error: 'Keka account not connected or user ID not found'
+        };
+      }
+      
+      const params = {
+        employeeId: authStatus.data.keka_user_id
+      };
+      if (leaveType) params.leaveTypeId = leaveType;
+      
+      const response = await kekaApiClient.get('/time/leavebalance', { params });
       return {
         success: true,
         data: response.data
@@ -179,11 +248,22 @@ class HRService {
 
   async getMyLeaveHistory(fromDate = null, toDate = null) {
     try {
-      const params = {};
-      if (fromDate) params.from_date = fromDate;
-      if (toDate) params.to_date = toDate;
+      // Get current user's employee ID
+      const authStatus = await this.checkKekaAuthStatus();
+      if (!authStatus.success || !authStatus.data?.keka_user_id) {
+        return {
+          success: false,
+          error: 'Keka account not connected or user ID not found'
+        };
+      }
       
-      const response = await hrApiClient.get('/leave/history', { params });
+      const params = {
+        employeeId: authStatus.data.keka_user_id
+      };
+      if (fromDate) params.from = fromDate;
+      if (toDate) params.to = toDate;
+      
+      const response = await kekaApiClient.get('/time/leaverequests', { params });
       return {
         success: true,
         data: response.data
@@ -195,7 +275,22 @@ class HRService {
 
   async applyForLeave(leaveData) {
     try {
-      const response = await hrApiClient.post('/leave/apply', leaveData);
+      // Get current user's employee ID
+      const authStatus = await this.checkKekaAuthStatus();
+      if (!authStatus.success || !authStatus.data?.keka_user_id) {
+        return {
+          success: false,
+          error: 'Keka account not connected or user ID not found'
+        };
+      }
+      
+      // Add employee ID to leave data
+      const leaveRequestData = {
+        ...leaveData,
+        employeeId: authStatus.data.keka_user_id
+      };
+      
+      const response = await kekaApiClient.post('/time/leaverequests', leaveRequestData);
       return {
         success: true,
         data: response.data
@@ -208,12 +303,35 @@ class HRService {
   // Attendance
   async getMyAttendance(fromDate, toDate) {
     try {
-      const response = await hrApiClient.get('/attendance', {
-        params: {
-          from_date: fromDate,
-          to_date: toDate
+      // Get current user's employee ID
+      const authStatus = await this.checkKekaAuthStatus();
+      if (!authStatus.success || !authStatus.data?.keka_user_id) {
+        return {
+          success: false,
+          error: 'Keka account not connected or user ID not found'
+        };
+      }
+      
+      // Validate date range (Keka limits to 90 days)
+      if (fromDate && toDate) {
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        const diffDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
+        if (diffDays > 90) {
+          return {
+            success: false,
+            error: 'Date range cannot exceed 90 days (Keka API limitation)'
+          };
         }
-      });
+      }
+      
+      const params = {
+        employeeId: authStatus.data.keka_user_id
+      };
+      if (fromDate) params.from = fromDate;
+      if (toDate) params.to = toDate;
+      
+      const response = await kekaApiClient.get('/time/attendance', { params });
       return {
         success: true,
         data: response.data
@@ -229,11 +347,13 @@ class HRService {
 
   async getCurrentMonthAttendance() {
     try {
-      const response = await hrApiClient.get('/attendance/current-month');
-      return {
-        success: true,
-        data: response.data
-      };
+      // Get current month date range
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      // Use the main attendance method with current month dates
+      return await this.getMyAttendance(firstDay.toISOString().split('T')[0], lastDay.toISOString().split('T')[0]);
     } catch (error) {
       return {
         success: false,
@@ -243,9 +363,12 @@ class HRService {
     }
   }
 
-  // Payslips
+  // Payslips - Note: Keka doesn't have a direct payslip endpoint
+  // You may need to implement this through your backend or use alternative methods
   async getMyPayslip(month, year) {
     try {
+      // Since Keka doesn't have a direct payslip endpoint, 
+      // we'll need to implement this through your backend service
       const response = await hrApiClient.get('/payslip', {
         params: { month, year }
       });
@@ -256,7 +379,7 @@ class HRService {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to fetch payslip',
+        error: 'Payslip endpoint not available in Keka API. Implement through backend service.',
         status: error.response?.status
       };
     }
@@ -281,7 +404,7 @@ class HRService {
   // General Information
   async getLeaveTypes() {
     try {
-      const response = await hrApiClient.get('/leave-types');
+      const response = await kekaApiClient.get('/time/leavetypes');
       return {
         success: true,
         data: response.data
@@ -297,8 +420,12 @@ class HRService {
 
   async getCompanyHolidays(year = null) {
     try {
+      // Note: Keka holidays endpoint requires a calendar ID
+      // This is a limitation - you'll need to get the calendar ID from Keka admin
+      const calendarId = process.env.REACT_APP_KEKA_CALENDAR_ID || 'default';
       const params = year ? { year } : {};
-      const response = await hrApiClient.get('/holidays', { params });
+      
+      const response = await kekaApiClient.get(`/time/holidayscalendar/${calendarId}/holidays`, { params });
       return {
         success: true,
         data: response.data
@@ -306,7 +433,7 @@ class HRService {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to fetch holidays',
+        error: error.response?.data?.detail || 'Failed to fetch holidays. Note: Requires calendar ID configuration.',
         status: error.response?.status
       };
     }
@@ -314,11 +441,22 @@ class HRService {
 
   async getUpcomingHolidays() {
     try {
-      const response = await hrApiClient.get('/holidays/upcoming');
-      return {
-        success: true,
-        data: response.data
-      };
+      // Get upcoming holidays using the company holidays method
+      // This will return all holidays, you can filter for upcoming ones in the frontend
+      const response = await this.getCompanyHolidays();
+      if (response.success && response.data) {
+        const now = new Date();
+        const upcomingHolidays = response.data.filter(holiday => {
+          const holidayDate = new Date(holiday.date);
+          return holidayDate >= now;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        return {
+          success: true,
+          data: upcomingHolidays
+        };
+      }
+      return response;
     } catch (error) {
       return {
         success: false,
@@ -328,7 +466,7 @@ class HRService {
     }
   }
 
-  // HR Chat Integration
+  // HR Chat Integration - Uses backend API for custom chat context
   async getHRContextForChat(query) {
     try {
       const response = await hrApiClient.post('/chat/context', { query });
@@ -345,7 +483,7 @@ class HRService {
     }
   }
 
-  // Health Check
+  // Health Check - Uses backend API for service health
   async checkHRServiceHealth() {
     try {
       const response = await hrApiClient.get('/health');

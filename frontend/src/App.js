@@ -45,7 +45,7 @@ const createAppTheme = (mode) => createTheme({
   palette: {
     mode,
     primary: {
-      main: 'rgba(17, 179, 207, 0.8)', // Modern blue
+      main: '#AD00A1', // Modern blue
       light: '#738eef',
       dark: '#2f44b0',
       contrastText: '#ffffff',
@@ -61,7 +61,7 @@ const createAppTheme = (mode) => createTheme({
       paper: mode === 'dark' ? '#1e1e1e' : '#ffffff',
     },
     info: {
-      main: '#4cc9f0', // Light blue
+      main: '#FF883B', // Light blue
     },
     success: {
       main: '#4cd97b', // Green

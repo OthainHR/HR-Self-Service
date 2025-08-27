@@ -305,7 +305,7 @@ const HRLeaveManagement = () => {
                   ))}
                 </Grid>
               ) : (
-                <Alert severity="info" variant="outlined">
+                <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                   No leave balance information available
                 </Alert>
               )}
@@ -328,7 +328,7 @@ const HRLeaveManagement = () => {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => setShowApplyDialog(true)}
-                    sx={{ mb: 1, py: 1.5 }}
+                    sx={{ mb: 1, py: 1.5, borderRadius: 1.5 }}
                   >
                     Apply for Leave
                   </Button>
@@ -340,7 +340,7 @@ const HRLeaveManagement = () => {
                     variant="outlined"
                     startIcon={<HistoryIcon />}
                     onClick={() => setShowHistoryDialog(true)}
-                    sx={{ py: 1.5 }}
+                    sx={{ py: 1.5, borderRadius: 1.5 }}
                   >
                     View Leave History
                   </Button>
@@ -475,7 +475,7 @@ const HRLeaveManagement = () => {
 
               {leaveForm.from_date && leaveForm.to_date && (
                 <Grid item xs={12}>
-                  <Alert severity="info" variant="outlined">
+                  <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                     <Typography variant="body2">
                       <strong>Duration:</strong> {
                         leaveForm.is_half_day ? '0.5 day' :

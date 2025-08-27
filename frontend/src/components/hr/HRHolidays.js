@@ -157,7 +157,7 @@ const HRHolidays = () => {
             </Box>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
                 {error}
               </Alert>
             )}
@@ -242,7 +242,7 @@ const HRHolidays = () => {
                 ))}
               </List>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 No holidays found for {selectedYear}
               </Alert>
             )}
@@ -274,7 +274,8 @@ const HRHolidays = () => {
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            bgcolor: getHolidayTypeColor(holiday.type) + '.light'
+                            bgcolor: getHolidayTypeColor(holiday.type) + '.light',
+                            borderRadius: 1.5
                           }}
                         >
                           <Typography variant="caption" sx={{ fontSize: '0.6rem', lineHeight: 1 }}>
@@ -324,7 +325,7 @@ const HRHolidays = () => {
                 ))}
               </List>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 No upcoming holidays found
               </Alert>
             )}
@@ -337,8 +338,8 @@ const HRHolidays = () => {
               
               <Grid container spacing={1}>
                 <Grid item xs={6}>
-                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'error.light', textAlign: 'center' }}>
-                    <Typography variant="h6" color="error.main">
+                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'error.light', textAlign: 'center', borderRadius: 1.5 }}>
+                    <Typography variant="h6" color="white">
                       {holidays.filter(h => h.type === 'national').length}
                     </Typography>
                     <Typography variant="caption" color="error.dark">
@@ -347,8 +348,8 @@ const HRHolidays = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
-                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'warning.light', textAlign: 'center' }}>
-                    <Typography variant="h6" color="warning.main">
+                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'warning.light', textAlign: 'center', borderRadius: 1.5 }}>
+                    <Typography variant="h6" color="white">
                       {holidays.filter(h => h.type === 'regional').length}
                     </Typography>
                     <Typography variant="caption" color="warning.dark">
@@ -357,8 +358,8 @@ const HRHolidays = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
-                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'primary.light', textAlign: 'center' }}>
-                    <Typography variant="h6" color="primary.main">
+                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'primary.light', textAlign: 'center', borderRadius: 1.5 }}>
+                    <Typography variant="h6" color="white">
                       {holidays.filter(h => h.type === 'company').length}
                     </Typography>
                     <Typography variant="caption" color="primary.dark">
@@ -367,8 +368,8 @@ const HRHolidays = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
-                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'info.light', textAlign: 'center' }}>
-                    <Typography variant="h6" color="info.main">
+                  <Paper elevation={0} sx={{ p: 1, bgcolor: 'info.light', textAlign: 'center', borderRadius: 1.5 }}>
+                    <Typography variant="h6" color="white">
                       {holidays.filter(h => h.is_optional).length}
                     </Typography>
                     <Typography variant="caption" color="info.dark">

@@ -132,7 +132,7 @@ const HRProfile = () => {
 
   if (error) {
     return (
-      <Alert severity="error" action={null}>
+      <Alert severity="error" action={null} sx={{ borderRadius: 1.5 }}>
         <Typography variant="h6" gutterBottom>
           Failed to Load Profile
         </Typography>
@@ -143,7 +143,7 @@ const HRProfile = () => {
 
   if (!profile) {
     return (
-      <Alert severity="info">
+      <Alert severity="info" sx={{ borderRadius: 1.5 }}>
         Profile information is not available.
       </Alert>
     );

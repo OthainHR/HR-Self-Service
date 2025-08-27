@@ -76,45 +76,45 @@ const HRSelfService = () => {
   const tabThemes = useMemo(() => [
     {
       name: 'Dashboard',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      gradient: 'white',
       color: '#667eea',
-      shadow: 'rgba(102, 126, 234, 0.4)'
+      shadow: 'none'
     },
     {
       name: 'Profile', 
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      gradient: 'white',
       color: '#f093fb',
       shadow: 'rgba(240, 147, 251, 0.4)'
     },
     {
       name: 'Leave',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 
+      gradient: 'white', 
       color: '#4facfe',
       shadow: 'rgba(79, 172, 254, 0.4)'
     },
     {
       name: 'Attendance',
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      gradient: 'white',
       color: '#43e97b', 
       shadow: 'rgba(67, 233, 123, 0.4)'
     },
     {
       name: 'Payslips',
-      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      gradient: 'white',
       color: '#fa709a',
       shadow: 'rgba(250, 112, 154, 0.4)'
     },
     {
       name: 'Holidays',
-      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-      color: '#a8edea',
+      gradient: 'white',
+      color: '#000000',
       shadow: 'rgba(168, 237, 234, 0.4)'
     }
   ], []);
 
   const tabs = useMemo(() => [
-    { label: 'Dashboard', icon: <DashboardIcon />, component: HRDashboard, props: { data: dashboardData } },
-    { label: 'Profile', icon: <PersonIcon />, component: HRProfile },
+    { label: 'Dashboard', component: HRDashboard, props: { data: dashboardData } },
+    { label: 'Profile', icon: <PersonIcon color="white"/>, component: HRProfile },
     { label: 'Leave', icon: <LeaveIcon />, component: HRLeaveManagement },
     { label: 'Attendance', icon: <AttendanceIcon />, component: HRAttendance },
     { label: 'Payslips', icon: <PayslipIcon />, component: HRPayslips },
@@ -190,6 +190,18 @@ const HRSelfService = () => {
     }
   };
 
+  const checkKekaAuthStatus = async () => {
+    try {
+      const kekaStatus = await hrService.checkKekaAuthStatus();
+      setKekaAuthStatus(kekaStatus.success ? kekaStatus.data : { connected: false });
+      return kekaStatus;
+    } catch (error) {
+      console.error('Failed to check Keka auth status:', error);
+      setKekaAuthStatus({ connected: false });
+      return { success: false, error: error.message };
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -210,7 +222,7 @@ const HRSelfService = () => {
           width: '100%',
           p: 4,
           textAlign: 'center',
-          borderRadius: 6,
+          borderRadius: 4,
           background: alpha(theme.palette.background.paper, 0.95),
           backdropFilter: 'blur(20px)',
           boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
@@ -342,23 +354,23 @@ const HRSelfService = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: `0 4px 20px ${currentTheme.shadow}`
+            boxShadow: `none`
           }}>
-            <DashboardIcon sx={{ color: 'white', fontSize: 24 }} />
+              
           </Box>
 
           <Typography variant="h6" fontWeight="bold" sx={{ flex: 1 }}>
             HR Self Service
           </Typography>
 
-          {/* Status Indicator */}
-          {hrHealthStatus && (
+          {/* Status Indicator - Shows Keka connection status */}
+          {kekaAuthStatus && (
             <Chip
-              icon={hrHealthStatus.success ? <CheckIcon /> : <WarningIcon />}
-              label={hrHealthStatus.success ? 'Connected' : 'Offline'}
+              icon={kekaAuthStatus.connected ? <CheckIcon /> : <WarningIcon />}
+              label={kekaAuthStatus.connected ? 'Connected' : 'Not Connected'}
               size="small"
               sx={{
-                background: hrHealthStatus.success 
+                background: kekaAuthStatus.connected 
                   ? 'linear-gradient(135deg, #22c55e, #16a34a)'
                   : 'linear-gradient(135deg, #ef4444, #dc2626)',
                 color: 'white',
@@ -371,37 +383,6 @@ const HRSelfService = () => {
 
           {/* Action Buttons */}
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Notifications">
-              <IconButton size="small">
-                <NotificationsIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title={refreshing ? 'Refreshing...' : 'Refresh'}>
-              <IconButton 
-                size="small" 
-                onClick={handleRefresh}
-                disabled={refreshing}
-                sx={{
-                  ...(refreshing && {
-                    animation: 'spin 1s linear infinite',
-                    '@keyframes spin': {
-                      '0%': { transform: 'rotate(0deg)' },
-                      '100%': { transform: 'rotate(360deg)' }
-                    }
-                  })
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Settings">
-              <IconButton size="small">
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
-
             <Avatar 
               sx={{ 
                 width: 36, 
@@ -421,7 +402,7 @@ const HRSelfService = () => {
         <Fade in timeout={600}>
           <Card sx={{
             mb: 3,
-            borderRadius: 5,
+            borderRadius: 4,
             background: alpha(theme.palette.background.paper, 0.9),
             backdropFilter: 'blur(20px)',
             border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -438,17 +419,19 @@ const HRSelfService = () => {
                   width: 60,
                   height: 60,
                   background: alpha('#ffffff', 0.2),
+                  border: '1px solid #000000',
                   backdropFilter: 'blur(10px)',
                   fontSize: '1.5rem',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  color: 'black'
                 }}>
                   {(user?.email || 'U').charAt(0).toUpperCase()}
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" fontWeight="bold" gutterBottom>
+                  <Typography variant="h4" fontWeight="bold" gutterBottom color="black">
                     Welcome back!
                   </Typography>
-                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  <Typography variant="body1" sx={{ opacity: 0.9, color: 'black' }}>
                     {user?.email || 'user@company.com'}
                   </Typography>
                 </Box>
@@ -489,11 +472,12 @@ const HRSelfService = () => {
                       </Typography>
                       <Chip 
                         label="Not Connected" 
-                        size="small"
+                        size="medium"
                         sx={{
                           background: 'linear-gradient(135deg, #ff9800, #ffc107)',
                           color: 'white',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          padding: 1.5
                         }}
                       />
                     </Stack>
@@ -505,6 +489,59 @@ const HRSelfService = () => {
                       <Button
                         variant="contained"
                         startIcon={<LinkIcon />}
+                        onClick={async () => {
+                          try {
+                            // Get authorization URL from backend
+                            const result = await hrService.getKekaAuthUrl();
+                            if (result.success && result.data.authorization_url) {
+                              // Open OAuth popup
+                              const popup = window.open(
+                                result.data.authorization_url, 
+                                'kekaAuth', 
+                                'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,toolbar=no,menubar=no'
+                              );
+                              
+                              // If popup blocked, show user-friendly message
+                              if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                                alert('Popup blocked! Please allow popups for this site and try again.');
+                                return;
+                              }
+                              
+                              // Listen for OAuth completion
+                              const handleMessage = (event) => {
+                                if (event.data.type === 'keka-oauth-result') {
+                                  if (popup && !popup.closed) {
+                                    popup.close();
+                                  }
+                                  window.removeEventListener('message', handleMessage);
+                                  
+                                  if (event.data.status === 'success') {
+                                    // Refresh auth status
+                                    checkKekaAuthStatus();
+                                    // Trigger refresh of HR data
+                                    window.dispatchEvent(new CustomEvent('hrRefresh'));
+                                  } else {
+                                    console.error('OAuth authentication failed:', event.data.error);
+                                  }
+                                }
+                              };
+                              
+                              window.addEventListener('message', handleMessage);
+                              
+                              // Check if popup was closed manually
+                              const checkClosed = setInterval(() => {
+                                if (!popup || popup.closed) {
+                                  clearInterval(checkClosed);
+                                  window.removeEventListener('message', handleMessage);
+                                }
+                              }, 1000);
+                            } else {
+                              console.error('Failed to get authorization URL:', result.error);
+                            }
+                          } catch (error) {
+                            console.error('Failed to initiate Keka authentication:', error);
+                          }
+                        }}
                         sx={{
                           background: 'linear-gradient(135deg, #ff9800, #ffc107)',
                           borderRadius: 3,
@@ -521,6 +558,13 @@ const HRSelfService = () => {
                       </Button>
                       <Button
                         variant="outlined"
+                        onClick={async () => {
+                          try {
+                            await checkKekaAuthStatus();
+                          } catch (error) {
+                            console.error('Failed to refresh Keka status:', error);
+                          }
+                        }}
                         sx={{
                           borderRadius: 3,
                           textTransform: 'none',
@@ -541,7 +585,7 @@ const HRSelfService = () => {
 
         {/* Main Content Card */}
         <Card sx={{
-          borderRadius: 6,
+          borderRadius: 4.5,
           background: alpha(theme.palette.background.paper, 0.95),
           backdropFilter: 'blur(25px)',
           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -624,7 +668,7 @@ const HRSelfService = () => {
                 <Typography variant="h5" fontWeight="bold">
                   {tabs[activeTab].label}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="black">
                   Manage your {tabs[activeTab].label.toLowerCase()} information and settings
                 </Typography>
               </Box>
@@ -648,7 +692,7 @@ const HRSelfService = () => {
         {/* Enhanced Footer */}
         <Box sx={{ mt: 4 }}>
           <Card sx={{
-            borderRadius: 5,
+            borderRadius: 2.5,
             background: alpha(theme.palette.background.paper, 0.8),
             backdropFilter: 'blur(20px)',
             border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -660,18 +704,23 @@ const HRSelfService = () => {
                 justifyContent="space-between" 
                 alignItems="center" 
                 spacing={2}
+                sx={{
+                  border: '1px solid #000000',
+                  borderRadius: 1.5,
+                  p: 1
+                }}
               >
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Box sx={{
                     width: 44,
                     height: 44,
-                    borderRadius: 3,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 2.5,
+                    background: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <DashboardIcon sx={{ color: 'white', fontSize: 24 }} />
+                    
                   </Box>
                   <Box>
                     <Typography variant="h6" fontWeight="bold">

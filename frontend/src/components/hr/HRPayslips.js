@@ -105,6 +105,7 @@ const HRPayslips = () => {
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 label="Month"
+                sx={{ borderRadius: 1.5 }}
               >
                 {months.map((month, index) => (
                   <MenuItem key={index} value={index + 1}>
@@ -121,6 +122,7 @@ const HRPayslips = () => {
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 label="Year"
+                sx={{ borderRadius: 1.5 }}
               >
                 {years.map((year) => (
                   <MenuItem key={year} value={year}>
@@ -136,7 +138,7 @@ const HRPayslips = () => {
               variant="outlined"
               startIcon={<DownloadIcon />}
               disabled={!payslip}
-              sx={{ height: 56 }}
+              sx={{ height: 56, borderRadius: 1.5 }}
             >
               Download PDF
             </Button>
@@ -144,7 +146,7 @@ const HRPayslips = () => {
         </Grid>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
             {error}
           </Alert>
         )}
@@ -261,7 +263,7 @@ const HRPayslips = () => {
             </Grid>
           </Box>
         ) : (
-          <Alert severity="info" variant="outlined">
+          <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
             No payslip found for {months[selectedMonth - 1]} {selectedYear}
           </Alert>
         )}

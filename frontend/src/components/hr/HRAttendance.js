@@ -132,7 +132,7 @@ const HRAttendance = () => {
             ))}
           </Grid>
         ) : (
-          <Alert severity="info" variant="outlined">
+          <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
             No attendance records found for this month
           </Alert>
         )}

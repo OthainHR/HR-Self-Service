@@ -57,7 +57,7 @@ const HRDashboard = ({ data }) => {
         <Card elevation={2}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <PersonIcon sx={{ mr: 1, color: 'black' }} />
               <Typography variant="h6">Profile Summary</Typography>
             </Box>
             
@@ -86,7 +86,7 @@ const HRDashboard = ({ data }) => {
                 </Typography>
               </Box>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 Profile information not available
               </Alert>
             )}
@@ -99,7 +99,7 @@ const HRDashboard = ({ data }) => {
         <Card elevation={2}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <LeaveIcon sx={{ mr: 1, color: 'success.main' }} />
+              <LeaveIcon sx={{ mr: 1, color: 'black' }} />
               <Typography variant="h6">Leave Balances</Typography>
             </Box>
             
@@ -136,7 +136,7 @@ const HRDashboard = ({ data }) => {
                 )}
               </Box>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 Leave balance information not available
               </Alert>
             )}
@@ -149,7 +149,7 @@ const HRDashboard = ({ data }) => {
         <Card elevation={2}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <AttendanceIcon sx={{ mr: 1, color: 'info.main' }} />
+              <AttendanceIcon sx={{ mr: 1, color: 'black' }} />
               <Typography variant="h6">This Month's Attendance</Typography>
             </Box>
             
@@ -207,7 +207,7 @@ const HRDashboard = ({ data }) => {
                 </Box>
               </Box>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 Attendance data not available
               </Alert>
             )}
@@ -220,7 +220,7 @@ const HRDashboard = ({ data }) => {
         <Card elevation={2}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <HolidayIcon sx={{ mr: 1, color: 'secondary.main' }} />
+              <HolidayIcon sx={{ mr: 1, color: 'black' }} />
               <Typography variant="h6">Upcoming Holidays</Typography>
             </Box>
             
@@ -283,7 +283,7 @@ const HRDashboard = ({ data }) => {
                 )}
               </List>
             ) : (
-              <Alert severity="info" variant="outlined">
+              <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
                 No upcoming holidays found
               </Alert>
             )}
@@ -292,18 +292,18 @@ const HRDashboard = ({ data }) => {
       </Grid>
 
       {/* Quick Actions Card */}
-      <Grid item xs={12}>
-        <Card elevation={2}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} />
+      <Grid item xs={12} sx={{ borderRadius: 2.5 }}>
+        <Card elevation={2} sx={{ borderRadius: 2.5 }}>
+          <CardContent sx={{ borderRadius: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, borderRadius: 2.5 }}>
+              <TrendingUpIcon sx={{ mr: 1, color: 'black' }} />
               <Typography variant="h6">Quick Insights</Typography>
             </Box>
             
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
-                  <Typography variant="h4" color="primary.main" gutterBottom>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', borderRadius: 2 }}>
+                  <Typography variant="h4" color="white" gutterBottom>
                     {leaveBalances?.reduce((total, balance) => total + balance.remaining, 0) || 0}
                   </Typography>
                   <Typography variant="body2" color="primary.dark">
@@ -313,8 +313,8 @@ const HRDashboard = ({ data }) => {
               </Grid>
               
               <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-                  <Typography variant="h4" color="success.main" gutterBottom>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 2 }}>
+                  <Typography variant="h4" color="white" gutterBottom>
                     {attendanceSummary?.present || 0}
                   </Typography>
                   <Typography variant="body2" color="success.dark">
@@ -324,8 +324,8 @@ const HRDashboard = ({ data }) => {
               </Grid>
               
               <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-                  <Typography variant="h4" color="info.main" gutterBottom>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', borderRadius: 2 }}>
+                  <Typography variant="h4" color="white" gutterBottom>
                     {upcomingHolidays?.length || 0}
                   </Typography>
                   <Typography variant="body2" color="info.dark">
@@ -335,8 +335,8 @@ const HRDashboard = ({ data }) => {
               </Grid>
               
               <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-                  <Typography variant="h4" color="warning.main" gutterBottom>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', borderRadius: 2 }}>
+                  <Typography variant="h4" color="white" gutterBottom>
                     {profile ? Math.floor((new Date() - new Date(profile.join_date)) / (1000 * 60 * 60 * 24 * 365.25)) : 0}
                   </Typography>
                   <Typography variant="body2" color="warning.dark">
