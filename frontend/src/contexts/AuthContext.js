@@ -150,7 +150,10 @@ export const AuthProvider = ({ children }) => {
     const accessToken = session?.access_token;
     if (!accessToken) throw new Error("Not authenticated");
 
-    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://sethhceiojxrevvpzupf.supabase.co';
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('Missing Supabase URL configuration');
+    }
     const res = await fetch(`${supabaseUrl}/functions/v1/reset-password`, {
       method: 'POST',
       headers: {

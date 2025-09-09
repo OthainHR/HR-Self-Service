@@ -19,14 +19,16 @@ const isAdminUser = (email?: string, role?: string) => {
 
 serve(async (req) => {
   // Handle CORS preflight request
+  const ALLOW_ORIGIN = "https://ess.othain.com";
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      status: 200,
+      status: 204,
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": ALLOW_ORIGIN,
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Max-Age": "86400",
+        "Vary": "Origin",
       },
     });
   }
@@ -36,7 +38,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Method not allowed" }), { 
         status: 405,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": ALLOW_ORIGIN,
           "Content-Type": "application/json",
         }
       });
@@ -51,7 +53,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { 
         status: 403,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": ALLOW_ORIGIN,
           "Content-Type": "application/json",
         }
       });
@@ -63,7 +65,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing user_id/email or new_password" }), { 
         status: 400,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": ALLOW_ORIGIN,
           "Content-Type": "application/json",
         }
       });
@@ -91,7 +93,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "User not found for given email" }), { 
           status: 404,
           headers: {
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": ALLOW_ORIGIN,
             "Content-Type": "application/json",
           }
         });
@@ -104,7 +106,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: error.message }), { 
         status: 400,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": ALLOW_ORIGIN,
           "Content-Type": "application/json",
         }
       });
@@ -113,7 +115,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, user_id: targetId, updated_at: data?.user?.updated_at }), { 
       status: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": ALLOW_ORIGIN,
         "Content-Type": "application/json",
       }
     });
@@ -121,7 +123,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: e?.message ?? "Unexpected error" }), { 
       status: 500,
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": ALLOW_ORIGIN,
         "Content-Type": "application/json",
       }
     });

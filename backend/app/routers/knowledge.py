@@ -58,6 +58,12 @@ async def add_document(
             detail="Only admin@example.com can add documents (temporary check)"
         )
     
+    # Basic payload blocklist to reduce risk of injection/XSS payloads
+    blocked_substrings = ["<script", "</script>", "onerror=", "onload=", "javascript:", "drop table", "union select", "<iframe", "</iframe>"]
+    lower_text = (document.text or "").lower()
+    if any(b in lower_text for b in blocked_substrings):
+        raise HTTPException(status_code=400, detail="Blocked content detected in document text")
+
     logger.info(f"Processing document: title={document.title}, source={document.source}")
     logger.info(f"Document text (first 50 chars): {document.text[:50]}...")
     
@@ -108,13 +114,27 @@ async def upload_file(
     
     logger.info(f"Processing uploaded file: {file.filename}")
     try:
+        # Basic upload validations: size cap (2MB), extension allowlist, content-type check
+        allowed_extensions = {"txt", "md", "json"}
+        allowed_content_types = {"text/plain", "application/json"}
+        filename = file.filename or ""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext not in allowed_extensions:
+            raise HTTPException(status_code=400, detail="Invalid file type. Allowed: txt, md, json")
+        if file.content_type not in allowed_content_types:
+            raise HTTPException(status_code=400, detail="Invalid content type")
         content = await file.read()
-        text = content.decode("utf-8")
+        if len(content) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large (max 2MB)")
+        # Simple magic-byte check for text/json (reject obvious binaries)
+        if b"\x00" in content[:1024]:
+            raise HTTPException(status_code=400, detail="Binary files are not allowed")
+        text = content.decode("utf-8", errors="strict")
         logger.info(f"File content decoded (first 50 chars): {text[:50]}...")
         
         try:
             meta_dict = json.loads(metadata)
-        except:
+        except Exception:
             meta_dict = {}
             logger.warning("Could not parse metadata JSON, using defaults.")
         

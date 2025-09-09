@@ -6,6 +6,8 @@ from app.models.user import Token, User, UserCreate
 from app.services import auth_service
 from app.utils.auth_utils import get_current_active_user, create_access_token
 from datetime import datetime, timedelta
+import re
+from pathlib import Path
 
 router = APIRouter()
 
@@ -46,6 +48,32 @@ async def register_user(
     db: Session = Depends(get_db)
 ):
     """Register a new user."""
+    # Enforce strong password policy: min 12 chars, at least 3 of 4 classes
+    password = user.password or ""
+    classes = 0
+    classes += 1 if re.search(r"[A-Z]", password) else 0
+    classes += 1 if re.search(r"[a-z]", password) else 0
+    classes += 1 if re.search(r"[0-9]", password) else 0
+    classes += 1 if re.search(r"[^A-Za-z0-9]", password) else 0
+    if len(password) < 12 or classes < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password does not meet complexity requirements (min 12 chars and 3 of: upper, lower, digit, symbol)"
+        )
+    # Block top common passwords (local list)
+    try:
+        common_pw_path = Path(__file__).resolve().parent.parent / "utils" / "common_passwords.txt"
+        if common_pw_path.exists():
+            with open(common_pw_path, "r", encoding="utf-8", errors="ignore") as f:
+                common_passwords = set(line.strip() for line in f if line.strip())
+            if password.lower() in common_passwords:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Password is too common. Please choose a stronger password."
+                )
+    except Exception:
+        # Fail-closed not required here; continue without blocking if list cannot be read
+        pass
     db_user = auth_service.create_user(db, user)
     return db_user
 

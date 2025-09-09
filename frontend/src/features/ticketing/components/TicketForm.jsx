@@ -19,6 +19,28 @@ import { Delete as DeleteIcon } from '@mui/icons-material';
 const CLIENT_OPTIONS = ["IQVIA", "GBT", "Presidio", "Othain"];
 const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com', 'operations@othainsoft.com', 'ai@othainsoft.com'];
 
+// Upload hardening per VAPT plan (F4): limit types, sizes, sanitize names
+const ALLOWED_FILE_EXTENSIONS = new Set(['pdf','doc','docx','txt','jpg','jpeg','png','gif','xls','xlsx','csv']);
+const ALLOWED_MIME_PREFIXES = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain','image/jpeg','image/png','image/gif','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','text/csv'];
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB per file for tickets
+
+const sanitizeFilename = (name) => {
+  const parts = name.split('.');
+  const ext = parts.length > 1 ? parts.pop() : '';
+  const base = parts.join('.')
+    .replace(/[^a-zA-Z0-9-_\.]/g, '_')
+    .slice(0, 100) || 'file';
+  const safeExt = (ext || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return safeExt ? `${base}.${safeExt}` : base;
+};
+
+// Simple payload blocklist (F1) to prevent obviously dangerous input
+const blockedSubstrings = ["<script", "</script>", "onerror=", "onload=", "javascript:", "data:text/html", "<iframe", "</iframe>", "drop table", "union select"];
+const hasBlockedPayload = (text) => {
+  const t = (text || '').toString().toLowerCase();
+  return blockedSubstrings.some(s => t.includes(s));
+};
+
 export default function TicketForm({ onTicketCreated }) {
   const theme = useTheme(); // Get the theme object
   const isDarkMode = theme.palette.mode === 'dark'; // Determine if dark mode is active
@@ -345,10 +367,15 @@ export default function TicketForm({ onTicketCreated }) {
         if (attachments.length > 0) {
           const uploadResults = await Promise.all(
             attachments.map(async (file) => {
-              const filePath = `${newTicketId}/${file.name}`;
+              const fileName = sanitizeFilename(file.name || 'file');
+              const filePath = `${newTicketId}/${fileName}`;
               const { error } = await supabase.storage
                 .from('ticket-attachments')
-                .upload(filePath, file, { cacheControl: '3600', upsert: false });
+                .upload(filePath, file, {
+                  cacheControl: '3600',
+                  upsert: false,
+                  contentType: file.type || undefined,
+                });
               return error;
             })
           );
@@ -402,6 +429,21 @@ export default function TicketForm({ onTicketCreated }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Client-side validation per VAPT F1
+    if (name === 'title') {
+      if (value.length > 120) return;
+      if (hasBlockedPayload(value)) {
+        setError('Blocked content detected in Title');
+        return;
+      }
+    }
+    if (name === 'description') {
+      if (value.length > 5000) return;
+      if (hasBlockedPayload(value)) {
+        setError('Blocked content detected in Description');
+        return;
+      }
+    }
     setForm(prevForm => ({ ...prevForm, [name]: value }));
   };
 
@@ -451,8 +493,35 @@ export default function TicketForm({ onTicketCreated }) {
 
   // Handler to add attachments
   const handleAttachmentChange = (e) => {
-    const files = Array.from(e.target.files);
-    setAttachments(prev => [...prev, ...files]);
+    const files = Array.from(e.target.files || []);
+    const accepted = [];
+    for (const f of files) {
+      const origName = f.name || 'file';
+      const safeName = sanitizeFilename(origName);
+      const ext = (safeName.split('.').pop() || '').toLowerCase();
+      const type = f.type || '';
+      if (!ALLOWED_FILE_EXTENSIONS.has(ext)) {
+        setError(`File type .${ext} is not allowed`);
+        continue;
+      }
+      if (!ALLOWED_MIME_PREFIXES.some(p => type.startsWith(p))) {
+        setError(`Content type ${type || 'unknown'} not allowed`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE_BYTES) {
+        setError(`File ${origName} exceeds 5MB size limit`);
+        continue;
+      }
+      // Create a new File with sanitized name (where supported)
+      try {
+        const safeFile = new File([f], safeName, { type: f.type, lastModified: f.lastModified });
+        accepted.push(safeFile);
+      } catch {
+        // Fallback: accept original reference
+        accepted.push(f);
+      }
+    }
+    setAttachments(prev => [...prev, ...accepted]);
   };
 
   // Handler to remove single attachment

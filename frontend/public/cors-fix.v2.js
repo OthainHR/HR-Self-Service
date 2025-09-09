@@ -289,24 +289,7 @@
   window.testHRChatbotFixV2 = async () => {
     console.log('⚙️ HR Chatbot Fix v2.0: Running test...');
     
-    // Test the Supabase connection first
-    try {
-      const supabaseTest = await fetch('https://sethhceiojxrevvpzupf.supabase.co/rest/v1/chat_sessions?select=*&limit=1', {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyODI4MzYsImV4cCI6MjAyNTg1ODgzNn0.sG1hZJ5ZHJ4GpDlRHZqmC-RD4eTi4uFqP4vEG1FRWjU',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyODI4MzYsImV4cCI6MjAyNTg1ODgzNn0.sG1hZJ5ZHJ4GpDlRHZqmC-RD4eTi4uFqP4vEG1FRWjU'
-        }
-      });
-      
-      if (supabaseTest.ok) {
-        const data = await supabaseTest.json();
-        console.log('⚙️ HR Chatbot Fix v2.0: Supabase connection test successful:', data);
-      } else {
-        console.error('⚙️ HR Chatbot Fix v2.0: Supabase connection test failed:', supabaseTest.status);
-      }
-    } catch (error) {
-      console.error('⚙️ HR Chatbot Fix v2.0: Supabase test error:', error);
-    }
+    // Skip any direct Supabase tests; do not embed keys in client code
     
     // Then test the backend API
     try {

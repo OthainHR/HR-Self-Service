@@ -1,6 +1,9 @@
 # This is the main FastAPI application module (main:app)
 # For WSGI/Gunicorn deployments, this should be imported as "main:app"
 import os
+import time
+from collections import defaultdict
+from typing import Dict, List, Tuple
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -16,8 +19,11 @@ init_db()
 
 app = FastAPI(title="HR Chatbot API")
 
-# Get CORS origins from environment variable
-cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://othain-hr-self-service.vercel.app,https://ess.othain.com,capacitor://localhost,ionic://localhost,http://10.0.2.2:3000")
+# Get CORS origins from environment variable (strict allowlist by default)
+cors_origins_str = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,https://ess.othain.com,https://admin.othain.com,https://staging-ess.othain.com"
+)
 cors_origins = cors_origins_str.split(",")
 print(f"*** Allowed CORS Origins: {cors_origins} ***")
 
@@ -26,15 +32,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Optional: Add a catch-all for OPTIONS requests as a secondary safeguard.
 # This runs after CORSMiddleware but before specific routes.
 @app.options("/{full_path:path}")
 async def _preflight_ok(full_path: str):
-    return Response(status_code=200)
+    return Response(status_code=204)
 
 # Optional: Add a debug middleware to log authentication headers.
 # This runs after the OPTIONS handler, so it won't log pre-flight requests.
@@ -49,6 +55,65 @@ async def log_auth_headers(request: Request, call_next):
     return response
 
 # All other middleware and routers are added AFTER CORSMiddleware.
+
+# Security Headers Middleware (CSP report-only initially)
+@app.middleware("http")
+async def set_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Core security headers
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Vary", "Origin")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+    # CSP in Report-Only mode first
+    csp_report_only = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self'; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
+        "connect-src 'self' https://*.othain.com; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    response.headers.setdefault("Content-Security-Policy-Report-Only", csp_report_only)
+    # Optional legacy XSS header
+    response.headers.setdefault("X-XSS-Protection", "1; mode=block")
+    # HSTS only when behind HTTPS (respect proxies)
+    enable_hsts = os.getenv("ENABLE_HSTS", "true").lower() == "true"
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    scheme_is_https = (forwarded_proto == "https") or (str(request.url).startswith("https://"))
+    if enable_hsts and scheme_is_https:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+# Simple in-memory rate limiter for sensitive endpoints (per IP)
+RATE_LIMITS: Dict[str, Tuple[int, int]] = {
+    "/api/auth/token": (30, 10 * 60),  # max 30 requests per 10 minutes
+}
+rate_store: Dict[Tuple[str, str], List[float]] = defaultdict(list)
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    path = request.url.path
+    client_ip = (request.client.host if request.client else "unknown") or "unknown"
+    # Skip preflight requests
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    if path in RATE_LIMITS:
+        max_requests, window_seconds = RATE_LIMITS[path]
+        key = (client_ip, path)
+        now = time.time()
+        window_start = now - window_seconds
+        # prune old timestamps
+        recent = [ts for ts in rate_store[key] if ts >= window_start]
+        rate_store[key] = recent
+        if len(recent) >= max_requests:
+            return Response(status_code=429, content="Too Many Requests")
+        rate_store[key].append(now)
+    return await call_next(request)
 
 # Add a simple public test endpoint
 @app.get("/api/test")

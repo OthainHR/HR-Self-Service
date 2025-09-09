@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+import time
+from collections import defaultdict
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.user import UserDB, User, UserCreate
@@ -41,11 +43,36 @@ def create_user(db: Session, user: UserCreate):
 
 def authenticate_user(db: Session, username: str, password: str):
     """Authenticate a user."""
+    # Basic lockout after repeated failures per user ID
+    max_failures = 10
+    window_seconds = 10 * 60
+    lock_seconds = 10 * 60
+    now = time.time()
+    if not hasattr(authenticate_user, "_failures"):
+        authenticate_user._failures = defaultdict(list)  # type: ignore[attr-defined]
+    if not hasattr(authenticate_user, "_locks"):
+        authenticate_user._locks = {}  # type: ignore[attr-defined]
+    locks = authenticate_user._locks  # type: ignore[attr-defined]
+    failures = authenticate_user._failures  # type: ignore[attr-defined]
+    # Enforce lock if active
+    if username in locks and locks[username] > now:
+        return False
     user = get_user_by_username(db, username)
     if not user:
+        failures[username].append(now)
+        failures[username] = [t for t in failures[username] if t >= now - window_seconds]
+        if len(failures[username]) >= max_failures:
+            locks[username] = now + lock_seconds
         return False
     if not verify_password(password, user.hashed_password):
+        failures[username].append(now)
+        failures[username] = [t for t in failures[username] if t >= now - window_seconds]
+        if len(failures[username]) >= max_failures:
+            locks[username] = now + lock_seconds
         return False
+    # Successful login clears failures and locks
+    failures.pop(username, None)
+    locks.pop(username, None)
     return user
 
 def get_access_token(user: UserDB):
