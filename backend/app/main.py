@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import chat, auth, knowledge, user_management, feedback
+from app.routers import chat, auth, knowledge, user_management, feedback, hr, sync
 from app.core.config import settings
 
 app = FastAPI(
@@ -93,6 +93,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
 app.include_router(user_management.router, prefix="/api/user-management", tags=["user-management"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+app.include_router(hr.router, prefix="/api/hr", tags=["hr"])
+app.include_router(sync.router, prefix="/api/sync", tags=["sync"])
 
 @app.get("/")
 async def root():

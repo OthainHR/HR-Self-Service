@@ -22,7 +22,7 @@ import {
   TableRow
 } from '@mui/material';
 import { Receipt as PayslipIcon, Download as DownloadIcon } from '@mui/icons-material';
-import { hrService } from '../../services/hrService';
+import { hrService } from '../../services/hrServiceDirect';
 
 const HRPayslips = () => {
   const [payslip, setPayslip] = useState(null);

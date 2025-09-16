@@ -20,7 +20,7 @@ import {
   Paper
 } from '@mui/material';
 import { Event as HolidayIcon, Today as TodayIcon } from '@mui/icons-material';
-import { hrService } from '../../services/hrService';
+import { hrService } from '../../services/hrServiceDirect';
 
 const HRHolidays = () => {
   const [holidays, setHolidays] = useState([]);

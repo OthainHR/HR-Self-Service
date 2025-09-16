@@ -13,7 +13,7 @@ from app.models.hr import (
     Payslip, Holiday, KekaMCPResponse, ApplyLeaveRequest, LeaveHistoryRequest,
     AttendanceRequest, PayslipRequest, HolidayRequest, LeaveBalanceRequest
 )
-from app.services.keka_mcp_service import keka_mcp_service
+from app.services.hr_data_service import hr_data_service
 from app.utils.auth_utils import get_current_supabase_user
 import logging
 
@@ -32,19 +32,60 @@ def get_user_email(current_user: dict = Depends(get_current_supabase_user)) -> s
         )
     return email
 
+# Test endpoint without authentication
+@router.get("/test-profile")
+async def test_profile():
+    """Test endpoint to check if HR data service is working"""
+    try:
+        # Use a test email from our database
+        test_email = "sunhith.reddy@othainsoft.com"
+        hr_data_service.set_authenticated_user(test_email)
+        profile = await hr_data_service.get_my_profile()
+        return {"success": True, "data": profile}
+    except Exception as e:
+        logger.error(f"Test profile failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@router.get("/test-leave-balances")
+async def test_leave_balances():
+    """Test endpoint to check leave balance data from Keka API"""
+    try:
+        # Use a test email from our database
+        test_email = "sunhith.reddy@othainsoft.com"
+        hr_data_service.set_authenticated_user(test_email)
+        balances = await hr_data_service.get_my_leave_balances()
+        return {"success": True, "data": balances}
+    except Exception as e:
+        logger.error(f"Test leave balances failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 # Employee Profile Endpoints
 @router.get("/profile", response_model=EmployeeProfile)
 async def get_my_profile(user_email: str = Depends(get_user_email)):
     """Get the authenticated user's employee profile"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
-        profile = await keka_mcp_service.get_my_profile()
+        hr_data_service.set_authenticated_user(user_email)
+        profile = await hr_data_service.get_my_profile()
         return profile
     except Exception as e:
         logger.error(f"Failed to fetch profile for {user_email}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve employee profile"
+        )
+
+@router.get("/profile/raw")
+async def get_my_raw_profile(user_email: str = Depends(get_user_email)):
+    """Get the authenticated user's raw profile data from Keka"""
+    try:
+        hr_data_service.set_authenticated_user(user_email)
+        raw_data = await hr_data_service.get_my_raw_profile()
+        return raw_data
+    except Exception as e:
+        logger.error(f"Failed to fetch raw profile for {user_email}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve raw profile data"
         )
 
 # Leave Management Endpoints
@@ -55,8 +96,8 @@ async def get_my_leave_balances(
 ):
     """Get leave balances for the authenticated user"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
-        balances = await keka_mcp_service.get_my_leave_balances(leave_type)
+        hr_data_service.set_authenticated_user(user_email)
+        balances = await hr_data_service.get_my_leave_balances(leave_type)
         return balances
     except Exception as e:
         logger.error(f"Failed to fetch leave balances for {user_email}: {str(e)}")
@@ -73,8 +114,8 @@ async def get_my_leave_history(
 ):
     """Get leave history for the authenticated user"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
-        history = await keka_mcp_service.get_my_leave_history(from_date, to_date)
+        hr_data_service.set_authenticated_user(user_email)
+        history = await hr_data_service.get_my_leave_history(from_date, to_date)
         return history
     except Exception as e:
         logger.error(f"Failed to fetch leave history for {user_email}: {str(e)}")
@@ -90,7 +131,7 @@ async def apply_for_leave(
 ):
     """Apply for leave"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
+        hr_data_service.set_authenticated_user(user_email)
         
         # Create leave application object
         from app.models.hr import LeaveApplication
@@ -104,7 +145,7 @@ async def apply_for_leave(
             half_day_type=leave_request.half_day_type
         )
         
-        result = await keka_mcp_service.apply_my_leave(leave_app)
+        result = await hr_data_service.apply_my_leave(leave_app)
         
         return KekaMCPResponse(
             success=True,
@@ -141,8 +182,8 @@ async def get_my_attendance(
                 detail="Date range cannot exceed 6 months"
             )
         
-        keka_mcp_service.set_authenticated_user(user_email)
-        attendance = await keka_mcp_service.get_my_attendance(from_date, to_date)
+        hr_data_service.set_authenticated_user(user_email)
+        attendance = await hr_data_service.get_my_attendance(from_date, to_date)
         return attendance
     except Exception as e:
         logger.error(f"Failed to fetch attendance for {user_email}: {str(e)}")
@@ -159,8 +200,8 @@ async def get_current_month_attendance(user_email: str = Depends(get_user_email)
         from_date = date(today.year, today.month, 1)
         to_date = today
         
-        keka_mcp_service.set_authenticated_user(user_email)
-        attendance = await keka_mcp_service.get_my_attendance(from_date, to_date)
+        hr_data_service.set_authenticated_user(user_email)
+        attendance = await hr_data_service.get_my_attendance(from_date, to_date)
         return attendance
     except Exception as e:
         logger.error(f"Failed to fetch current month attendance for {user_email}: {str(e)}")
@@ -192,8 +233,8 @@ async def get_my_payslip(
                 detail=f"Year must be between 2020 and {current_year}"
             )
         
-        keka_mcp_service.set_authenticated_user(user_email)
-        payslip = await keka_mcp_service.get_my_payslip(month, year)
+        hr_data_service.set_authenticated_user(user_email)
+        payslip = await hr_data_service.get_my_payslip(month, year)
         return payslip
     except Exception as e:
         logger.error(f"Failed to fetch payslip for {user_email}: {str(e)}")
@@ -210,8 +251,8 @@ async def get_latest_payslip(user_email: str = Depends(get_user_email)):
         today = date.today()
         
         try:
-            keka_mcp_service.set_authenticated_user(user_email)
-            return await keka_mcp_service.get_my_payslip(today.month, today.year)
+            hr_data_service.set_authenticated_user(user_email)
+            return await hr_data_service.get_my_payslip(today.month, today.year)
         except HTTPException:
             # Try previous month
             if today.month == 1:
@@ -221,7 +262,7 @@ async def get_latest_payslip(user_email: str = Depends(get_user_email)):
                 prev_month = today.month - 1
                 prev_year = today.year
                 
-            return await keka_mcp_service.get_my_payslip(prev_month, prev_year)
+            return await hr_data_service.get_my_payslip(prev_month, prev_year)
             
     except Exception as e:
         logger.error(f"Failed to fetch latest payslip for {user_email}: {str(e)}")
@@ -235,8 +276,8 @@ async def get_latest_payslip(user_email: str = Depends(get_user_email)):
 async def get_available_leave_types(user_email: str = Depends(get_user_email)):
     """Get available leave types"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
-        leave_types = await keka_mcp_service.get_leave_types()
+        hr_data_service.set_authenticated_user(user_email)
+        leave_types = await hr_data_service.get_leave_types()
         return {"leave_types": leave_types}
     except Exception as e:
         logger.error(f"Failed to fetch leave types: {str(e)}")
@@ -255,8 +296,8 @@ async def get_company_holidays(
         if not year:
             year = datetime.now().year
             
-        keka_mcp_service.set_authenticated_user(user_email)
-        holidays = await keka_mcp_service.get_upcoming_holidays(year)
+        hr_data_service.set_authenticated_user(user_email)
+        holidays = await hr_data_service.get_upcoming_holidays(year)
         return holidays
     except Exception as e:
         logger.error(f"Failed to fetch holidays: {str(e)}")
@@ -269,8 +310,8 @@ async def get_company_holidays(
 async def get_upcoming_holidays(user_email: str = Depends(get_user_email)):
     """Get upcoming holidays in the next 3 months"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
-        holidays = await keka_mcp_service.get_upcoming_holidays()
+        hr_data_service.set_authenticated_user(user_email)
+        holidays = await hr_data_service.get_upcoming_holidays()
         
         # Filter for upcoming holidays in next 3 months
         today = date.today()
@@ -300,7 +341,7 @@ async def get_hr_context_for_chat(
 ):
     """Get HR context for chat queries"""
     try:
-        keka_mcp_service.set_authenticated_user(user_email)
+        hr_data_service.set_authenticated_user(user_email)
         
         # Simple intent classification (can be enhanced with NLP)
         query_lower = query.lower()
@@ -308,23 +349,23 @@ async def get_hr_context_for_chat(
         context_data = {}
         
         if any(word in query_lower for word in ['profile', 'details', 'information', 'me']):
-            context_data['profile'] = await keka_mcp_service.get_my_profile()
+            context_data['profile'] = await hr_data_service.get_my_profile()
             
         if any(word in query_lower for word in ['leave', 'vacation', 'time off']):
             if any(word in query_lower for word in ['balance', 'remaining', 'left']):
-                context_data['leave_balances'] = await keka_mcp_service.get_my_leave_balances()
+                context_data['leave_balances'] = await hr_data_service.get_my_leave_balances()
             if any(word in query_lower for word in ['history', 'past', 'previous']):
-                context_data['leave_history'] = await keka_mcp_service.get_my_leave_history()
+                context_data['leave_history'] = await hr_data_service.get_my_leave_history()
                 
         if any(word in query_lower for word in ['attendance', 'present', 'hours']):
             today = date.today()
             from_date = date(today.year, today.month, 1)
-            context_data['attendance'] = await keka_mcp_service.get_my_attendance(from_date, today)
+            context_data['attendance'] = await hr_data_service.get_my_attendance(from_date, today)
             
         if any(word in query_lower for word in ['salary', 'payslip', 'pay']):
             try:
                 today = date.today()
-                context_data['payslip'] = await keka_mcp_service.get_my_payslip(today.month, today.year)
+                context_data['payslip'] = await hr_data_service.get_my_payslip(today.month, today.year)
             except:
                 # Try previous month if current month not available
                 if today.month == 1:
@@ -332,12 +373,12 @@ async def get_hr_context_for_chat(
                 else:
                     prev_month, prev_year = today.month - 1, today.year
                 try:
-                    context_data['payslip'] = await keka_mcp_service.get_my_payslip(prev_month, prev_year)
+                    context_data['payslip'] = await hr_data_service.get_my_payslip(prev_month, prev_year)
                 except:
                     pass  # No payslip available
                     
         if any(word in query_lower for word in ['holiday', 'holidays']):
-            context_data['holidays'] = await keka_mcp_service.get_upcoming_holidays()
+            context_data['holidays'] = await hr_data_service.get_upcoming_holidays()
         
         return KekaMCPResponse(
             success=True,

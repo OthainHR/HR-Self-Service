@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Components Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .loading { opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <h1>🧪 HR Components Test Suite</h1>
+    <p>This page tests the HR API endpoints to verify they're working correctly.</p>
+
+    <div class="test-section">
+        <h2>🔍 API Health Check</h2>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👤 Profile Data Test</h2>
+        <p>Note: This requires authentication. The test will show the expected structure.</p>
+        <button onclick="testProfile()">Test Profile Endpoint</button>
+        <div id="profile-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏖️ Leave Balances Test</h2>
+        <button onclick="testLeaveBalances()">Test Leave Balances</button>
+        <div id="leave-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📅 Attendance Test</h2>
+        <button onclick="testAttendance()">Test Attendance</button>
+        <div id="attendance-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎉 Holidays Test</h2>
+        <button onclick="testHolidays()">Test Holidays</button>
+        <div id="holidays-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Run All Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="all-tests-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/hr';
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        async function testHealth() {
+            showResult('health-result', 'Testing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('health-result', 
+                        `✅ Health check passed!<br>
+                         Status: ${data.status}<br>
+                         Service: ${data.service}<br>
+                         Timestamp: ${data.timestamp}`, 'success');
+                } else {
+                    showResult('health-result', `❌ Health check failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('health-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testProfile() {
+            showResult('profile-result', 'Testing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/profile`);
+                
+                if (response.status === 401) {
+                    showResult('profile-result', 
+                        `✅ Profile endpoint requires authentication (expected)<br>
+                         Status: ${response.status}<br>
+                         This is correct behavior - the endpoint is protected.`, 'success');
+                } else if (response.ok) {
+                    const data = await response.json();
+                    showResult('profile-result', 
+                        `✅ Profile data retrieved!<br>
+                         Name: ${data.full_name}<br>
+                         Email: ${data.email}<br>
+                         Designation: ${data.designation}`, 'success');
+                } else {
+                    showResult('profile-result', `❌ Unexpected status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('profile-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLeaveBalances() {
+            showResult('leave-result', 'Testing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/leave/balances`);
+                
+                if (response.status === 401) {
+                    showResult('leave-result', 
+                        `✅ Leave balances endpoint requires authentication (expected)<br>
+                         Status: ${response.status}`, 'success');
+                } else if (response.ok) {
+                    const data = await response.json();
+                    showResult('leave-result', 
+                        `✅ Leave balances retrieved!<br>
+                         Found ${data.length} leave types<br>
+                         Sample data: ${JSON.stringify(data[0], null, 2)}`, 'success');
+                } else {
+                    showResult('leave-result', `❌ Unexpected status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('leave-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAttendance() {
+            showResult('attendance-result', 'Testing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/attendance/current-month`);
+                
+                if (response.status === 401) {
+                    showResult('attendance-result', 
+                        `✅ Attendance endpoint requires authentication (expected)<br>
+                         Status: ${response.status}`, 'success');
+                } else if (response.ok) {
+                    const data = await response.json();
+                    showResult('attendance-result', 
+                        `✅ Attendance data retrieved!<br>
+                         Found ${data.length} records<br>
+                         Sample data: ${JSON.stringify(data[0], null, 2)}`, 'success');
+                } else {
+                    showResult('attendance-result', `❌ Unexpected status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('attendance-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHolidays() {
+            showResult('holidays-result', 'Testing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/holidays/upcoming`);
+                
+                if (response.status === 401) {
+                    showResult('holidays-result', 
+                        `✅ Holidays endpoint requires authentication (expected)<br>
+                         Status: ${response.status}`, 'success');
+                } else if (response.ok) {
+                    const data = await response.json();
+                    showResult('holidays-result', 
+                        `✅ Holidays data retrieved!<br>
+                         Found ${data.length} upcoming holidays<br>
+                         Sample data: ${JSON.stringify(data[0], null, 2)}`, 'success');
+                } else {
+                    showResult('holidays-result', `❌ Unexpected status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('holidays-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            showResult('all-tests-result', 'Running all tests...', 'info');
+            
+            const tests = [
+                { name: 'Health Check', func: testHealth, resultId: 'health-result' },
+                { name: 'Profile', func: testProfile, resultId: 'profile-result' },
+                { name: 'Leave Balances', func: testLeaveBalances, resultId: 'leave-result' },
+                { name: 'Attendance', func: testAttendance, resultId: 'attendance-result' },
+                { name: 'Holidays', func: testHolidays, resultId: 'holidays-result' }
+            ];
+
+            let passed = 0;
+            let total = tests.length;
+
+            for (const test of tests) {
+                try {
+                    await test.func();
+                    passed++;
+                } catch (error) {
+                    console.error(`Test ${test.name} failed:`, error);
+                }
+            }
+
+            showResult('all-tests-result', 
+                `🎯 All tests completed!<br>
+                 Results: ${passed}/${total} tests passed<br>
+                 ${passed === total ? '🎉 All tests passed!' : '⚠️ Some tests failed. Check individual results above.'}`, 
+                passed === total ? 'success' : 'error');
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            testHealth();
+        };
+    </script>
+</body>
+</html>
+

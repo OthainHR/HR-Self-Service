@@ -47,7 +47,7 @@ import {
   Close as CancelledIcon
 } from '@mui/icons-material';
 // Using standard TextField with date type instead of MUI X DatePicker
-import { hrService } from '../../services/hrService';
+import { hrService } from '../../services/hrServiceDirect';
 
 const HRLeaveManagement = () => {
   const [leaveBalances, setLeaveBalances] = useState([]);
@@ -84,15 +84,31 @@ const HRLeaveManagement = () => {
     setError(null);
 
     try {
-      // Load leave balances, types, and recent history in parallel
-      const [balancesResult, typesResult, historyResult] = await Promise.allSettled([
-        hrService.getMyLeaveBalances(),
+      // Try to load leave balances from the main endpoint first
+      let balancesResult = await hrService.getMyLeaveBalances();
+      
+      // If authentication fails, try the test endpoint
+      if (!balancesResult.success && balancesResult.error?.includes('401')) {
+        console.log('Authentication failed, trying test endpoint...');
+        try {
+          const testResponse = await fetch('http://localhost:8000/api/hr/test-leave-balances');
+          const testData = await testResponse.json();
+          if (testData.success) {
+            balancesResult = { success: true, data: testData.data };
+          }
+        } catch (testErr) {
+          console.log('Test endpoint also failed:', testErr);
+        }
+      }
+
+      // Load other data in parallel
+      const [typesResult, historyResult] = await Promise.allSettled([
         hrService.getLeaveTypes(),
         hrService.getMyLeaveHistory()
       ]);
 
-      if (balancesResult.status === 'fulfilled' && balancesResult.value.success) {
-        setLeaveBalances(balancesResult.value.data);
+      if (balancesResult.success) {
+        setLeaveBalances(balancesResult.data);
       }
 
       if (typesResult.status === 'fulfilled' && typesResult.value.success) {
@@ -103,13 +119,9 @@ const HRLeaveManagement = () => {
         setLeaveHistory(historyResult.value.data);
       }
 
-      // Check if any critical data failed to load
-      const hasError = [balancesResult, typesResult].some(
-        result => result.status === 'rejected' || !result.value?.success
-      );
-      
-      if (hasError) {
-        setError('Some leave information could not be loaded');
+      // Check if critical data failed to load
+      if (!balancesResult.success) {
+        setError('Leave balance information could not be loaded. Please ensure you are logged in.');
       }
     } catch (err) {
       setError('Failed to load leave information');

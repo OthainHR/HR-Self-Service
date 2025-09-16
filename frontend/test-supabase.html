@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Supabase Configuration Test</h1>
+    <p>This page tests if the Supabase configuration is working correctly.</p>
+
+    <div class="test-section">
+        <h2>Environment Variables Check</h2>
+        <button onclick="checkEnvVars()">Check Environment Variables</button>
+        <div id="env-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Supabase Connection Test</h2>
+        <button onclick="testSupabaseConnection()">Test Supabase Connection</button>
+        <div id="supabase-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Database Query Test</h2>
+        <button onclick="testDatabaseQuery()">Test Database Query</button>
+        <div id="database-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Authentication Test</h2>
+        <button onclick="testAuthentication()">Test Authentication</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <script>
+        // Supabase configuration (same as in your .env file)
+        const SUPABASE_URL = 'https://sethhceiojxrevvpzupf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldGhoY2Vpb2p4cmV2dnB6dXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NDcyMDAsImV4cCI6MjA1ODEyMzIwMH0.dYLDhmxgP9k-fOAGAddH8UNCETMF8fHKNhSPWpDNisM';
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        function checkEnvVars() {
+            showResult('env-result', 'Checking environment variables...', 'info');
+            
+            const envVars = {
+                'REACT_APP_SUPABASE_URL': SUPABASE_URL,
+                'REACT_APP_SUPABASE_ANON_KEY': SUPABASE_ANON_KEY ? 'Set (hidden)' : 'Not set'
+            };
+
+            let message = '<h4>Environment Variables Status:</h4>';
+            for (const [key, value] of Object.entries(envVars)) {
+                const status = value !== 'Not set' ? '✅' : '❌';
+                message += `<div>${status} ${key}: ${value}</div>`;
+            }
+
+            const allSet = Object.values(envVars).every(v => v !== 'Not set');
+            showResult('env-result', message, allSet ? 'success' : 'error');
+        }
+
+        async function testSupabaseConnection() {
+            showResult('supabase-result', 'Testing Supabase connection...', 'info');
+            
+            try {
+                // Test basic connection by making a simple request
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    showResult('supabase-result', 
+                        `✅ Supabase connection successful!<br>
+                         URL: ${SUPABASE_URL}<br>
+                         Status: ${response.status}`, 'success');
+                } else {
+                    showResult('supabase-result', 
+                        `❌ Supabase connection failed<br>
+                         Status: ${response.status}<br>
+                         Response: ${await response.text()}`, 'error');
+                }
+            } catch (error) {
+                showResult('supabase-result', `❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabaseQuery() {
+            showResult('database-result', 'Testing database query...', 'info');
+            
+            try {
+                // Test querying the keka_employees table
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/keka_employees?select=email,display_name&limit=5`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('database-result', 
+                        `✅ Database query successful!<br>
+                         Found ${data.length} employees<br>
+                         Sample data: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult('database-result', 
+                        `❌ Database query failed<br>
+                         Status: ${response.status}<br>
+                         Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult('database-result', `❌ Query error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthentication() {
+            showResult('auth-result', 'Testing authentication...', 'info');
+            
+            try {
+                // Test authentication by trying to get user session
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    showResult('auth-result', 
+                        `✅ Authentication endpoint working (401 expected for anonymous key)<br>
+                         This means the auth service is properly configured`, 'success');
+                } else if (response.ok) {
+                    const user = await response.json();
+                    showResult('auth-result', 
+                        `✅ User authenticated!<br>
+                         User: ${user.email || 'Unknown'}`, 'success');
+                } else {
+                    showResult('auth-result', 
+                        `⚠️ Unexpected auth response<br>
+                         Status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `❌ Auth error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run environment check on page load
+        window.onload = function() {
+            checkEnvVars();
+        };
+    </script>
+</body>
+</html>
+

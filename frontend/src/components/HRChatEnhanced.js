@@ -38,25 +38,15 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useKekaAuth } from '../hooks/useKekaAuth';
-import KekaAccountConnection from './KekaAccountConnection';
-import hrServiceEnhanced, { KekaAuthRequiredError } from '../services/hrServiceEnhanced';
+import { hrService } from '../services/hrServiceDirect';
 
 const HRChatEnhanced = ({ maxHeight = '600px' }) => {
   const theme = useTheme();
-  const { 
-    hasValidConnection, 
-    connect, 
-    withKekaAuth, 
-    getConnectionSummary,
-    isConnected 
-  } = useKekaAuth();
   
   // Chat state
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showConnectionPanel, setShowConnectionPanel] = useState(false);
   const [error, setError] = useState(null);
   
   // Chat examples
@@ -80,16 +70,13 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
       const welcomeMessage = {
         id: Date.now(),
         type: 'bot',
-        content: isConnected 
-          ? "Hi! I'm your HR assistant. I can help you with your leave balances, attendance, payslips, and more. What would you like to know?"
-          : "Hi! I'm your HR assistant. To provide personalized HR information, I'll need you to connect your Keka account first.",
-        timestamp: new Date(),
-        requiresKeka: !isConnected
+        content: "Hi! I'm your HR assistant. I can help you with your leave balances, attendance, payslips, and more. What would you like to know?",
+        timestamp: new Date()
       };
       
       setMessages([welcomeMessage]);
     }
-  }, [isConnected, messages.length]);
+  }, [messages.length]);
 
   /**
    * Handle sending a message
@@ -111,31 +98,13 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
     setShowExamples(false);
 
     try {
-      // Check if this is an HR query that requires Keka connection
+      // Check if this is an HR query
       const isHRQuery = await isHRRelatedQuery(userMessage.content);
       
-      if (isHRQuery && !hasValidConnection()) {
-        // Show connection required message
-        const botResponse = {
-          id: Date.now() + 1,
-          type: 'bot',
-          content: "To answer questions about your personal HR information, I need you to connect your Keka account first. This will allow me to provide accurate information about your leave balances, attendance, payslips, and more.",
-          timestamp: new Date(),
-          requiresKeka: true,
-          actions: ['connect']
-        };
-        
-        setMessages(prev => [...prev, botResponse]);
-        setShowConnectionPanel(true);
-        return;
-      }
-
       // Make the chat request
       let response;
       if (isHRQuery) {
-        response = await withKekaAuth(() => 
-          makeHRChatRequest(userMessage.content)
-        );
+        response = await makeHRChatRequest(userMessage.content);
       } else {
         response = await makeGeneralChatRequest(userMessage.content);
       }
@@ -154,15 +123,7 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
       console.error('Chat request failed:', error);
       
       let errorMessage = 'Sorry, I encountered an error processing your request.';
-      let requiresKeka = false;
-      let actions = [];
-
-      if (error instanceof KekaAuthRequiredError) {
-        errorMessage = error.message;
-        requiresKeka = true;
-        actions = ['connect'];
-        setShowConnectionPanel(true);
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = `Sorry, I encountered an error: ${error.message}`;
       }
 
@@ -171,9 +132,7 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
         type: 'bot',
         content: errorMessage,
         timestamp: new Date(),
-        isError: true,
-        requiresKeka,
-        actions
+        isError: true
       };
 
       setMessages(prev => [...prev, errorResponse]);
@@ -205,27 +164,19 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
    */
   const makeHRChatRequest = async (query) => {
     try {
-      // For now, we'll make a simple request to the chat endpoint
-      // In a real implementation, this would call your enhanced chat service
-      
       // Get some context data that might be relevant
       const contextPromises = [];
       
       if (query.toLowerCase().includes('leave') || query.toLowerCase().includes('balance')) {
-        contextPromises.push(hrServiceEnhanced.getLeaveBalancesSafe().catch(() => null));
+        contextPromises.push(hrService.getMyLeaveBalances().catch(() => null));
       }
       
       if (query.toLowerCase().includes('attendance') || query.toLowerCase().includes('time')) {
-        const today = new Date();
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        contextPromises.push(hrServiceEnhanced.getAttendanceSafe(
-          monthStart.toISOString().split('T')[0],
-          today.toISOString().split('T')[0]
-        ).catch(() => null));
+        contextPromises.push(hrService.getCurrentMonthAttendance().catch(() => null));
       }
 
       const contextData = await Promise.all(contextPromises);
-      const validContextData = contextData.filter(data => data !== null);
+      const validContextData = contextData.filter(data => data?.success && data?.data);
 
       // Simulate processing the query with context
       let responseMessage = `I understand you're asking about: "${query}".`;
@@ -235,15 +186,15 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
         
         // Add specific data based on what was retrieved
         validContextData.forEach(data => {
-          if (Array.isArray(data) && data[0]?.leave_type) {
+          if (Array.isArray(data.data) && data.data[0]?.leave_type) {
             // Leave balances
             responseMessage += `\n\n📊 **Your Leave Balances:**`;
-            data.forEach(leave => {
-              responseMessage += `\n• ${leave.leave_type}: ${leave.available_days} days available`;
+            data.data.forEach(leave => {
+              responseMessage += `\n• ${leave.leave_type}: ${leave.remaining} days available`;
             });
-          } else if (Array.isArray(data) && data[0]?.date) {
+          } else if (Array.isArray(data.data) && data.data[0]?.date) {
             // Attendance data
-            const presentDays = data.filter(d => d.status === 'Present').length;
+            const presentDays = data.data.filter(d => d.status === 'Present').length;
             responseMessage += `\n\n📈 **This Month's Attendance:** ${presentDays} days worked`;
           }
         });
@@ -281,28 +232,6 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
     inputRef.current?.focus();
   };
 
-  /**
-   * Handle Keka connection
-   */
-  const handleConnectKeka = async () => {
-    try {
-      const result = await connect();
-      if (result.success) {
-        setShowConnectionPanel(false);
-        // Add success message to chat
-        const successMessage = {
-          id: Date.now(),
-          type: 'bot',
-          content: "Great! Your Keka account is now connected. I can now provide personalized information about your leave balances, attendance, and more. What would you like to know?",
-          timestamp: new Date(),
-          isSuccess: true
-        };
-        setMessages(prev => [...prev, successMessage]);
-      }
-    } catch (error) {
-      console.error('Failed to connect Keka account:', error);
-    }
-  };
 
   // Example questions
   const exampleQuestions = [
@@ -313,7 +242,10 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
     "Can you show me my recent payslips?"
   ];
 
-  const connectionSummary = getConnectionSummary();
+  const connectionSummary = {
+    status: 'connected',
+    message: 'HR data is available'
+  };
 
   return (
     <Paper
@@ -381,15 +313,6 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
           </Tooltip>
         </Box>
 
-        {/* Connection Panel Toggle */}
-        <Collapse in={showConnectionPanel}>
-          <Box sx={{ mt: 2 }}>
-            <KekaAccountConnection 
-              onConnectionChange={() => setShowConnectionPanel(false)}
-              compact={false}
-            />
-          </Box>
-        </Collapse>
       </Box>
 
       {/* Messages Area */}
@@ -470,29 +393,6 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
                         {message.content}
                       </Typography>
 
-                      {/* Action buttons for bot messages */}
-                      {message.actions && message.actions.length > 0 && (
-                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                          {message.actions.includes('connect') && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<ConnectIcon />}
-                              onClick={handleConnectKeka}
-                              sx={{ 
-                                borderColor: 'white', 
-                                color: 'white',
-                                '&:hover': {
-                                  borderColor: 'rgba(255,255,255,0.8)',
-                                  backgroundColor: 'rgba(255,255,255,0.1)'
-                                }
-                              }}
-                            >
-                              Connect Keka Account
-                            </Button>
-                          )}
-                        </Box>
-                      )}
                     </Paper>
                     
                     <Typography 
@@ -550,7 +450,7 @@ const HRChatEnhanced = ({ maxHeight = '600px' }) => {
         )}
 
         {/* Example Questions */}
-        {showExamples && messages.length <= 1 && isConnected && (
+        {showExamples && messages.length <= 1 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

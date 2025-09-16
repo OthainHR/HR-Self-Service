@@ -11,7 +11,7 @@ import {
   Chip
 } from '@mui/material';
 import { Schedule as AttendanceIcon } from '@mui/icons-material';
-import { hrService } from '../../services/hrService';
+import { hrService } from '../../services/hrServiceDirect';
 
 const HRAttendance = () => {
   const [attendance, setAttendance] = useState([]);
@@ -84,7 +84,10 @@ const HRAttendance = () => {
         <Typography variant="h6" gutterBottom>
           Failed to Load Attendance
         </Typography>
-        {error}
+        {error.includes('Keka account not connected') ? 
+          'Please log in to access your attendance data. If you continue to see this error, contact HR support.' : 
+          error
+        }
       </Alert>
     );
   }
