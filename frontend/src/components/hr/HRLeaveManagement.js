@@ -187,7 +187,33 @@ const HRLeaveManagement = () => {
   };
 
   const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
+    // Handle different status types (string, number, undefined)
+    let statusStr = '';
+    if (typeof status === 'string') {
+      statusStr = status.toLowerCase();
+    } else if (typeof status === 'number') {
+      // Map numeric status codes to string status
+      switch (status) {
+        case 0:
+          statusStr = 'pending';
+          break;
+        case 1:
+          statusStr = 'approved';
+          break;
+        case 2:
+          statusStr = 'rejected';
+          break;
+        case 3:
+          statusStr = 'cancelled';
+          break;
+        default:
+          statusStr = 'pending';
+      }
+    } else {
+      statusStr = 'pending';
+    }
+
+    switch (statusStr) {
       case 'approved':
         return <ApprovedIcon color="success" />;
       case 'rejected':
@@ -201,7 +227,33 @@ const HRLeaveManagement = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+    // Handle different status types (string, number, undefined)
+    let statusStr = '';
+    if (typeof status === 'string') {
+      statusStr = status.toLowerCase();
+    } else if (typeof status === 'number') {
+      // Map numeric status codes to string status
+      switch (status) {
+        case 0:
+          statusStr = 'pending';
+          break;
+        case 1:
+          statusStr = 'approved';
+          break;
+        case 2:
+          statusStr = 'rejected';
+          break;
+        case 3:
+          statusStr = 'cancelled';
+          break;
+        default:
+          statusStr = 'pending';
+      }
+    } else {
+      statusStr = 'pending';
+    }
+
+    switch (statusStr) {
       case 'approved':
         return 'success';
       case 'rejected':
@@ -212,6 +264,36 @@ const HRLeaveManagement = () => {
       default:
         return 'warning';
     }
+  };
+
+  const getStatusText = (status) => {
+    // Handle different status types (string, number, undefined)
+    let statusStr = '';
+    if (typeof status === 'string') {
+      statusStr = status.toLowerCase();
+    } else if (typeof status === 'number') {
+      // Map numeric status codes to string status
+      switch (status) {
+        case 0:
+          statusStr = 'pending';
+          break;
+        case 1:
+          statusStr = 'approved';
+          break;
+        case 2:
+          statusStr = 'rejected';
+          break;
+        case 3:
+          statusStr = 'cancelled';
+          break;
+        default:
+          statusStr = 'pending';
+      }
+    } else {
+      statusStr = 'pending';
+    }
+
+    return statusStr.charAt(0).toUpperCase() + statusStr.slice(1);
   };
 
   if (loading) {
@@ -395,7 +477,7 @@ const HRLeaveManagement = () => {
                     </Typography>
                     <Chip
                       icon={getStatusIcon(leave.status)}
-                      label={leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                      label={getStatusText(leave.status)}
                       size="small"
                       color={getStatusColor(leave.status)}
                       variant="outlined"
@@ -571,7 +653,7 @@ const HRLeaveManagement = () => {
                       <TableCell>
                         <Chip
                           icon={getStatusIcon(request.status)}
-                          label={request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Pending'}
+                          label={getStatusText(request.status)}
                           size="small"
                           color={getStatusColor(request.status)}
                           variant="outlined"
@@ -651,7 +733,7 @@ const HRLeaveManagement = () => {
                       <TableCell>
                         <Chip
                           icon={getStatusIcon(leave.status)}
-                          label={leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                          label={getStatusText(leave.status)}
                           size="small"
                           color={getStatusColor(leave.status)}
                           variant="outlined"
