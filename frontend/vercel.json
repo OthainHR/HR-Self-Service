@@ -9,14 +9,27 @@
   },
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://hr-self-service.onrender.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://hr-self-service.onrender.com/api/$1"
     }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
-      "headers": []
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
     }
   ]
 } 
