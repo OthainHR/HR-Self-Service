@@ -59,6 +59,29 @@ async def test_leave_balances():
         logger.error(f"Test leave balances failed: {str(e)}")
         return {"success": False, "error": str(e)}
 
+@router.get("/test-leave-requests")
+async def test_leave_requests():
+    """Test endpoint to check leave requests data from Keka API"""
+    try:
+        # Use a test email from our database
+        test_email = "sunhith.reddy@othainsoft.com"
+        hr_data_service.set_authenticated_user(test_email)
+        requests = await hr_data_service.get_my_leave_requests()
+        return {"success": True, "data": requests}
+    except Exception as e:
+        logger.error(f"Test leave requests failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@router.get("/test-leave-types")
+async def test_leave_types():
+    """Test endpoint to check leave types data from Keka API"""
+    try:
+        leave_types = await hr_data_service.get_leave_types()
+        return {"success": True, "data": leave_types}
+    except Exception as e:
+        logger.error(f"Test leave types failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 # Employee Profile Endpoints
 @router.get("/profile", response_model=EmployeeProfile)
 async def get_my_profile(user_email: str = Depends(get_user_email)):
@@ -104,6 +127,50 @@ async def get_my_leave_balances(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve leave balances"
+        )
+
+@router.get("/leave/requests")
+async def get_my_leave_requests(user_email: str = Depends(get_user_email)):
+    """Get leave requests for the authenticated user"""
+    try:
+        hr_data_service.set_authenticated_user(user_email)
+        requests = await hr_data_service.get_my_leave_requests()
+        return {"success": True, "data": requests}
+    except Exception as e:
+        logger.error(f"Failed to fetch leave requests for {user_email}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve leave requests"
+        )
+
+@router.get("/leave/types")
+async def get_leave_types():
+    """Get available leave types"""
+    try:
+        leave_types = await hr_data_service.get_leave_types()
+        return {"success": True, "data": leave_types}
+    except Exception as e:
+        logger.error(f"Failed to fetch leave types: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve leave types"
+        )
+
+@router.post("/leave/apply")
+async def apply_for_leave(
+    leave_data: ApplyLeaveRequest,
+    user_email: str = Depends(get_user_email)
+):
+    """Apply for leave"""
+    try:
+        hr_data_service.set_authenticated_user(user_email)
+        result = await hr_data_service.create_leave_request(leave_data.dict())
+        return result
+    except Exception as e:
+        logger.error(f"Failed to apply for leave for {user_email}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to apply for leave"
         )
 
 @router.get("/leave/history", response_model=List[LeaveHistory])

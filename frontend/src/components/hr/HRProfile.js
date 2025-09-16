@@ -684,13 +684,13 @@ const HRProfile = () => {
                     borderRadius: 2 
                   }}
                 >
-                  <Typography variant="h4" color="primary.main">
+                  <Typography variant="h4" color="white">
                     {profile.join_date ? 
                       Math.floor((new Date() - new Date(profile.join_date)) / (1000 * 60 * 60 * 24 * 365.25)) 
                       : 0
                     }
                   </Typography>
-                  <Typography variant="body2" color="primary.dark">
+                  <Typography variant="body2" color="white">
                     Years at Company
                   </Typography>
                 </Paper>
@@ -706,13 +706,13 @@ const HRProfile = () => {
                     borderRadius: 2 
                   }}
                 >
-                  <Typography variant="h4" color="success.main">
+                  <Typography variant="h4" color="white">
                     {profile.join_date ? 
                       Math.floor((new Date() - new Date(profile.join_date)) / (1000 * 60 * 60 * 24 * 30.44)) 
                       : 0
                     }
                   </Typography>
-                  <Typography variant="body2" color="success.dark">
+                  <Typography variant="body2" color="white">
                     Months at Company
                   </Typography>
                 </Paper>
@@ -728,10 +728,10 @@ const HRProfile = () => {
                     borderRadius: 2 
                   }}
                 >
-                  <Typography variant="h4" color="info.main">
+                  <Typography variant="h4" color="white">
                     {profile.employee_status === 'active' ? 'Active' : 'Inactive'}
                   </Typography>
-                  <Typography variant="body2" color="info.dark">
+                  <Typography variant="body2" color="white">
                     Current Status
                   </Typography>
                 </Paper>
@@ -747,10 +747,10 @@ const HRProfile = () => {
                     borderRadius: 2 
                   }}
                 >
-                  <Typography variant="h4" color="warning.main">
+                  <Typography variant="h4" color="white">
                     {profile.employee_id.slice(-4)}
                   </Typography>
-                  <Typography variant="body2" color="warning.dark">
+                  <Typography variant="body2" color="white">
                     Employee ID
                   </Typography>
                 </Paper>

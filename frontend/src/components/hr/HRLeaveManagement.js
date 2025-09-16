@@ -52,21 +52,24 @@ import { hrService } from '../../services/hrServiceDirect';
 const HRLeaveManagement = () => {
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showRequestsDialog, setShowRequestsDialog] = useState(false);
   const [applying, setApplying] = useState(false);
   
   // Apply leave form state
   const [leaveForm, setLeaveForm] = useState({
-    leave_type: '',
-    from_date: null,
-    to_date: null,
+    leave_type_id: '',
+    from_date: '',
+    to_date: '',
+    from_session: 0,
+    to_session: 0,
     reason: '',
-    is_half_day: false,
-    half_day_type: ''
+    note: ''
   });
 
   useEffect(() => {
@@ -102,9 +105,10 @@ const HRLeaveManagement = () => {
       }
 
       // Load other data in parallel
-      const [typesResult, historyResult] = await Promise.allSettled([
+      const [typesResult, historyResult, requestsResult] = await Promise.allSettled([
         hrService.getLeaveTypes(),
-        hrService.getMyLeaveHistory()
+        hrService.getMyLeaveHistory(),
+        hrService.getMyLeaveRequests()
       ]);
 
       if (balancesResult.success) {
@@ -112,11 +116,15 @@ const HRLeaveManagement = () => {
       }
 
       if (typesResult.status === 'fulfilled' && typesResult.value.success) {
-        setLeaveTypes(typesResult.value.data.leave_types || []);
+        setLeaveTypes(typesResult.value.data || []);
       }
 
       if (historyResult.status === 'fulfilled' && historyResult.value.success) {
         setLeaveHistory(historyResult.value.data);
+      }
+
+      if (requestsResult.status === 'fulfilled' && requestsResult.value.success) {
+        setLeaveRequests(requestsResult.value.data);
       }
 
       // Check if critical data failed to load
@@ -131,7 +139,7 @@ const HRLeaveManagement = () => {
   };
 
   const handleApplyLeave = async () => {
-    if (!leaveForm.leave_type || !leaveForm.from_date || !leaveForm.to_date || !leaveForm.reason.trim()) {
+    if (!leaveForm.leave_type_id || !leaveForm.from_date || !leaveForm.to_date || !leaveForm.reason.trim()) {
       setError('Please fill in all required fields');
       return;
     }
@@ -140,12 +148,13 @@ const HRLeaveManagement = () => {
 
     try {
       const leaveData = {
-        leave_type: leaveForm.leave_type,
-        from_date: leaveForm.from_date.toISOString().split('T')[0],
-        to_date: leaveForm.to_date.toISOString().split('T')[0],
+        leave_type_id: leaveForm.leave_type_id,
+        from_date: leaveForm.from_date,
+        to_date: leaveForm.to_date,
+        from_session: leaveForm.from_session,
+        to_session: leaveForm.to_session,
         reason: leaveForm.reason.trim(),
-        is_half_day: leaveForm.is_half_day,
-        half_day_type: leaveForm.is_half_day ? leaveForm.half_day_type : null
+        note: leaveForm.note || ''
       };
 
       const result = await hrService.applyForLeave(leaveData);
@@ -153,12 +162,13 @@ const HRLeaveManagement = () => {
       if (result.success) {
         setShowApplyDialog(false);
         setLeaveForm({
-          leave_type: '',
-          from_date: null,
-          to_date: null,
+          leave_type_id: '',
+          from_date: '',
+          to_date: '',
+          from_session: 0,
+          to_session: 0,
           reason: '',
-          is_half_day: false,
-          half_day_type: ''
+          note: ''
         });
         
         // Refresh data
@@ -276,7 +286,7 @@ const HRLeaveManagement = () => {
                       >
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Typography variant="subtitle1" fontWeight="medium">
-                            {balance.leave_type.charAt(0).toUpperCase() + balance.leave_type.slice(1)} Leave
+                            {balance.leave_type.charAt(0).toUpperCase() + balance.leave_type.slice(1)}
                           </Typography>
                           <Chip
                             label={`${balance.remaining} / ${balance.total_allocated}`}
@@ -350,6 +360,18 @@ const HRLeaveManagement = () => {
                   <Button
                     fullWidth
                     variant="outlined"
+                    startIcon={<PendingIcon />}
+                    onClick={() => setShowRequestsDialog(true)}
+                    sx={{ mb: 1, py: 1.5, borderRadius: 1.5 }}
+                  >
+                    View Leave Requests
+                  </Button>
+                </ListItem>
+                
+                <ListItem disablePadding>
+                  <Button
+                    fullWidth
+                    variant="outlined"
                     startIcon={<HistoryIcon />}
                     onClick={() => setShowHistoryDialog(true)}
                     sx={{ py: 1.5, borderRadius: 1.5 }}
@@ -400,13 +422,13 @@ const HRLeaveManagement = () => {
                 <FormControl fullWidth>
                   <InputLabel>Leave Type</InputLabel>
                   <Select
-                    value={leaveForm.leave_type}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}
+                    value={leaveForm.leave_type_id}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, leave_type_id: e.target.value })}
                     label="Leave Type"
                   >
                     {leaveTypes.map((type) => (
-                      <MenuItem key={type.id || type.name} value={type.name || type.id}>
-                        {type.display_name || type.name}
+                      <MenuItem key={type.identifier} value={type.identifier}>
+                        {type.name} - {type.description}
                       </MenuItem>
                     ))}
                   </Select>
@@ -416,15 +438,15 @@ const HRLeaveManagement = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="From Date"
-                  type="date"
-                  value={leaveForm.from_date ? leaveForm.from_date.toISOString().split('T')[0] : ''}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, from_date: e.target.value ? new Date(e.target.value) : null })}
+                  label="From Date & Time"
+                  type="datetime-local"
+                  value={leaveForm.from_date}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, from_date: e.target.value })}
                   InputLabelProps={{
                     shrink: true,
                   }}
                   inputProps={{
-                    min: new Date().toISOString().split('T')[0]
+                    min: new Date().toISOString().slice(0, 16)
                   }}
                 />
               </Grid>
@@ -432,46 +454,46 @@ const HRLeaveManagement = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="To Date"
-                  type="date"
-                  value={leaveForm.to_date ? leaveForm.to_date.toISOString().split('T')[0] : ''}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, to_date: e.target.value ? new Date(e.target.value) : null })}
+                  label="To Date & Time"
+                  type="datetime-local"
+                  value={leaveForm.to_date}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, to_date: e.target.value })}
                   InputLabelProps={{
                     shrink: true,
                   }}
                   inputProps={{
-                    min: leaveForm.from_date ? leaveForm.from_date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                    min: leaveForm.from_date || new Date().toISOString().slice(0, 16)
                   }}
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={leaveForm.is_half_day}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, is_half_day: e.target.checked })}
-                    />
-                  }
-                  label="Half Day Leave"
-                />
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>From Session</InputLabel>
+                  <Select
+                    value={leaveForm.from_session}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, from_session: parseInt(e.target.value) })}
+                    label="From Session"
+                  >
+                    <MenuItem value={0}>First Half</MenuItem>
+                    <MenuItem value={1}>Second Half</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
 
-              {leaveForm.is_half_day && (
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Half Day Type</InputLabel>
-                    <Select
-                      value={leaveForm.half_day_type}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, half_day_type: e.target.value })}
-                      label="Half Day Type"
-                    >
-                      <MenuItem value="first_half">First Half</MenuItem>
-                      <MenuItem value="second_half">Second Half</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>To Session</InputLabel>
+                  <Select
+                    value={leaveForm.to_session}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, to_session: parseInt(e.target.value) })}
+                    label="To Session"
+                  >
+                    <MenuItem value={0}>First Half</MenuItem>
+                    <MenuItem value={1}>Second Half</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
 
               <Grid item xs={12}>
                 <TextField
@@ -485,18 +507,17 @@ const HRLeaveManagement = () => {
                 />
               </Grid>
 
-              {leaveForm.from_date && leaveForm.to_date && (
-                <Grid item xs={12}>
-                  <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
-                    <Typography variant="body2">
-                      <strong>Duration:</strong> {
-                        leaveForm.is_half_day ? '0.5 day' :
-                        hrService.calculateWorkingDays(leaveForm.from_date, leaveForm.to_date) + ' day(s)'
-                      }
-                    </Typography>
-                  </Alert>
-                </Grid>
-              )}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Additional Notes (Optional)"
+                  multiline
+                  rows={2}
+                  value={leaveForm.note}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, note: e.target.value })}
+                  placeholder="Any additional information..."
+                />
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
@@ -509,6 +530,81 @@ const HRLeaveManagement = () => {
               disabled={applying}
             >
               {applying ? 'Applying...' : 'Apply for Leave'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Leave Requests Dialog */}
+        <Dialog open={showRequestsDialog} onClose={() => setShowRequestsDialog(false)} maxWidth="lg" fullWidth>
+          <DialogTitle>Leave Requests</DialogTitle>
+          <DialogContent>
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Leave Type</TableCell>
+                    <TableCell>Duration</TableCell>
+                    <TableCell>Applied Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Reason</TableCell>
+                    <TableCell>Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {leaveRequests.map((request, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {request.leaveTypeName || 'Unknown'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(request.fromDate).toLocaleDateString()} - {new Date(request.toDate).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(request.appliedDate || request.createdDate).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(request.status)}
+                          label={request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Pending'}
+                          size="small"
+                          color={getStatusColor(request.status)}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                          {request.reason || 'No reason provided'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                          {request.note || '-'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {leaveRequests.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography variant="body2" color="text.secondary">
+                          No leave requests found
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowRequestsDialog(false)}>
+              Close
             </Button>
           </DialogActions>
         </Dialog>

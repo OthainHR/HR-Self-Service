@@ -102,6 +102,45 @@ class DirectHRService {
     }
   }
 
+  // Get leave requests
+  async getMyLeaveRequests() {
+    try {
+      const response = await hrApiClient.get('/leave/requests');
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
+  // Get leave types
+  async getLeaveTypes() {
+    try {
+      const response = await hrApiClient.get('/leave/types');
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
+  // Apply for leave
+  async applyForLeave(leaveData) {
+    try {
+      const response = await hrApiClient.post('/leave/apply', leaveData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
   // Leave Management
   async getMyLeaveBalances(leaveType = null) {
     try {

@@ -4,8 +4,8 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import chat, auth, knowledge, user_management, feedback, hr, sync
-from app.core.config import settings
+from app.routers import chat, auth, knowledge, feedback, hr, sync
+# Configuration is handled in utils/supabase_config.py
 
 app = FastAPI(
     title="HR Self Service API",
@@ -91,7 +91,6 @@ async def rate_limit_middleware(request: Request, call_next):
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
-app.include_router(user_management.router, prefix="/api/user-management", tags=["user-management"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
 app.include_router(hr.router, prefix="/api/hr", tags=["hr"])
 app.include_router(sync.router, prefix="/api/sync", tags=["sync"])
@@ -127,7 +126,8 @@ async def test_mock_embeddings():
 @app.get("/knowledge/config/mock-embeddings-status")
 async def get_mock_embeddings_status():
     """Returns the current status of USE_MOCK_EMBEDDINGS."""
+    use_mock_embeddings = os.getenv("USE_MOCK_EMBEDDINGS", "false").lower() == "true"
     return {
-        "useMockEmbeddings": settings.USE_MOCK_EMBEDDINGS,
-        "message": f"Mock embeddings are {'enabled' if settings.USE_MOCK_EMBEDDINGS else 'disabled'}"
+        "useMockEmbeddings": use_mock_embeddings,
+        "message": f"Mock embeddings are {'enabled' if use_mock_embeddings else 'disabled'}"
     }

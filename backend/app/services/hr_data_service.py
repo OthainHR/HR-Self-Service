@@ -65,6 +65,79 @@ class HRDataService:
             logger.error(f"Failed to fetch leave balance from Keka API: {str(e)}")
             return []
     
+    async def _fetch_keka_leave_requests(self, employee_id: str) -> List[Dict[str, Any]]:
+        """Fetch leave requests from Keka API"""
+        try:
+            url = f"https://othainsoft.keka.com/api/v1/time/leaverequests?employeeIds={employee_id}"
+            headers = self._get_keka_headers()
+            
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            if data.get("succeeded") and data.get("data"):
+                return data["data"]
+            else:
+                logger.warning(f"No leave requests found for employee {employee_id}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Failed to fetch leave requests from Keka API: {str(e)}")
+            return []
+    
+    async def _fetch_keka_leave_types(self) -> List[Dict[str, Any]]:
+        """Fetch leave types from Keka API"""
+        try:
+            url = "https://othainsoft.keka.com/api/v1/time/leavetypes"
+            headers = self._get_keka_headers()
+            
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            if data.get("succeeded") and data.get("data"):
+                return data["data"]
+            else:
+                logger.warning("No leave types found")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Failed to fetch leave types from Keka API: {str(e)}")
+            return []
+    
+    async def _create_keka_leave_request(self, employee_id: str, leave_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a leave request in Keka API"""
+        try:
+            url = "https://othainsoft.keka.com/api/v1/time/leaverequests"
+            headers = self._get_keka_headers()
+            headers["content-type"] = "application/*+json"
+            
+            # Prepare the request data according to Keka API format
+            request_data = {
+                "employeeId": employee_id,
+                "requestedBy": employee_id,
+                "fromDate": leave_data["from_date"],
+                "toDate": leave_data["to_date"],
+                "fromSession": leave_data.get("from_session", 0),  # 0 = First Half, 1 = Second Half
+                "toSession": leave_data.get("to_session", 0),
+                "leaveTypeId": leave_data["leave_type_id"],
+                "reason": leave_data["reason"],
+                "note": leave_data.get("note", "")
+            }
+            
+            response = requests.post(url, headers=headers, json=request_data)
+            response.raise_for_status()
+            
+            data = response.json()
+            if data.get("succeeded"):
+                return {"success": True, "data": data}
+            else:
+                return {"success": False, "error": data.get("message", "Failed to create leave request")}
+                
+        except Exception as e:
+            logger.error(f"Failed to create leave request in Keka API: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
     async def _get_employee_by_email(self, email: str) -> Dict[str, Any]:
         """Get employee data by email"""
         try:
@@ -171,6 +244,63 @@ class HRDataService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve leave balances"
+            )
+    
+    async def get_my_leave_requests(self) -> List[Dict[str, Any]]:
+        """Get leave requests for the authenticated user from Keka API"""
+        if not self.authenticated_user_email:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        try:
+            employee_data = await self._get_employee_by_email(self.authenticated_user_email)
+            employee_id = employee_data["keka_employee_id"]
+            
+            # Fetch real leave requests data from Keka API
+            keka_leave_requests = await self._fetch_keka_leave_requests(employee_id)
+            
+            return keka_leave_requests
+            
+        except Exception as e:
+            logger.error(f"Failed to get leave requests for {self.authenticated_user_email}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve leave requests"
+            )
+    
+    async def get_leave_types(self) -> List[Dict[str, Any]]:
+        """Get leave types from Keka API"""
+        try:
+            # Fetch real leave types data from Keka API
+            keka_leave_types = await self._fetch_keka_leave_types()
+            
+            return keka_leave_types
+            
+        except Exception as e:
+            logger.error(f"Failed to get leave types: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve leave types"
+            )
+    
+    async def create_leave_request(self, leave_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a leave request for the authenticated user"""
+        if not self.authenticated_user_email:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        try:
+            employee_data = await self._get_employee_by_email(self.authenticated_user_email)
+            employee_id = employee_data["keka_employee_id"]
+            
+            # Create leave request in Keka API
+            result = await self._create_keka_leave_request(employee_id, leave_data)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to create leave request for {self.authenticated_user_email}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create leave request"
             )
     
     async def get_my_leave_history(self, from_date: Optional[date] = None, to_date: Optional[date] = None) -> List[LeaveHistory]:

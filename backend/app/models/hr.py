@@ -130,55 +130,28 @@ class LeaveBalanceRequest(BaseModel):
     leave_type: Optional[str] = None
 
 class ApplyLeaveRequest(BaseModel):
-    leave_type: str = Field(..., min_length=2, max_length=50)
-    from_date: date
-    to_date: date
-    reason: str = Field(..., min_length=10, max_length=500)
-    is_half_day: bool = False
-    half_day_type: Optional[str] = Field(None, pattern="^(first_half|second_half)$")
+    leave_type_id: str = Field(..., description="Leave type ID from Keka API")
+    from_date: str = Field(..., description="From date in ISO format (YYYY-MM-DDTHH:mm:ss)")
+    to_date: str = Field(..., description="To date in ISO format (YYYY-MM-DDTHH:mm:ss)")
+    from_session: int = Field(0, ge=0, le=1, description="0 = First Half, 1 = Second Half")
+    to_session: int = Field(0, ge=0, le=1, description="0 = First Half, 1 = Second Half")
+    reason: str = Field(..., min_length=10, max_length=500, description="Reason for leave")
+    note: Optional[str] = Field(None, max_length=1000, description="Additional notes")
 
-    @validator('leave_type')
-    def validate_leave_type(cls, v):
-        allowed_types = ['vacation', 'sick', 'personal', 'emergency', 'casual', 'maternity', 'paternity']
-        if v.lower() not in allowed_types:
-            raise ValueError(f'leave_type must be one of: {", ".join(allowed_types)}')
-        return v.lower()
-
-    @validator('from_date')
-    def validate_from_date(cls, v):
-        if v < date.today():
-            raise ValueError('from_date cannot be in the past')
-        if v > date.today() + timedelta(days=365):
-            raise ValueError('from_date cannot be more than a year in the future')
-        return v
-
-    @validator('to_date')
-    def validate_to_date(cls, v, values):
-        from_date = values.get('from_date')
-        if from_date and v < from_date:
-            raise ValueError('to_date must be after or equal to from_date')
-        if from_date and (v - from_date).days > 90:
-            raise ValueError('Leave duration cannot exceed 90 days')
-        return v
+    @validator('from_date', 'to_date')
+    def validate_date_format(cls, v):
+        try:
+            from datetime import datetime
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+            return v
+        except ValueError:
+            raise ValueError('Date must be in ISO format (YYYY-MM-DDTHH:mm:ss)')
 
     @validator('reason')
     def validate_reason(cls, v):
-        if not v.strip():
-            raise ValueError('Reason is required')
         if len(v.strip()) < 10:
-            raise ValueError('Reason must be at least 10 characters')
-        # Remove any potentially harmful content
-        cleaned_reason = v.strip().replace('<', '&lt;').replace('>', '&gt;')
-        return cleaned_reason
-
-    @validator('half_day_type')
-    def validate_half_day_type(cls, v, values):
-        is_half_day = values.get('is_half_day', False)
-        if is_half_day and not v:
-            raise ValueError('half_day_type is required when is_half_day is True')
-        if not is_half_day and v:
-            raise ValueError('half_day_type should not be provided when is_half_day is False')
-        return v
+            raise ValueError('Reason must be at least 10 characters long')
+        return v.strip()
 
 class LeaveHistoryRequest(BaseModel):
     """Request to get leave history - email is extracted from JWT token"""
