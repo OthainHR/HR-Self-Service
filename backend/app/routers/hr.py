@@ -156,22 +156,6 @@ async def get_leave_types():
             detail="Failed to retrieve leave types"
         )
 
-@router.post("/leave/apply")
-async def apply_for_leave(
-    leave_data: ApplyLeaveRequest,
-    user_email: str = Depends(get_user_email)
-):
-    """Apply for leave"""
-    try:
-        hr_data_service.set_authenticated_user(user_email)
-        result = await hr_data_service.create_leave_request(leave_data.dict())
-        return result
-    except Exception as e:
-        logger.error(f"Failed to apply for leave for {user_email}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to apply for leave"
-        )
 
 @router.get("/leave/history", response_model=List[LeaveHistory])
 async def get_my_leave_history(
@@ -202,17 +186,44 @@ async def apply_for_leave(
         
         # Create leave application object
         from app.models.hr import LeaveApplication
+        from datetime import datetime, date
+        
+        # Parse dates and convert to date objects
+        from_datetime = datetime.fromisoformat(leave_request.from_date.replace('Z', '+00:00'))
+        to_datetime = datetime.fromisoformat(leave_request.to_date.replace('Z', '+00:00'))
+        from_date = from_datetime.date()
+        to_date = to_datetime.date()
+        
+        # Determine if it's a half day based on sessions
+        is_half_day = leave_request.from_session != leave_request.to_session
+        
+        # Convert session to string format
+        half_day_type = None
+        if is_half_day:
+            half_day_type = "first_half" if leave_request.from_session == 0 else "second_half"
+        
         leave_app = LeaveApplication(
-            leave_type=leave_request.leave_type,
-            from_date=leave_request.from_date,
-            to_date=leave_request.to_date,
-            days_count=_calculate_leave_days(leave_request.from_date, leave_request.to_date, leave_request.is_half_day),
+            leave_type=leave_request.leave_type_id,
+            from_date=from_date,
+            to_date=to_date,
+            days_count=0.5 if is_half_day else (to_date - from_date).days + 1,
             reason=leave_request.reason,
-            is_half_day=leave_request.is_half_day,
-            half_day_type=leave_request.half_day_type
+            is_half_day=is_half_day,
+            half_day_type=half_day_type
         )
         
-        result = await hr_data_service.apply_my_leave(leave_app)
+        # Convert LeaveApplication to dictionary for the service
+        leave_data = {
+            "leave_type_id": leave_app.leave_type,
+            "from_date": leave_app.from_date.isoformat(),
+            "to_date": leave_app.to_date.isoformat(),
+            "from_session": 0 if leave_app.half_day_type == "first_half" else 1,
+            "to_session": 0 if leave_app.half_day_type == "first_half" else 1,
+            "reason": leave_app.reason,
+            "note": leave_request.note or ""
+        }
+        
+        result = await hr_data_service.create_leave_request(leave_data)
         
         return KekaMCPResponse(
             success=True,

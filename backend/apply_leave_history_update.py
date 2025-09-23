@@ -67,3 +67,4 @@ if __name__ == "__main__":
     success = asyncio.run(apply_leave_history_update())
     sys.exit(0 if success else 1)
 
+

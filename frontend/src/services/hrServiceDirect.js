@@ -57,6 +57,20 @@ const handleApiError = (error) => {
     return { success: false, error: 'HR service is temporarily unavailable. Please try again later.' };
   } else if (error.code === 'NETWORK_ERROR' || !error.response) {
     return { success: false, error: 'Network connection issue. Please check your internet connection.' };
+  } else if (error.response?.status === 422) {
+    // Validation error - handle FastAPI validation errors
+    const validationErrors = error.response?.data?.detail;
+    if (Array.isArray(validationErrors)) {
+      const errorMessages = validationErrors.map(err => {
+        const field = err.loc ? err.loc.join('.') : 'field';
+        return `${field}: ${err.msg}`;
+      });
+      return { success: false, error: errorMessages.join('; ') };
+    } else if (typeof validationErrors === 'string') {
+      return { success: false, error: validationErrors };
+    } else {
+      return { success: false, error: 'Validation error. Please check your input.' };
+    }
   } else {
     // Generic error with user-friendly message
     const userMessage = error.response?.data?.detail || 'An unexpected error occurred. Please try again.';

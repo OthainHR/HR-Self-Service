@@ -14,6 +14,7 @@ from app.models.hr import (
     Payslip, Holiday, KekaMCPResponse, LeaveStatus
 )
 from app.utils.supabase_client import supabase_admin_client
+from app.services.keka_token_service import keka_token_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -38,18 +39,32 @@ class HRDataService:
         """Basic email validation"""
         return "@" in email and "." in email.split("@")[1]
     
-    def _get_keka_headers(self) -> Dict[str, str]:
-        """Get Keka API headers"""
+    async def _get_keka_headers(self) -> Dict[str, str]:
+        """Get Keka API headers with valid token"""
+        if not self.authenticated_user_email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not authenticated"
+            )
+        
+        # Get valid tokens for the user
+        tokens = await keka_token_service.ensure_valid_tokens(self.authenticated_user_email)
+        if not tokens or not tokens.access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Keka authentication required. Please connect your Keka account."
+            )
+        
         return {
             "accept": "application/json",
-            "authorization": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjFBRjQzNjk5RUE0NDlDNkNCRUU3NDZFMjhDODM5NUIyMEE0MUNFMTgiLCJ4NXQiOiJHdlEybWVwRW5HeS01MGJpaklPVnNncEJ6aGciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2xvZ2luLmtla2EuY29tIiwibmJmIjoxNzU4MDE5NDY2LCJpYXQiOjE3NTgwMTk0NjYsImV4cCI6MTc1ODEwNTg2NiwiYXVkIjpbImtla2FhcGkiLCJodHRwczovL2xvZ2luLmtla2EuY29tL3Jlc291cmNlcyJdLCJzY29wZSI6WyJrZWthYXBpIl0sImFtciI6WyJrZWthYXBpIl0sImNsaWVudF9pZCI6IjUyNDVhMGRlLTQ3Y2UtNGZhZi1iZGQ4LWMwYWEzNmIxY2Q2MCIsInN1YiI6IjIwYmQzZTMwLWJmNjktNDdhZC04YTUxLTg3ZWU1NmZmOTkwZiIsImF1dGhfdGltZSI6MTc1ODAxOTQ2NiwiaWRwIjoibG9jYWwiLCJ0ZW5hbnRfaWQiOiIyN2U1NGNhNy1mMWI1LTRjNjMtOWYwNi1iNzkwZjI3MmQ5MjgiLCJ0ZW5hbnRpZCI6IjI3ZTU0Y2E3LWYxYjUtNGM2My05ZjA2LWI3OTBmMjcyZDkyOCIsImFwcF9uYW1lIjoiUGF5cm9sbCBBdXRvbWF0aW9uIEtleSIsInN1YmRvbWFpbiI6Im90aGFpbnNvZnQua2VrYS5jb20iLCJqdGkiOiIxNkRBMkFGMDNCMTEwQUNCNTdCMTM0ODkxMzlCNUQwRiJ9.XAkfFvpTeMcZnpokNs-yV6k400z1bQWgKnP2rAV8N5wAV1X0YAN3_1WspYgGsnpIJTw1gPpw1BiehQu8wKbbWv5H2OVMl30yDGlU4G2YH14iiJDO0sNZdLaoZ_7IFbduw2U4hRT2zc5tsLXlgcCP3IMKlHBxXwgcydu1YQJNU-jvw3J54112BCxMPc_t9Y028f_fCKvHnS9Snk7wsytzpPIYT5myWviCxVS_ceiUsiA-DbEqi7sMIWbLuWAEmNljXf8aK2SwIfh9YKE56yfmMHjAQaZpFNAdGwJchZAAJxE1YV59IwSpA1nOiqPsx9jdAAFcjuJYrKb_b3Y6tgQqCA"
+            "authorization": f"Bearer {tokens.access_token}"
         }
     
     async def _fetch_keka_leave_balance(self, employee_id: str) -> List[Dict[str, Any]]:
         """Fetch leave balance from Keka API"""
         try:
             url = f"https://othainsoft.keka.com/api/v1/time/leavebalance?employeeIds={employee_id}"
-            headers = self._get_keka_headers()
+            headers = await self._get_keka_headers()
             
             response = requests.get(url, headers=headers)
             response.raise_for_status()
@@ -69,13 +84,16 @@ class HRDataService:
         """Fetch leave requests from Keka API"""
         try:
             url = f"https://othainsoft.keka.com/api/v1/time/leaverequests?employeeIds={employee_id}"
-            headers = self._get_keka_headers()
+            headers = await self._get_keka_headers()
             
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             
             data = response.json()
+            logger.info(f"Keka leave requests API response: {data}")
             if data.get("succeeded") and data.get("data"):
+                logger.info(f"Found {len(data['data'])} leave requests for employee {employee_id}")
+                logger.info(f"Pagination info: page {data.get('pageNumber', 1)} of {data.get('totalPages', 1)}, total records: {data.get('totalRecords', 0)}")
                 return data["data"]
             else:
                 logger.warning(f"No leave requests found for employee {employee_id}")
@@ -89,7 +107,7 @@ class HRDataService:
         """Fetch leave types from Keka API"""
         try:
             url = "https://othainsoft.keka.com/api/v1/time/leavetypes"
-            headers = self._get_keka_headers()
+            headers = await self._get_keka_headers()
             
             response = requests.get(url, headers=headers)
             response.raise_for_status()
@@ -109,15 +127,20 @@ class HRDataService:
         """Create a leave request in Keka API"""
         try:
             url = "https://othainsoft.keka.com/api/v1/time/leaverequests"
-            headers = self._get_keka_headers()
+            headers = await self._get_keka_headers()
             headers["content-type"] = "application/*+json"
             
             # Prepare the request data according to Keka API format
+            # Convert date strings to proper datetime format for Keka API
+            from datetime import datetime
+            from_date_dt = datetime.fromisoformat(leave_data["from_date"].replace('Z', '+00:00'))
+            to_date_dt = datetime.fromisoformat(leave_data["to_date"].replace('Z', '+00:00'))
+            
             request_data = {
                 "employeeId": employee_id,
                 "requestedBy": employee_id,
-                "fromDate": leave_data["from_date"],
-                "toDate": leave_data["to_date"],
+                "fromDate": from_date_dt.isoformat(),
+                "toDate": to_date_dt.isoformat(),
                 "fromSession": leave_data.get("from_session", 0),  # 0 = First Half, 1 = Second Half
                 "toSession": leave_data.get("to_session", 0),
                 "leaveTypeId": leave_data["leave_type_id"],
@@ -126,7 +149,18 @@ class HRDataService:
             }
             
             response = requests.post(url, headers=headers, json=request_data)
-            response.raise_for_status()
+            
+            # Log the request details for debugging
+            logger.info(f"Keka API Request URL: {url}")
+            logger.info(f"Keka API Request Headers: {headers}")
+            logger.info(f"Keka API Request Data: {request_data}")
+            logger.info(f"Keka API Response Status: {response.status_code}")
+            logger.info(f"Keka API Response Text: {response.text}")
+            
+            if response.status_code != 200:
+                error_detail = response.text
+                logger.error(f"Keka API Error {response.status_code}: {error_detail}")
+                return {"success": False, "error": f"Keka API Error {response.status_code}: {error_detail}"}
             
             data = response.json()
             if data.get("succeeded"):
@@ -258,7 +292,48 @@ class HRDataService:
             # Fetch real leave requests data from Keka API
             keka_leave_requests = await self._fetch_keka_leave_requests(employee_id)
             
-            return keka_leave_requests
+            # Process the data to match the frontend expectations
+            processed_requests = []
+            for request in keka_leave_requests:
+                try:
+                    # Parse dates - handle ISO format with timezone
+                    from_date_str = request["fromDate"].replace('Z', '+00:00')
+                    to_date_str = request["toDate"].replace('Z', '+00:00')
+                    applied_date_str = request["requestedOn"].replace('Z', '+00:00')
+                    
+                    from_date_parsed = datetime.fromisoformat(from_date_str).date()
+                    to_date_parsed = datetime.fromisoformat(to_date_str).date()
+                    applied_date_parsed = datetime.fromisoformat(applied_date_str)
+                    
+                    # Extract leave type from selection array
+                    leave_type = "Unknown"
+                    if request.get("selection") and len(request["selection"]) > 0:
+                        leave_type = request["selection"][0].get("leaveTypeName", "Unknown")
+                    
+                    # Map status (1 = approved, 0 = pending, 2 = rejected, etc.)
+                    status_map = {0: "pending", 1: "approved", 2: "rejected", 3: "cancelled"}
+                    status = status_map.get(request.get("status", 0), "pending")
+                    
+                    processed_requests.append({
+                        "id": request["id"],
+                        "leaveTypeName": leave_type,
+                        "fromDate": from_date_parsed.isoformat(),
+                        "toDate": to_date_parsed.isoformat(),
+                        "appliedDate": applied_date_parsed.isoformat(),
+                        "createdDate": applied_date_parsed.isoformat(),
+                        "status": status,
+                        "reason": request.get("leaveReason") or request.get("note", "") or "No reason provided",
+                        "note": request.get("note", ""),
+                        "daysCount": request["selection"][0].get("count", 1) if request.get("selection") else 1
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to process leave request {request.get('id', 'unknown')}: {str(e)}")
+                    continue
+            
+            # Sort by applied date descending
+            processed_requests.sort(key=lambda x: x["appliedDate"], reverse=True)
+            
+            return processed_requests
             
         except Exception as e:
             logger.error(f"Failed to get leave requests for {self.authenticated_user_email}: {str(e)}")
@@ -312,31 +387,61 @@ class HRDataService:
             employee_data = await self._get_employee_by_email(self.authenticated_user_email)
             employee_id = employee_data["keka_employee_id"]
             
-            query = supabase_admin_client.table("keka_employee_leave_history").select("*").eq("keka_employee_id", employee_id)
+            # Fetch live data from Keka API instead of database
+            keka_leave_requests = await self._fetch_keka_leave_requests(employee_id)
             
-            if from_date:
-                query = query.gte("from_date", from_date.isoformat())
-            if to_date:
-                query = query.lte("to_date", to_date.isoformat())
+            # Convert to LeaveHistory objects
+            leave_history = []
+            for request in keka_leave_requests:
+                try:
+                    # Parse dates - handle ISO format with timezone
+                    from_date_str = request["fromDate"].replace('Z', '+00:00')
+                    to_date_str = request["toDate"].replace('Z', '+00:00')
+                    applied_date_str = request["requestedOn"].replace('Z', '+00:00')
+                    
+                    from_date_parsed = datetime.fromisoformat(from_date_str).date()
+                    to_date_parsed = datetime.fromisoformat(to_date_str).date()
+                    applied_date_parsed = datetime.fromisoformat(applied_date_str)
+                    
+                    # Apply date filters
+                    if from_date and from_date_parsed < from_date:
+                        continue
+                    if to_date and from_date_parsed > to_date:
+                        continue
+                    
+                    # Extract leave type from selection array
+                    leave_type = "Unknown"
+                    if request.get("selection") and len(request["selection"]) > 0:
+                        leave_type = request["selection"][0].get("leaveTypeName", "Unknown")
+                    
+                    # Map status (1 = approved, 0 = pending, 2 = rejected, etc.)
+                    status_map = {0: LeaveStatus.PENDING, 1: LeaveStatus.APPROVED, 2: LeaveStatus.REJECTED, 3: LeaveStatus.CANCELLED}
+                    status = status_map.get(request.get("status", 0), LeaveStatus.PENDING)
+                    
+                    # Debug logging
+                    logger.info(f"Processing leave request {request['id']}: status={request.get('status')} -> {status}")
+                    
+                    leave_history.append(LeaveHistory(
+                        id=request["id"],
+                        leave_type=leave_type,
+                        from_date=from_date_parsed,
+                        to_date=to_date_parsed,
+                        days_count=request["selection"][0].get("count", 1) if request.get("selection") else 1,
+                        reason=request.get("leaveReason") or request.get("note", "") or "No reason provided",
+                        status=status,
+                        applied_date=applied_date_parsed,
+                        approved_date=datetime.fromisoformat(request["lastActionTakenOn"].replace('Z', '+00:00')) if request.get("lastActionTakenOn") and status == LeaveStatus.APPROVED else None,
+                        approved_by=None,  # Not available in this API response
+                        comments=request.get("note", "")
+                    ))
+                except Exception as e:
+                    logger.warning(f"Failed to parse leave request {request.get('id', 'unknown')}: {str(e)}")
+                    continue
             
-            response = query.order("applied_date", desc=True).execute()
-            leave_requests = response.data
+            # Sort by applied date descending
+            leave_history.sort(key=lambda x: x.applied_date, reverse=True)
             
-            return [
-                LeaveHistory(
-                    id=leave["leave_request_id"],
-                    leave_type=leave["leave_type"],
-                    from_date=datetime.fromisoformat(leave["from_date"]).date() if leave.get("from_date") else None,
-                    to_date=datetime.fromisoformat(leave["to_date"]).date() if leave.get("to_date") else None,
-                    days_count=float(leave["days_count"]) if leave.get("days_count") else 0,
-                    reason=leave.get("reason"),
-                    status=LeaveStatus(leave["status"].lower()) if leave.get("status") else LeaveStatus.PENDING,
-                    applied_date=datetime.fromisoformat(leave["applied_date"]) if leave.get("applied_date") else None,
-                    approved_date=datetime.fromisoformat(leave["approved_date"]) if leave.get("approved_date") else None,
-                    approved_by=leave.get("approved_by"),
-                    comments=leave.get("comments")
-                ) for leave in leave_requests
-            ]
+            return leave_history
         except Exception as e:
             logger.error(f"Failed to get leave history for {self.authenticated_user_email}: {str(e)}")
             raise HTTPException(
@@ -457,21 +562,6 @@ class HRDataService:
                 detail="Failed to retrieve holidays"
             )
     
-    async def get_leave_types(self) -> List[Dict[str, Any]]:
-        """Get available leave types from leave balances"""
-        try:
-            response = supabase_admin_client.table("keka_employee_leave_balances").select("leave_type").execute()
-            
-            # Get unique leave types
-            leave_types = list(set([balance["leave_type"] for balance in response.data if balance.get("leave_type")]))
-            
-            return [{"name": leave_type, "identifier": leave_type} for leave_type in leave_types]
-        except Exception as e:
-            logger.error(f"Failed to get leave types: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve leave types"
-            )
     
     def _format_address(self, address_data: Optional[Dict[str, Any]]) -> Optional[str]:
         """Format address data into a readable string"""

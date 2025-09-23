@@ -177,7 +177,23 @@ const HRLeaveManagement = () => {
         // Show success message
         setError(null);
       } else {
-        setError(result.error);
+        // Handle different error formats
+        let errorMessage = 'Failed to apply for leave';
+        if (typeof result.error === 'string') {
+          errorMessage = result.error;
+        } else if (result.error && typeof result.error === 'object') {
+          // Handle validation errors or other object errors
+          if (Array.isArray(result.error)) {
+            errorMessage = result.error.map(err => err.msg || err.message || JSON.stringify(err)).join(', ');
+          } else if (result.error.detail) {
+            errorMessage = result.error.detail;
+          } else if (result.error.message) {
+            errorMessage = result.error.message;
+          } else {
+            errorMessage = JSON.stringify(result.error);
+          }
+        }
+        setError(errorMessage);
       }
     } catch (err) {
       setError('Failed to apply for leave');
