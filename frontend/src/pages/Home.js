@@ -476,6 +476,128 @@ const Home = () => {
           animate="visible"
           style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
         >
+              {/* Announcement Section */}
+              <motion.div variants={itemVariants}>
+                <motion.div
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: 0.2, duration: 0.8, ease: [0.25, 0.25, 0, 1] }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  style={{ 
+                    width: '100%',
+                    marginBottom: 'clamp(2rem, 5vw, 5rem)' // Match chat spacing
+                  }}
+                >
+                    <Paper
+                      sx={{
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        background: isDarkMode 
+                          ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+                        backdropFilter: 'blur(25px)',
+                        border: isDarkMode 
+                          ? '1px solid rgba(148, 163, 184, 0.1)' 
+                          : '1px solid rgba(226, 232, 240, 0.3)',
+                        boxShadow: isDarkMode
+                          ? '0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                          : '0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                        position: 'relative',
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          boxShadow: isDarkMode
+                            ? '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                            : '0 25px 50px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                        }
+                      }}
+                    >
+                      {/* Announcement Header */}
+                      <Box sx={{ 
+                        p: { xs: 2, sm: 2.5, md: 3 }, 
+                        textAlign: 'center',
+                        borderBottom: isDarkMode 
+                          ? '1px solid rgba(148, 163, 184, 0.1)' 
+                          : '1px solid rgba(226, 232, 240, 0.3)'
+                      }}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 700,
+                            color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                            fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1
+                          }}
+                        >
+                          <Box sx={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            '@keyframes pulse': {
+                              '0%': { opacity: 1, transform: 'scale(1)' },
+                              '50%': { opacity: 0.8, transform: 'scale(1.05)' },
+                              '100%': { opacity: 1, transform: 'scale(1)' }
+                            },
+                            animation: 'pulse 2s infinite'
+                          }}>
+                            <InfoIcon sx={{ fontSize: '14px', color: 'white' }} />
+                          </Box>
+                          Announcement
+                        </Typography>
+                      </Box>
+                      
+                      {/* Image Container */}
+                      <Box sx={{ 
+                        position: 'relative',
+                        marginTop: '-35px',
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        p: { xs: 2, sm: 3, md: 4 }
+                      }}>
+                        <motion.img
+                          src="/thumbnail_1.jpg"
+                          alt="Announcement"
+                          style={{
+                            width: '30%',
+                            height: '300px', // Fixed height for consistent cropping
+                            borderRadius: '16px',
+                            objectFit: 'cover', // Changed from contain to cover for cropping
+                            objectPosition: 'center 0%', // Move image down to show more of the top
+                            filter: isDarkMode 
+                              ? 'brightness(0.9) contrast(1.1)' 
+                              : 'brightness(1) contrast(1)',
+                            transition: 'all 0.3s ease'
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                        
+                        {/* Subtle overlay for better text readability if needed */}
+                        <Box sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: isDarkMode 
+                            ? 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, transparent 100%)'
+                            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%)',
+                          borderRadius: '16px',
+                          pointerEvents: 'none',
+                          margin: { xs: 2, sm: 3, md: 4 }
+                        }} />
+                      </Box>
+                    </Paper>
+                </motion.div>
+              </motion.div>
+
               {/* Enhanced Mini Chat Interface */}
               <motion.div variants={itemVariants}>
           <Box sx={{ 
@@ -515,7 +637,7 @@ const Home = () => {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2, duration: 0.8, ease: [0.25, 0.25, 0, 1] }}
+                        transition={{ delay: 0.4, duration: 0.8, ease: [0.25, 0.25, 0, 1] }}
                       >
             <Box sx={{
                           display: 'flex',
@@ -570,7 +692,7 @@ const Home = () => {
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.25, 0, 1] }}
+                        transition={{ delay: 0.5, duration: 0.6, ease: [0.25, 0.25, 0, 1] }}
                         style={{ 
                           display: 'flex', 
                           justifyContent: 'center',
@@ -611,7 +733,7 @@ const Home = () => {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4, duration: 0.6 }}
+                          transition={{ delay: 0.6, duration: 0.6 }}
                         >
                           <Typography variant="h5" sx={{ 
                             fontWeight: 600,
@@ -634,7 +756,7 @@ const Home = () => {
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.6 }}
+                        transition={{ delay: 0.8, duration: 0.6 }}
                       >
                         <Typography variant="h4" sx={{ 
                   fontWeight: 800,
@@ -663,7 +785,7 @@ const Home = () => {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8, duration: 0.6 }}
+                      transition={{ delay: 1.0, duration: 0.6 }}
                     >
                       <Box component="form" onSubmit={handleMiniChatSubmit} sx={{ mb: 4 }}>
                         <TextField
@@ -764,7 +886,7 @@ const Home = () => {
         <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1, duration: 0.6 }}
+                      transition={{ delay: 1.2, duration: 0.6 }}
                     >
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="body1" sx={{ 

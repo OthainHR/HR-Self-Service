@@ -56,7 +56,8 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   WbSunny as MorningIcon, // Added MorningIcon
   NightsStay as EveningIcon, // Added EveningIcon
-  Delete as DeleteIcon // Added DeleteIcon
+  Delete as DeleteIcon, // Added DeleteIcon
+  Info as InfoIcon // Added InfoIcon for announcement
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -2032,8 +2033,9 @@ const CabService = () => {
           </Box>
         </motion.div>
 
+        
         {/* Future feature placeholder */}
-        <Box sx={{ textAlign: 'center', mt: 2, mb: 3 }}>
+        {/* <Box sx={{ textAlign: 'center', mt: 2, mb: 3 }}>
           <FormControlLabel
             control={
               <Switch
@@ -2044,7 +2046,124 @@ const CabService = () => {
             }
             label="Enable Hands-free Auto Drop-off"
           />
-        </Box>
+        </Box> */}
+        
+
+        {/* Announcement Section - Compact */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          style={{ marginBottom: theme.spacing(3) }}
+        >
+          <Paper
+            sx={{
+              borderRadius: '16px',
+              overflow: 'hidden',
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(20px)',
+              border: isDarkMode 
+                ? '1px solid rgba(148, 163, 184, 0.1)' 
+                : '1px solid rgba(226, 232, 240, 0.3)',
+              boxShadow: isDarkMode
+                ? '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                : '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+              position: 'relative',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: isDarkMode
+                  ? '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                  : '0 12px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1)',
+              }
+            }}
+          >
+            {/* Compact Header */}
+            <Box sx={{ 
+              p: { xs: 1.5, sm: 2 }, 
+              textAlign: 'center',
+              borderBottom: isDarkMode 
+                ? '1px solid rgba(148, 163, 184, 0.1)' 
+                : '1px solid rgba(226, 232, 240, 0.3)'
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                  fontSize: { xs: '0.95rem', sm: '1rem' },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}
+              >
+                <Box sx={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  '@keyframes pulse': {
+                    '0%': { opacity: 1, transform: 'scale(1)' },
+                    '50%': { opacity: 0.8, transform: 'scale(1.05)' },
+                    '100%': { opacity: 1, transform: 'scale(1)' }
+                  },
+                  animation: 'pulse 2s infinite'
+                }}>
+                  <InfoIcon sx={{ fontSize: '12px', color: 'white' }} />
+                </Box>
+                Announcement
+              </Typography>
+            </Box>
+            
+            {/* Compact Image Container */}
+            <Box sx={{ 
+              position: 'relative',
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              p: { xs: 1.5, sm: 2 }
+            }}>
+              <motion.img
+                src="/thumbnail_1.jpg"
+                alt="Announcement"
+                style={{
+                  width: '30%',
+                  height: '300px', // Slightly shorter to make it appear wider
+                  borderRadius: '12px',
+                  objectFit: 'cover', // Back to cover to crop bottom
+                  objectPosition: 'center top', // Focus on top portion, crop the bottom
+                  filter: isDarkMode 
+                    ? 'brightness(0.9) contrast(1.1)' 
+                    : 'brightness(1) contrast(1)',
+                  transition: 'all 0.3s ease'
+                }}
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              />
+              
+              {/* Subtle overlay */}
+              <Box sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, transparent 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%)',
+                borderRadius: '12px',
+                pointerEvents: 'none',
+                margin: { xs: 1.5, sm: 2 }
+              }} />
+            </Box>
+          </Paper>
+        </motion.div>
 
         {/* Eligibility Notification Alert */}
         {!loadingWhitelistStatus && !isUserWhitelisted && !isHrAdmin && (
