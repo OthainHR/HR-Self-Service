@@ -555,7 +555,7 @@ const Home = () => {
                       {/* Image Container */}
                       <Box sx={{ 
                         position: 'relative',
-                        marginTop: '-35px',
+                        marginTop: '-25px',
                         width: '100%',
                         display: 'flex',
                         justifyContent: 'center',
@@ -565,7 +565,7 @@ const Home = () => {
                           src="/thumbnail_1.jpg"
                           alt="Announcement"
                           style={{
-                            width: '30%',
+                            width: 'clamp(20%, 30vw, 80%)', // Wider on mobile, 30% on desktop/larger screens
                             height: '300px', // Fixed height for consistent cropping
                             borderRadius: '16px',
                             objectFit: 'cover', // Changed from contain to cover for cropping

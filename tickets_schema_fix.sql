@@ -82,6 +82,23 @@ create index if not exists idx_tickets_status on public.tickets(status);
 create index if not exists idx_tickets_created_at on public.tickets(created_at);
 create index if not exists idx_tickets_due_at on public.tickets(due_at);
 
+-- Enable RLS
+alter table public.tickets enable row level security;
+
+-- Create function to check if user is in additional emails for a ticket
+create or replace function user_in_additional_emails(ticket_uuid uuid, user_uuid uuid)
+returns boolean as $$
+begin
+    return exists (
+        select 1 from ticket_additional_emails 
+        where ticket_id = ticket_uuid and user_id = user_uuid
+    );
+end;
+$$ language plpgsql security definer;
+
+-- Grant execute permission
+grant execute on function user_in_additional_emails(uuid, uuid) to authenticated;
+
 do $$
 begin
   if not exists (select 1 from pg_proc where proname = 'set_updated_at_tickets') then
@@ -107,3 +124,156 @@ begin
       execute function public.set_updated_at_tickets();
   end if;
 end$$;
+
+-- Drop any existing policies that give blanket admin access
+drop policy if exists "tickets_select_policy" on public.tickets;
+drop policy if exists "tickets_insert_policy" on public.tickets;
+drop policy if exists "tickets_update_policy" on public.tickets;
+drop policy if exists "Allow users to view relevant tickets" on public.tickets;
+
+-- Create restrictive SELECT policy - admins can only see tickets they're involved with
+create policy "tickets_select_restricted" on public.tickets
+for select using (
+    -- Ticket requester can see their own tickets
+    requested_by = auth.uid() 
+    
+    -- Assigned user can see tickets assigned to them
+    or assignee = auth.uid()
+    
+    -- Functional mailboxes can see relevant tickets (these are service accounts)
+    or lower(auth.jwt()->>'email') in (
+        'tickets@othainsoft.com',
+        'it@othainsoft.com',
+        'hr@othainsoft.com',
+        'accounts@othainsoft.com',
+        'operations@othainsoft.com',
+        'ai@othainsoft.com'
+    )
+    
+    -- HR admin can see HR tickets they're involved with (requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'hr_admin'
+        and (requested_by = auth.uid() or assignee = auth.uid())
+        and exists (
+            select 1 from public.ticket_categories c
+            where c.id = category_id and c.name = 'HR Requests'
+        )
+    )
+    
+    -- IT admin can see IT tickets they're involved with (requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'it_admin'
+        and (requested_by = auth.uid() or assignee = auth.uid())
+        and exists (
+            select 1 from public.ticket_categories c
+            where c.id = category_id and c.name = 'IT Requests'
+        )
+    )
+    
+    -- Payroll admin can see payroll/expense tickets they're involved with
+    or (
+        (auth.jwt() ->> 'role') = 'payroll_admin'
+        and (requested_by = auth.uid() or assignee = auth.uid())
+        and exists (
+            select 1 from public.ticket_categories c
+            where c.id = category_id 
+            and c.name in ('Payroll Requests', 'Expense Management')
+        )
+    )
+    
+    -- Operations admin can see operations tickets they're involved with
+    or (
+        (auth.jwt() ->> 'role') = 'operations_admin'
+        and (requested_by = auth.uid() or assignee = auth.uid())
+        and exists (
+            select 1 from public.ticket_categories c
+            where c.id = category_id and c.name = 'Operations'
+        )
+    )
+    
+    -- AI admin can see AI tickets they're involved with
+    or (
+        (auth.jwt() ->> 'role') = 'ai_admin'
+        and (requested_by = auth.uid() or assignee = auth.uid())
+        and exists (
+            select 1 from public.ticket_categories c
+            where c.id = category_id and c.name = 'AI Requests'
+        )
+    )
+    
+    -- Users in additional emails list for this ticket
+    or user_in_additional_emails(id, auth.uid())
+    
+    -- ONLY global admin (not role-based admins) can see all tickets
+    or (auth.jwt() ->> 'role') = 'admin'
+);
+
+-- Create INSERT policy - allow users to create tickets
+create policy "tickets_insert_restricted" on public.tickets
+for insert with check (
+    -- Users can create tickets for themselves
+    requested_by = auth.uid()
+    
+    -- Functional mailboxes can create tickets
+    or lower(auth.jwt()->>'email') in (
+        'tickets@othainsoft.com',
+        'it@othainsoft.com', 
+        'hr@othainsoft.com',
+        'accounts@othainsoft.com',
+        'operations@othainsoft.com',
+        'ai@othainsoft.com'
+    )
+    
+    -- Global admin can create tickets for anyone
+    or (auth.jwt() ->> 'role') = 'admin'
+);
+
+-- Create UPDATE policy - restrict who can update tickets
+create policy "tickets_update_restricted" on public.tickets
+for update using (
+    -- Ticket requester can update their own tickets
+    requested_by = auth.uid()
+    
+    -- Assigned user can update tickets assigned to them
+    or assignee = auth.uid()
+    
+    -- Functional mailboxes can update relevant tickets
+    or lower(auth.jwt()->>'email') in (
+        'tickets@othainsoft.com',
+        'it@othainsoft.com',
+        'hr@othainsoft.com', 
+        'accounts@othainsoft.com',
+        'operations@othainsoft.com',
+        'ai@othainsoft.com'
+    )
+    
+    -- Role-based admins can only update tickets they're involved with
+    or (
+        (auth.jwt() ->> 'role') in ('hr_admin', 'it_admin', 'payroll_admin', 'operations_admin', 'ai_admin')
+        and (requested_by = auth.uid() or assignee = auth.uid())
+    )
+    
+    -- Users in additional emails list
+    or user_in_additional_emails(id, auth.uid())
+    
+    -- ONLY global admin can update any ticket
+    or (auth.jwt() ->> 'role') = 'admin'
+) with check (
+    -- Same restrictions for what can be updated
+    requested_by = auth.uid()
+    or assignee = auth.uid()
+    or lower(auth.jwt()->>'email') in (
+        'tickets@othainsoft.com',
+        'it@othainsoft.com',
+        'hr@othainsoft.com',
+        'accounts@othainsoft.com', 
+        'operations@othainsoft.com',
+        'ai@othainsoft.com'
+    )
+    or (
+        (auth.jwt() ->> 'role') in ('hr_admin', 'it_admin', 'payroll_admin', 'operations_admin', 'ai_admin')
+        and (requested_by = auth.uid() or assignee = auth.uid())
+    )
+    or user_in_additional_emails(id, auth.uid())
+    or (auth.jwt() ->> 'role') = 'admin'
+);

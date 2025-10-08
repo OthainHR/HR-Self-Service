@@ -399,6 +399,176 @@ class DirectHRService {
         return '#9e9e9e'; // Grey
     }
   }
+
+  // ============================================================
+  // Keka Direct Token Management
+  // ============================================================
+
+  /**
+   * Generate a new Keka API token for the current user
+   * This uses the simpler grant_type=kekaapi approach
+   */
+  async generateKekaToken() {
+    try {
+      const kekaDirectClient = axios.create({
+        baseURL: `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/keka-direct`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Add auth interceptor
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await kekaDirectClient.post('/generate-token', {}, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error generating Keka token:', error);
+      return handleApiError(error);
+    }
+  }
+
+  /**
+   * Get the status of the user's cached Keka API token
+   */
+  async getKekaTokenStatus() {
+    try {
+      const kekaDirectClient = axios.create({
+        baseURL: `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/keka-direct`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await kekaDirectClient.get('/token-status', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error getting token status:', error);
+      return handleApiError(error);
+    }
+  }
+
+  /**
+   * Refresh the user's Keka API token
+   * Forces generation of a new token even if current one is valid
+   */
+  async refreshKekaToken() {
+    try {
+      const kekaDirectClient = axios.create({
+        baseURL: `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/keka-direct`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await kekaDirectClient.post('/refresh-token', {}, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error refreshing Keka token:', error);
+      return handleApiError(error);
+    }
+  }
+
+  /**
+   * Revoke the user's cached Keka API token
+   */
+  async revokeKekaToken() {
+    try {
+      const kekaDirectClient = axios.create({
+        baseURL: `${process.env.REACT_APP_API_URL || 'https://hr-self-service.onrender.com'}/api/keka-direct`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await kekaDirectClient.delete('/revoke-token', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error revoking Keka token:', error);
+      return handleApiError(error);
+    }
+  }
+
+  /**
+   * Ensure user has a valid Keka token before making HR API calls
+   * This should be called before any HR API operation
+   */
+  async ensureKekaToken() {
+    try {
+      // Check token status
+      const statusResult = await this.getKekaTokenStatus();
+      
+      if (!statusResult.success) {
+        // Generate new token if none exists
+        const generateResult = await this.generateKekaToken();
+        return generateResult;
+      }
+
+      const status = statusResult.data?.status;
+      
+      // If token is expired or not found, generate new one
+      if (status === 'expired' || status === 'not_found') {
+        const refreshResult = await this.refreshKekaToken();
+        return refreshResult;
+      }
+
+      // Token is valid
+      return { success: true, message: 'Token is valid' };
+    } catch (error) {
+      console.error('Error ensuring Keka token:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Export singleton instance

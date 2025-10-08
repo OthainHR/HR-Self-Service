@@ -202,3 +202,15 @@ class KekaAuthResponse(BaseModel):
     message: str
     requires_setup: bool = False
     auth_url: Optional[str] = None
+
+class KekaDirectTokenRequest(BaseModel):
+    """Request to generate Keka direct token"""
+    pass
+
+class KekaDirectTokenResponse(BaseModel):
+    """Response from Keka direct token generation"""
+    success: bool
+    message: str
+    access_token: Optional[str] = None
+    expires_in: Optional[int] = None
+    token_type: Optional[str] = "Bearer"

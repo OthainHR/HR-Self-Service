@@ -141,6 +141,16 @@ const HRSelfService = () => {
     setError(null);
     
     try {
+      // Ensure user has a valid Keka API token
+      console.log('Ensuring Keka API token...');
+      const tokenResult = await hrService.ensureKekaToken();
+      if (!tokenResult.success) {
+        console.warn('Failed to ensure Keka token:', tokenResult.error);
+        // Continue anyway - the backend will handle token generation
+      } else {
+        console.log('Keka token ensured successfully');
+      }
+
       // Check service health
       const healthResult = await hrService.checkHRServiceHealth();
       setHrHealthStatus(healthResult);
@@ -148,7 +158,6 @@ const HRSelfService = () => {
       if (!healthResult?.success) {
         throw new Error('HR service is not available');
       }
-
 
       // Load initial dashboard data
       await loadDashboardData();
