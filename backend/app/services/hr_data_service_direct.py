@@ -121,7 +121,7 @@ class HRDataServiceDirect:
                 join_date=datetime.fromisoformat(employee_data.get("joiningDate", datetime.now().isoformat()).replace("Z", "+00:00")).date(),
                 phone=employee_data.get("mobilePhone") or employee_data.get("workPhone"),
                 address=employee_data.get("currentAddress"),
-                employee_status=employee_data.get("employmentStatus", "active")
+                employee_status=self._map_employee_status(employee_data.get("employmentStatus") or employee_data.get("accountStatus", 1))
             )
             
         except HTTPException:
@@ -133,8 +133,19 @@ class HRDataServiceDirect:
                 detail=f"Failed to retrieve profile: {str(e)}"
             )
     
+    def _map_employee_status(self, status_value: any) -> str:
+        """Map employee status from int or string to string"""
+        if isinstance(status_value, str):
+            return status_value.lower()
+        elif isinstance(status_value, int):
+            # Map numeric status to string
+            status_map = {0: "inactive", 1: "active", 2: "suspended", 3: "terminated"}
+            return status_map.get(status_value, "active")
+        else:
+            return "active"
+    
     async def get_my_raw_profile(self) -> Dict[str, Any]:
-        """Get raw employee data from Keka"""
+        """Get raw employee profile data"""
         try:
             employee_id = await self._get_employee_id()
             employee_data = await keka_api_service.get_employee_by_id(employee_id)
@@ -142,7 +153,7 @@ class HRDataServiceDirect:
             if not employee_data:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Employee data not found"
+                    detail="Employee profile not found"
                 )
             
             return employee_data
