@@ -176,6 +176,74 @@ class HRDataServiceDirect:
                 detail=f"Failed to retrieve leave requests: {str(e)}"
             )
     
+    async def get_my_leave_history(
+        self, 
+        from_date: Optional[date] = None, 
+        to_date: Optional[date] = None
+    ) -> List[LeaveHistory]:
+        """Get leave history for the authenticated user"""
+        try:
+            employee_id = await self._get_employee_id()
+            
+            # Use default date range if not provided (last 6 months)
+            if not to_date:
+                to_date = date.today()
+            if not from_date:
+                from_date = to_date - timedelta(days=180)
+            
+            # Get leave requests from Keka API (which includes history)
+            requests_data = await keka_api_service.get_leave_requests(employee_id)
+            
+            if not requests_data or "data" not in requests_data:
+                return []
+            
+            # Transform to LeaveHistory format
+            history = []
+            for req in requests_data.get("data", []):
+                try:
+                    # Parse dates
+                    req_from_date = datetime.fromisoformat(req.get("fromDate", "").replace("Z", "+00:00")).date()
+                    req_to_date = datetime.fromisoformat(req.get("toDate", "").replace("Z", "+00:00")).date()
+                    
+                    # Filter by date range
+                    if from_date and req_from_date < from_date:
+                        continue
+                    if to_date and req_from_date > to_date:
+                        continue
+                    
+                    # Calculate days count
+                    days_count = (req_to_date - req_from_date).days + 1
+                    
+                    # Map status (0=pending, 1=approved, 2=rejected, 3=cancelled)
+                    status_map = {0: "pending", 1: "approved", 2: "rejected", 3: "cancelled"}
+                    status_code = req.get("status", 0)
+                    status_str = status_map.get(status_code, "pending")
+                    
+                    history_item = LeaveHistory(
+                        leave_type=req.get("leaveTypeName", "Unknown"),
+                        from_date=req_from_date,
+                        to_date=req_to_date,
+                        days_count=days_count,
+                        reason=req.get("reason", ""),
+                        status=status_str,
+                        applied_date=datetime.fromisoformat(req.get("createdDate", "").replace("Z", "+00:00")).date() if req.get("createdDate") else None
+                    )
+                    history.append(history_item)
+                except (ValueError, KeyError, TypeError) as e:
+                    logger.warning(f"Skipping invalid leave record: {str(e)}")
+                    continue
+            
+            return history
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get leave history: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve leave history: {str(e)}"
+            )
+    
     async def get_leave_types(self) -> List[Dict[str, Any]]:
         """Get all leave types"""
         try:
