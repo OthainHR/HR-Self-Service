@@ -63,6 +63,7 @@ class HRDataServiceDirect:
         """Get employee profile"""
         try:
             employee_id = await self._get_employee_id()
+            logger.info(f"Fetching profile for employee ID: {employee_id}")
             employee_data = await keka_api_service.get_employee_by_id(employee_id)
             
             if not employee_data:
@@ -71,16 +72,47 @@ class HRDataServiceDirect:
                     detail="Employee profile not found"
                 )
             
+            # Log the raw data structure for debugging
+            logger.info(f"Employee data keys: {list(employee_data.keys())}")
+            logger.info(f"Full name: {employee_data.get('fullName')}, Display name: {employee_data.get('displayName')}")
+            logger.info(f"Designation: {employee_data.get('designation')}, Department: {employee_data.get('department')}")
+            
             # Map Keka data to our model
+            # Try multiple field name variations
+            full_name = (
+                employee_data.get("fullName") or 
+                employee_data.get("displayName") or 
+                f"{employee_data.get('firstName', '')} {employee_data.get('lastName', '')}".strip() or
+                "N/A"
+            )
+            
+            designation_name = ""
+            if isinstance(employee_data.get("designation"), dict):
+                designation_name = employee_data.get("designation", {}).get("name", "")
+            elif isinstance(employee_data.get("designation"), str):
+                designation_name = employee_data.get("designation", "")
+            
+            department_name = ""
+            if isinstance(employee_data.get("department"), dict):
+                department_name = employee_data.get("department", {}).get("name", "")
+            elif isinstance(employee_data.get("department"), str):
+                department_name = employee_data.get("department", "")
+            
+            manager_name = None
+            if isinstance(employee_data.get("reportingManager"), dict):
+                manager_name = employee_data.get("reportingManager", {}).get("fullName")
+            elif isinstance(employee_data.get("reportingManager"), str):
+                manager_name = employee_data.get("reportingManager")
+            
             return EmployeeProfile(
                 employee_id=employee_data.get("id", ""),
                 email=employee_data.get("email", self.authenticated_user_email),
-                full_name=employee_data.get("fullName", ""),
-                designation=employee_data.get("designation", {}).get("name", ""),
-                department=employee_data.get("department", {}).get("name", ""),
-                manager=employee_data.get("reportingManager", {}).get("fullName"),
-                join_date=datetime.fromisoformat(employee_data.get("joiningDate", datetime.now().isoformat())).date(),
-                phone=employee_data.get("mobilePhone"),
+                full_name=full_name,
+                designation=designation_name,
+                department=department_name,
+                manager=manager_name,
+                join_date=datetime.fromisoformat(employee_data.get("joiningDate", datetime.now().isoformat()).replace("Z", "+00:00")).date(),
+                phone=employee_data.get("mobilePhone") or employee_data.get("workPhone"),
                 address=employee_data.get("currentAddress"),
                 employee_status=employee_data.get("employmentStatus", "active")
             )
