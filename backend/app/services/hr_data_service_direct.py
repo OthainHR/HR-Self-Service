@@ -74,6 +74,13 @@ class HRDataServiceDirect:
             
             # Log the raw data structure for debugging
             logger.info(f"Employee data keys: {list(employee_data.keys())}")
+            
+            # Keka wraps the actual data in a 'data' field
+            if 'data' in employee_data and isinstance(employee_data['data'], dict):
+                logger.info("Unwrapping employee data from 'data' field")
+                employee_data = employee_data['data']
+                logger.info(f"Unwrapped data keys: {list(employee_data.keys())}")
+            
             logger.info(f"Full name: {employee_data.get('fullName')}, Display name: {employee_data.get('displayName')}")
             logger.info(f"Designation: {employee_data.get('designation')}, Department: {employee_data.get('department')}")
             
@@ -291,9 +298,19 @@ class HRDataServiceDirect:
             types_data = await keka_api_service.get_leave_types()
             
             if not types_data:
+                logger.warning("No leave types data received from Keka API")
                 return []
             
-            return types_data.get("data", [])
+            # Extract data from response
+            leave_types = types_data.get("data", [])
+            
+            # Ensure it's a list
+            if not isinstance(leave_types, list):
+                logger.warning(f"Leave types data is not a list: {type(leave_types)}, returning empty list")
+                return []
+            
+            logger.info(f"Retrieved {len(leave_types)} leave types")
+            return leave_types
             
         except Exception as e:
             logger.error(f"Failed to get leave types: {str(e)}")
