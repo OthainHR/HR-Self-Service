@@ -13,6 +13,21 @@ from app.utils.supabase_client import supabase_admin_client
 
 logger = logging.getLogger(__name__)
 
+# Import cache service (will be initialized after this module)
+_cache_service = None
+
+def get_cache_service():
+    """Lazy load cache service to avoid circular imports"""
+    global _cache_service
+    if _cache_service is None:
+        try:
+            from app.services.keka_db_cache_service import keka_db_cache_service
+            _cache_service = keka_db_cache_service
+        except Exception as e:
+            logger.warning(f"Cache service not available: {e}")
+            _cache_service = False
+    return _cache_service if _cache_service is not False else None
+
 class KekaAPIService:
     """
     Direct Keka API service using API key authentication
@@ -122,6 +137,7 @@ class KekaAPIService:
     async def get_employee_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """
         Get employee data by email
+        Checks cache first, then fetches from API if needed
         
         Args:
             email: Employee email address
@@ -130,6 +146,23 @@ class KekaAPIService:
             Employee data dict or None
         """
         try:
+            # Try to get from cache first
+            cache_service = get_cache_service()
+            if cache_service:
+                cached_employee = await cache_service.get_cached_employee_by_email(email)
+                if cached_employee:
+                    # Check if cache is fresh (less than 24 hours old)
+                    last_synced = cached_employee.get("last_synced_at")
+                    if last_synced:
+                        try:
+                            last_synced_dt = datetime.fromisoformat(last_synced.replace("Z", "+00:00"))
+                            if (datetime.now() - last_synced_dt).total_seconds() < 86400:  # 24 hours
+                                logger.info(f"Using cached employee data for {email}")
+                                return cached_employee.get("raw_data", {})
+                        except:
+                            pass
+            
+            # Fetch from API
             access_token = await self.generate_access_token()
             if not access_token:
                 return None
@@ -152,7 +185,16 @@ class KekaAPIService:
                     employees = data if isinstance(data, list) else data.get('data', [])
                     
                     if employees and len(employees) > 0:
-                        return employees[0]
+                        employee_data = employees[0]
+                        
+                        # Cache the employee data
+                        if cache_service:
+                            try:
+                                await cache_service.cache_employee_data(employee_data)
+                            except Exception as cache_error:
+                                logger.warning(f"Failed to cache employee data: {cache_error}")
+                        
+                        return employee_data
                     else:
                         logger.warning(f"No employee found with email: {email}")
                         return None
