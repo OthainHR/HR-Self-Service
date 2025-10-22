@@ -155,7 +155,7 @@ for select using (
         (auth.jwt() ->> 'role') = 'hr_admin'
         and (requested_by = auth.uid() or assignee = auth.uid())
         and exists (
-            select 1 from public.ticket_categories c
+            select 1 from public.categories c
             where c.id = category_id and c.name = 'HR Requests'
         )
     )
@@ -165,7 +165,7 @@ for select using (
         (auth.jwt() ->> 'role') = 'it_admin'
         and (requested_by = auth.uid() or assignee = auth.uid())
         and exists (
-            select 1 from public.ticket_categories c
+            select 1 from public.categories c
             where c.id = category_id and c.name = 'IT Requests'
         )
     )
@@ -175,7 +175,7 @@ for select using (
         (auth.jwt() ->> 'role') = 'payroll_admin'
         and (requested_by = auth.uid() or assignee = auth.uid())
         and exists (
-            select 1 from public.ticket_categories c
+            select 1 from public.categories c
             where c.id = category_id 
             and c.name in ('Payroll Requests', 'Expense Management')
         )
@@ -186,7 +186,7 @@ for select using (
         (auth.jwt() ->> 'role') = 'operations_admin'
         and (requested_by = auth.uid() or assignee = auth.uid())
         and exists (
-            select 1 from public.ticket_categories c
+            select 1 from public.categories c
             where c.id = category_id and c.name = 'Operations'
         )
     )
@@ -196,7 +196,7 @@ for select using (
         (auth.jwt() ->> 'role') = 'ai_admin'
         and (requested_by = auth.uid() or assignee = auth.uid())
         and exists (
-            select 1 from public.ticket_categories c
+            select 1 from public.categories c
             where c.id = category_id and c.name = 'AI Requests'
         )
     )
@@ -237,7 +237,7 @@ for update using (
     -- Assigned user can update tickets assigned to them
     or assignee = auth.uid()
     
-    -- Functional mailboxes can update relevant tickets
+    -- Functional mailboxes can update tickets in their domain
     or lower(auth.jwt()->>'email') in (
         'tickets@othainsoft.com',
         'it@othainsoft.com',
@@ -247,19 +247,59 @@ for update using (
         'ai@othainsoft.com'
     )
     
-    -- Role-based admins can only update tickets they're involved with
+    -- HR admin can update HR tickets (regardless of requester/assignee)
     or (
-        (auth.jwt() ->> 'role') in ('hr_admin', 'it_admin', 'payroll_admin', 'operations_admin', 'ai_admin')
-        and (requested_by = auth.uid() or assignee = auth.uid())
+        (auth.jwt() ->> 'role') = 'hr_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'HR Requests'
+        )
+    )
+    
+    -- IT admin can update IT tickets (regardless of requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'it_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'IT Requests'
+        )
+    )
+    
+    -- Payroll admin can update payroll/expense tickets (regardless of requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'payroll_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id 
+            and c.name in ('Payroll Requests', 'Expense Management')
+        )
+    )
+    
+    -- Operations admin can update operations tickets (regardless of requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'operations_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'Operations'
+        )
+    )
+    
+    -- AI admin can update AI tickets (regardless of requester/assignee)
+    or (
+        (auth.jwt() ->> 'role') = 'ai_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'AI Requests'
+        )
     )
     
     -- Users in additional emails list
     or user_in_additional_emails(id, auth.uid())
     
-    -- ONLY global admin can update any ticket
+    -- Global admin can update any ticket
     or (auth.jwt() ->> 'role') = 'admin'
 ) with check (
-    -- Same restrictions for what can be updated
+    -- Allow the same users to make changes
     requested_by = auth.uid()
     or assignee = auth.uid()
     or lower(auth.jwt()->>'email') in (
@@ -271,8 +311,40 @@ for update using (
         'ai@othainsoft.com'
     )
     or (
-        (auth.jwt() ->> 'role') in ('hr_admin', 'it_admin', 'payroll_admin', 'operations_admin', 'ai_admin')
-        and (requested_by = auth.uid() or assignee = auth.uid())
+        (auth.jwt() ->> 'role') = 'hr_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'HR Requests'
+        )
+    )
+    or (
+        (auth.jwt() ->> 'role') = 'it_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'IT Requests'
+        )
+    )
+    or (
+        (auth.jwt() ->> 'role') = 'payroll_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id 
+            and c.name in ('Payroll Requests', 'Expense Management')
+        )
+    )
+    or (
+        (auth.jwt() ->> 'role') = 'operations_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'Operations'
+        )
+    )
+    or (
+        (auth.jwt() ->> 'role') = 'ai_admin'
+        and exists (
+            select 1 from public.categories c
+            where c.id = category_id and c.name = 'AI Requests'
+        )
     )
     or user_in_additional_emails(id, auth.uid())
     or (auth.jwt() ->> 'role') = 'admin'

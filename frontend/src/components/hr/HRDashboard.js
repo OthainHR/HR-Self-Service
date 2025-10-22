@@ -45,7 +45,7 @@ import {
   Group as GroupIcon,
   SupervisorAccount as SupervisorAccountIcon
 } from '@mui/icons-material';
-import { hrService } from '../../services/hrServiceDirect';
+import { hrService } from '../../services/hrService';
 
 const HRDashboard = ({ data }) => {
   const { profile, leaveBalances, recentAttendance, upcomingHolidays } = data || {};

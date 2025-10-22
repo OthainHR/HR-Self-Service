@@ -51,7 +51,7 @@ import {
   AttachMoney as AttachMoneyIcon,
   Policy as PolicyIcon
 } from '@mui/icons-material';
-import { hrService } from '../../services/hrServiceDirect';
+import { hrService } from '../../services/hrService';
 
 const HRProfile = () => {
   const [profile, setProfile] = useState(null);

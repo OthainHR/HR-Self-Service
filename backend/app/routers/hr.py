@@ -13,7 +13,7 @@ from app.models.hr import (
     Payslip, Holiday, KekaMCPResponse, ApplyLeaveRequest, LeaveHistoryRequest,
     AttendanceRequest, PayslipRequest, HolidayRequest, LeaveBalanceRequest
 )
-from app.services.hr_data_service import hr_data_service
+from app.services.hr_data_service_direct import hr_data_service_direct as hr_data_service
 from app.utils.auth_utils import get_current_supabase_user
 import logging
 

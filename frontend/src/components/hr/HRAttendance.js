@@ -11,7 +11,7 @@ import {
   Chip
 } from '@mui/material';
 import { Schedule as AttendanceIcon } from '@mui/icons-material';
-import { hrService } from '../../services/hrServiceDirect';
+import { hrService } from '../../services/hrService';
 
 const HRAttendance = () => {
   const [attendance, setAttendance] = useState([]);

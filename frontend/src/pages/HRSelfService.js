@@ -42,7 +42,7 @@ import {
   Link as LinkIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { hrService } from '../services/hrServiceDirect';
+import { hrService } from '../services/hrService';
 
 // Lazy-load components for performance
 const HRProfile = React.lazy(() => import('../components/hr/HRProfile'));
@@ -141,16 +141,8 @@ const HRSelfService = () => {
     setError(null);
     
     try {
-      // Ensure user has a valid Keka API token
-      console.log('Ensuring Keka API token...');
-      const tokenResult = await hrService.ensureKekaToken();
-      if (!tokenResult.success) {
-        console.warn('Failed to ensure Keka token:', tokenResult.error);
-        // Continue anyway - the backend will handle token generation
-      } else {
-        console.log('Keka token ensured successfully');
-      }
-
+      console.log('Initializing HR Service (Direct API Key Method)...');
+      
       // Check service health
       const healthResult = await hrService.checkHRServiceHealth();
       setHrHealthStatus(healthResult);
@@ -161,6 +153,8 @@ const HRSelfService = () => {
 
       // Load initial dashboard data
       await loadDashboardData();
+      
+      console.log('HR Service initialized successfully');
     } catch (err) {
       setError(err.message || 'Failed to initialize HR service');
     } finally {

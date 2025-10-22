@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routers import auth, chat, knowledge, feedback, hr, keka_auth, keka_direct_auth
+from app.routers import auth, chat, knowledge, feedback, hr
 from app.db.init_db import init_db
 
 # Load environment variables
@@ -185,11 +185,8 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["Knowledge"])
 app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["Feedback"])
 app.include_router(hr.router, prefix="/api/hr", tags=["HR"])
-app.include_router(keka_auth.router, prefix="/api/keka-auth", tags=["Keka Authentication"])
-app.include_router(keka_direct_auth.router, prefix="/api/keka-direct", tags=["Keka Direct Token"])
 print("--- DEBUG: Included feedback router with prefix /api/v1/feedback ---")
-print("--- DEBUG: Included HR router with prefix /api/hr ---")
-print("--- DEBUG: Included Keka Auth router with prefix /api/keka-auth ---")
+print("--- DEBUG: Included HR router with prefix /api/hr (Direct API Key Method) ---")
 
 @app.get("/")
 async def root():

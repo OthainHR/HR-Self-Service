@@ -47,7 +47,7 @@ import {
   Close as CancelledIcon
 } from '@mui/icons-material';
 // Using standard TextField with date type instead of MUI X DatePicker
-import { hrService } from '../../services/hrServiceDirect';
+import { hrService } from '../../services/hrService';
 
 const HRLeaveManagement = () => {
   const [leaveBalances, setLeaveBalances] = useState([]);

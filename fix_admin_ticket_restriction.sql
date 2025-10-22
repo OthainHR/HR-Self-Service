@@ -29,53 +29,48 @@ FOR SELECT USING (
         'ai@othainsoft.com'
     )
     
-    -- HR admin can see HR tickets they're involved with (requester/assignee)
+    -- HR admin can see ALL HR tickets (not just ones they're involved with)
     OR (
-        (auth.jwt() ->> 'role') = 'hr_admin'
-        AND (requested_by = auth.uid() OR assignee = auth.uid())
+        (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'hr_admin'
         AND EXISTS (
-            SELECT 1 FROM public.ticket_categories c
+            SELECT 1 FROM public.categories c
             WHERE c.id = category_id AND c.name = 'HR Requests'
         )
     )
     
-    -- IT admin can see IT tickets they're involved with (requester/assignee)
+    -- IT admin can see ALL IT tickets
     OR (
-        (auth.jwt() ->> 'role') = 'it_admin'
-        AND (requested_by = auth.uid() OR assignee = auth.uid())
+        (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'it_admin'
         AND EXISTS (
-            SELECT 1 FROM public.ticket_categories c
+            SELECT 1 FROM public.categories c
             WHERE c.id = category_id AND c.name = 'IT Requests'
         )
     )
     
-    -- Payroll admin can see payroll/expense tickets they're involved with
+    -- Payroll admin can see ALL payroll/expense tickets
     OR (
-        (auth.jwt() ->> 'role') = 'payroll_admin'
-        AND (requested_by = auth.uid() OR assignee = auth.uid())
+        (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'payroll_admin'
         AND EXISTS (
-            SELECT 1 FROM public.ticket_categories c
+            SELECT 1 FROM public.categories c
             WHERE c.id = category_id 
             AND c.name IN ('Payroll Requests', 'Expense Management')
         )
     )
     
-    -- Operations admin can see operations tickets they're involved with
+    -- Operations admin can see ALL operations tickets
     OR (
-        (auth.jwt() ->> 'role') = 'operations_admin'
-        AND (requested_by = auth.uid() OR assignee = auth.uid())
+        (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'operations_admin'
         AND EXISTS (
-            SELECT 1 FROM public.ticket_categories c
+            SELECT 1 FROM public.categories c
             WHERE c.id = category_id AND c.name = 'Operations'
         )
     )
     
-    -- AI admin can see AI tickets they're involved with
+    -- AI admin can see ALL AI tickets
     OR (
-        (auth.jwt() ->> 'role') = 'ai_admin'
-        AND (requested_by = auth.uid() OR assignee = auth.uid())
+        (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'ai_admin'
         AND EXISTS (
-            SELECT 1 FROM public.ticket_categories c
+            SELECT 1 FROM public.categories c
             WHERE c.id = category_id AND c.name = 'AI Requests'
         )
     )
@@ -84,7 +79,7 @@ FOR SELECT USING (
     OR user_in_additional_emails(id, auth.uid())
     
     -- ONLY global admin (not role-based admins) can see all tickets
-    OR (auth.jwt() ->> 'role') = 'admin'
+    OR (auth.jwt() -> 'raw_app_meta_data' ->> 'role') = 'admin'
 );
 
 -- Create INSERT policy - allow users to create tickets
