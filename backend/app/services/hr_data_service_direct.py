@@ -36,7 +36,7 @@ class HRDataServiceDirect:
         logger.info(f"Set authenticated user: {email}")
     
     async def _get_employee_id(self) -> str:
-        """Get employee ID for the authenticated user"""
+        """Get employee ID for the authenticated user from DATABASE"""
         if not self.authenticated_user_email:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -47,7 +47,21 @@ class HRDataServiceDirect:
         if self.cached_employee_id:
             return self.cached_employee_id
         
-        # Fetch employee ID from Keka API
+        # ** NEW: Get from database first **
+        cache_service = keka_db_cache_service
+        if cache_service and cache_service.supabase:
+            try:
+                cached_employee = await cache_service.get_cached_employee_by_email(self.authenticated_user_email)
+                if cached_employee and cached_employee.get("keka_employee_id"):
+                    employee_id = cached_employee.get("keka_employee_id")
+                    logger.info(f"Found employee ID {employee_id} in database for {self.authenticated_user_email}")
+                    self.cached_employee_id = employee_id
+                    return employee_id
+            except Exception as e:
+                logger.warning(f"Failed to get employee ID from database: {str(e)}")
+        
+        # Fallback: Fetch employee ID from Keka API
+        logger.info(f"Employee not found in database, fetching from Keka API for {self.authenticated_user_email}")
         employee_id = await keka_api_service.get_employee_id_from_email(self.authenticated_user_email)
         
         if not employee_id:
@@ -60,29 +74,96 @@ class HRDataServiceDirect:
         return employee_id
     
     async def get_my_profile(self) -> EmployeeProfile:
-        """Get employee profile"""
+        """Get employee profile from DATABASE"""
         try:
-            employee_id = await self._get_employee_id()
-            logger.info(f"Fetching profile for employee ID: {employee_id}")
-            employee_data = await keka_api_service.get_employee_by_id(employee_id)
-            
-            if not employee_data:
+            # Step 1: Get employee ID from database by email
+            if not self.authenticated_user_email:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Employee profile not found"
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not authenticated"
                 )
             
-            # Log the raw data structure for debugging
-            logger.info(f"Employee data keys: {list(employee_data.keys())}")
-            
-            # Keka wraps the actual data in a 'data' field
-            if 'data' in employee_data and isinstance(employee_data['data'], dict):
-                logger.info("Unwrapping employee data from 'data' field")
-                employee_data = employee_data['data']
-                logger.info(f"Unwrapped data keys: {list(employee_data.keys())}")
-            
-            logger.info(f"Full name: {employee_data.get('fullName')}, Display name: {employee_data.get('displayName')}")
-            logger.info(f"Designation: {employee_data.get('designation')}, Department: {employee_data.get('department')}")
+            # Step 2: Get employee data from DATABASE
+            cache_service = keka_db_cache_service
+            if cache_service and cache_service.supabase:
+                try:
+                    cached_employee = await cache_service.get_cached_employee_by_email(self.authenticated_user_email)
+                    if cached_employee:
+                        logger.info(f"Found employee profile in DATABASE for {self.authenticated_user_email}")
+                        
+                        # Map database fields to Keka API format
+                        employee_data = {
+                            "id": cached_employee.get("keka_employee_id"),
+                            "employeeNumber": cached_employee.get("employee_number"),
+                            "firstName": cached_employee.get("first_name"),
+                            "middleName": cached_employee.get("middle_name"),
+                            "lastName": cached_employee.get("last_name"),
+                            "displayName": cached_employee.get("display_name"),
+                            "fullName": cached_employee.get("display_name"),  # Alias
+                            "email": cached_employee.get("email"),
+                            "city": cached_employee.get("city"),
+                            "jobTitle": cached_employee.get("job_title"),
+                            "secondaryJobTitle": cached_employee.get("secondary_job_title"),
+                            "reportsToEmail": cached_employee.get("reports_to_email"),
+                            "designation": cached_employee.get("job_title"),  # Map job_title to designation
+                            "department": None,  # TODO: Add department mapping
+                            "gender": cached_employee.get("gender"),
+                            "joiningDate": cached_employee.get("joining_date"),
+                            "dateOfBirth": cached_employee.get("date_of_birth"),
+                            "mobilePhone": cached_employee.get("mobile_phone"),
+                            "workPhone": cached_employee.get("work_phone"),
+                            "currentAddress": cached_employee.get("current_address"),
+                            "permanentAddress": cached_employee.get("permanent_address"),
+                            "employmentStatus": cached_employee.get("employment_status"),
+                            "accountStatus": cached_employee.get("account_status"),
+                        }
+                        
+                        logger.info(f"Mapped employee data from DATABASE: {employee_data.get('displayName')}")
+                    else:
+                        # Fallback to Keka API
+                        logger.info(f"Employee not found in DATABASE, fetching from Keka API")
+                        employee_id = await self._get_employee_id()
+                        employee_data = await keka_api_service.get_employee_by_id(employee_id)
+                        
+                        if not employee_data:
+                            raise HTTPException(
+                                status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Employee profile not found"
+                            )
+                        
+                        # Keka wraps the actual data in a 'data' field
+                        if 'data' in employee_data and isinstance(employee_data['data'], dict):
+                            logger.info("Unwrapping employee data from 'data' field")
+                            employee_data = employee_data['data']
+                except Exception as e:
+                    logger.error(f"Error getting profile from DATABASE: {str(e)}")
+                    # Fallback to Keka API
+                    employee_id = await self._get_employee_id()
+                    employee_data = await keka_api_service.get_employee_by_id(employee_id)
+                    
+                    if not employee_data:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Employee profile not found"
+                        )
+                    
+                    # Keka wraps the actual data in a 'data' field
+                    if 'data' in employee_data and isinstance(employee_data['data'], dict):
+                        employee_data = employee_data['data']
+            else:
+                # No database service, fall back to API
+                employee_id = await self._get_employee_id()
+                employee_data = await keka_api_service.get_employee_by_id(employee_id)
+                
+                if not employee_data:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Employee profile not found"
+                    )
+                
+                # Keka wraps the actual data in a 'data' field
+                if 'data' in employee_data and isinstance(employee_data['data'], dict):
+                    employee_data = employee_data['data']
             
             # Map Keka data to our model
             # Try multiple field name variations
