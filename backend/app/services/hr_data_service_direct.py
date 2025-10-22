@@ -219,14 +219,23 @@ class HRDataServiceDirect:
                     status_code = req.get("status", 0)
                     status_str = status_map.get(status_code, "pending")
                     
+                    # Parse applied_date
+                    applied_date = None
+                    if req.get("createdDate"):
+                        try:
+                            applied_date = datetime.fromisoformat(req.get("createdDate").replace("Z", "+00:00"))
+                        except:
+                            pass
+                    
                     history_item = LeaveHistory(
+                        id=str(req.get("id", "")),
                         leave_type=req.get("leaveTypeName", "Unknown"),
                         from_date=req_from_date,
                         to_date=req_to_date,
                         days_count=days_count,
                         reason=req.get("reason", ""),
                         status=status_str,
-                        applied_date=datetime.fromisoformat(req.get("createdDate", "").replace("Z", "+00:00")).date() if req.get("createdDate") else None
+                        applied_date=applied_date
                     )
                     history.append(history_item)
                 except (ValueError, KeyError, TypeError) as e:

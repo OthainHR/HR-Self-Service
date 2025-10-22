@@ -16,15 +16,20 @@ class KekaDBCacheService:
     """Service to cache and retrieve Keka employee data from database"""
     
     def __init__(self):
+        # Try service role key first, then fall back to anon key for read operations
         supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
         
         if not supabase_url or not supabase_key:
             logger.warning("Supabase credentials not found, database caching disabled")
             self.supabase = None
         else:
-            self.supabase: Client = create_client(supabase_url, supabase_key)
-            logger.info("Keka DB Cache Service initialized")
+            try:
+                self.supabase: Client = create_client(supabase_url, supabase_key)
+                logger.info("Keka DB Cache Service initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Keka DB Cache Service: {str(e)}")
+                self.supabase = None
     
     async def cache_employee_data(self, employee_data: Dict[str, Any]) -> bool:
         """Cache employee data in database"""

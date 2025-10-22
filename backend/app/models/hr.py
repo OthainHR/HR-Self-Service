@@ -56,14 +56,14 @@ class LeaveApplication(BaseModel):
     half_day_type: Optional[str] = None  # "first_half" or "second_half"
 
 class LeaveHistory(BaseModel):
-    id: str
+    id: Optional[str] = None
     leave_type: str
     from_date: date
     to_date: date
     days_count: float
     reason: str
     status: LeaveStatus
-    applied_date: datetime
+    applied_date: Optional[datetime] = None
     approved_date: Optional[datetime] = None
     approved_by: Optional[str] = None
     comments: Optional[str] = None
