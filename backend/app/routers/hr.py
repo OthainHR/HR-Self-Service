@@ -238,30 +238,34 @@ async def apply_for_leave(
         )
 
 # Attendance Endpoints
-@router.get("/attendance", response_model=List[AttendanceRecord])
+@router.get("/attendance")
 async def get_my_attendance(
-    from_date: date,
-    to_date: date,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
     user_email: str = Depends(get_user_email)
 ):
     """Get attendance records for the authenticated user"""
     try:
-        # Validate date range
-        if from_date > to_date:
+        # Validate date range if provided
+        if from_date and to_date and from_date > to_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="From date cannot be after to date"
             )
         
-        # Limit to 6 months range
-        if (to_date - from_date).days > 180:
+        # Limit to 6 months range if dates provided
+        if from_date and to_date and (to_date - from_date).days > 180:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Date range cannot exceed 6 months"
             )
         
         hr_data_service.set_authenticated_user(user_email)
-        attendance = await hr_data_service.get_my_attendance(from_date, to_date)
+        from_date_str = from_date.isoformat() if from_date else None
+        to_date_str = to_date.isoformat() if to_date else None
+        attendance = await hr_data_service.get_my_attendance(from_date_str, to_date_str)
+        
+        # Return raw Keka data structure
         return attendance
     except Exception as e:
         logger.error(f"Failed to fetch attendance for {user_email}: {str(e)}")
@@ -270,7 +274,7 @@ async def get_my_attendance(
             detail="Failed to retrieve attendance records"
         )
 
-@router.get("/attendance/current-month", response_model=List[AttendanceRecord])
+@router.get("/attendance/current-month")
 async def get_current_month_attendance(user_email: str = Depends(get_user_email)):
     """Get attendance for the current month"""
     try:
@@ -279,7 +283,9 @@ async def get_current_month_attendance(user_email: str = Depends(get_user_email)
         to_date = today
         
         hr_data_service.set_authenticated_user(user_email)
-        attendance = await hr_data_service.get_my_attendance(from_date, to_date)
+        attendance = await hr_data_service.get_current_month_attendance()
+        
+        # Return raw Keka data structure
         return attendance
     except Exception as e:
         logger.error(f"Failed to fetch current month attendance for {user_email}: {str(e)}")
