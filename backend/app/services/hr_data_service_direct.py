@@ -14,6 +14,7 @@ from app.models.hr import (
     Payslip, Holiday
 )
 from app.services.keka_api_service import keka_api_service
+from app.services.keka_db_cache_service import keka_db_cache_service
 
 logger = logging.getLogger(__name__)
 
