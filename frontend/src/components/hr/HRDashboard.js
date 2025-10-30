@@ -272,7 +272,7 @@ const HRDashboard = ({ data }) => {
                   </Box>
                 )}
 
-                {leaveBalances.slice(0, 3).map((balance, index) => (
+                {leaveBalances.map((balance, index) => (
                   <Box key={index} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="body2" fontWeight="medium">
@@ -304,11 +304,6 @@ const HRDashboard = ({ data }) => {
                     </Box>
                   </Box>
                 ))}
-                {leaveBalances.length > 3 && (
-                  <Typography variant="body2" color="primary" sx={{ textAlign: 'center', mt: 1 }}>
-                    +{leaveBalances.length - 3} more leave types
-                  </Typography>
-                )}
               </Box>
             ) : (
               <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5 }}>
