@@ -30,27 +30,37 @@ class KekaEmployeeSyncService:
         # API credentials (should be stored securely)
         self.client_id = os.getenv("KEKA_CLIENT_ID")
         self.client_secret = os.getenv("KEKA_CLIENT_SECRET")
+        self.api_key = os.getenv("KEKA_API_KEY")
         
-        if not self.client_id or not self.client_secret:
-            raise ValueError("KEKA_CLIENT_ID and KEKA_CLIENT_SECRET must be set")
+        # Use the correct token endpoint (same as keka_api_service)
+        self.token_endpoint = "https://login.keka.com/connect/token"
+        
+        if not self.client_id or not self.client_secret or not self.api_key:
+            raise ValueError("KEKA_CLIENT_ID, KEKA_CLIENT_SECRET, and KEKA_API_KEY must be set")
     
     async def _get_access_token(self) -> str:
-        """Get access token for Keka API using client credentials"""
+        """Get access token for Keka API using kekaapi grant type (same as keka_api_service)"""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.api_base_url}/auth/token",
+                    self.token_endpoint,
                     data={
-                        "grant_type": "client_credentials",
+                        "grant_type": "kekaapi",
+                        "scope": "kekaapi",
                         "client_id": self.client_id,
                         "client_secret": self.client_secret,
-                        "scope": "read:employees read:attendance read:leave read:payroll"
+                        "api_key": self.api_key
                     },
-                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                    headers={
+                        "accept": "application/json",
+                        "content-type": "application/x-www-form-urlencoded"
+                    },
+                    timeout=30.0
                 )
                 
                 if response.status_code == 200:
                     token_data = response.json()
+                    logger.info("Successfully generated Keka access token for sync")
                     return token_data["access_token"]
                 else:
                     logger.error(f"Failed to get access token: {response.status_code} - {response.text}")
