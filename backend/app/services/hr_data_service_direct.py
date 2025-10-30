@@ -266,15 +266,24 @@ class HRDataServiceDirect:
                 employee_balances = leave_balance_list[0].get("leaveBalance", [])
                 
                 for balance in employee_balances:
-                    if leave_type and balance.get("leaveType", {}).get("name") != leave_type:
+                    # Get leave type name - Keka API returns it as 'leaveTypeName' (flat string)
+                    leave_type_name = balance.get("leaveTypeName", "Unknown")
+                    
+                    # Skip if filtering by leave type
+                    if leave_type and leave_type_name != leave_type:
+                        continue
+                    
+                    # Skip leave types with no annual quota (like Unpaid Leave with -1)
+                    annual_quota = float(balance.get("annualQuota", 0))
+                    if annual_quota <= 0:
                         continue
                     
                     balances.append(LeaveBalance(
-                        leave_type=balance.get("leaveType", {}).get("name", ""),
-                        total_allocated=balance.get("totalAllocated", 0),
-                        used=balance.get("used", 0),
-                        remaining=balance.get("remaining", 0),
-                        carry_forward=balance.get("carryForward", 0)
+                        leave_type=leave_type_name,
+                        total_allocated=annual_quota,
+                        used=float(balance.get("consumedAmount", 0)),
+                        remaining=float(balance.get("availableBalance", 0)),
+                        carry_forward=float(balance.get("accruedAmount", 0)) - float(balance.get("consumedAmount", 0)) if balance.get("accruedAmount", 0) > balance.get("consumedAmount", 0) else 0.0
                     ))
             
             return balances
