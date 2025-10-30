@@ -227,8 +227,25 @@ class HRDataServiceDirect:
             return "active"
     
     async def get_my_raw_profile(self) -> Dict[str, Any]:
-        """Get raw employee profile data"""
+        """Get raw employee profile data FROM DATABASE (keka_employees table)"""
         try:
+            if not self.authenticated_user_email:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not authenticated"
+                )
+            
+            # Get employee data from DATABASE
+            cache_service = keka_db_cache_service
+            if cache_service and cache_service.supabase:
+                cached_employee = await cache_service.get_cached_employee_by_email(self.authenticated_user_email)
+                if cached_employee:
+                    logger.info(f"Returning raw employee data from DATABASE for {self.authenticated_user_email}")
+                    # Return the raw database record with all fields
+                    return cached_employee
+            
+            # Fallback: Get from Keka API if not in database
+            logger.warning(f"Employee not in DATABASE, fetching from Keka API")
             employee_id = await self._get_employee_id()
             employee_data = await keka_api_service.get_employee_by_id(employee_id)
             
@@ -237,6 +254,10 @@ class HRDataServiceDirect:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Employee profile not found"
                 )
+            
+            # Unwrap if needed
+            if 'data' in employee_data and isinstance(employee_data['data'], dict):
+                return employee_data['data']
             
             return employee_data
             
