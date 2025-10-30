@@ -87,8 +87,25 @@ async def test_leave_types():
 async def get_my_employee_id(user_email: str = Depends(get_user_email)):
     """Get the authenticated user's keka_employee_id mapping"""
     try:
-        hr_data_service.set_authenticated_user(user_email)
-        employee_data = await hr_data_service._get_employee_by_email(user_email)
+        from app.utils.supabase_client import supabase_admin_client
+        
+        # Query keka_employees table directly
+        response = supabase_admin_client.table("keka_employees")\
+            .select("keka_employee_id, email, display_name, employee_number")\
+            .eq("email", user_email)\
+            .eq("account_status", 1)\
+            .execute()
+        
+        if not response.data or len(response.data) == 0:
+            logger.error(f"Employee not found in keka_employees table for email: {user_email}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Employee not found with email: {user_email}"
+            )
+        
+        employee_data = response.data[0]
+        logger.info(f"Successfully retrieved employee_id for {user_email}: {employee_data['keka_employee_id']}")
+        
         return {
             "success": True,
             "employee_id": employee_data["keka_employee_id"],
