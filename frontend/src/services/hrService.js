@@ -90,6 +90,19 @@ hrApiClient.interceptors.response.use(
 // HR Service class
 class HRService {
   
+  // Get employee ID mapping from keka_employees table
+  async getMyEmployeeId() {
+    try {
+      const response = await hrApiClient.get('/employee-id');
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+
   // Employee Profile - Get current user's profile
   async getMyProfile() {
     try {

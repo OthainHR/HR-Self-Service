@@ -71,6 +71,8 @@ const HRSelfService = () => {
     recentAttendance: [],
     upcomingHolidays: []
   });
+  const [employeeId, setEmployeeId] = useState(null);
+  const [employeeMapping, setEmployeeMapping] = useState(null);
 
   // Modern gradient themes for each tab
   const tabThemes = useMemo(() => [
@@ -164,7 +166,27 @@ const HRSelfService = () => {
 
   const loadDashboardData = useCallback(async () => {
     try {
-      // Try to load profile first
+      // Step 1: Get employee ID mapping from keka_employees table
+      console.log('Step 1: Fetching employee ID mapping from keka_employees table...');
+      const employeeIdResult = await hrService.getMyEmployeeId();
+      
+      if (!employeeIdResult.success) {
+        throw new Error('Failed to resolve employee ID from keka_employees table');
+      }
+
+      const mapping = employeeIdResult.data;
+      console.log('✓ Employee ID mapping resolved:', {
+        employee_id: mapping.employee_id,
+        email: mapping.email,
+        display_name: mapping.display_name,
+        employee_number: mapping.employee_number
+      });
+      
+      setEmployeeId(mapping.employee_id);
+      setEmployeeMapping(mapping);
+
+      // Step 2: Now that we have employee_id, fetch profile and other data
+      console.log('Step 2: Fetching employee profile using employee_id:', mapping.employee_id);
       let profileResult = await hrService.getMyProfile();
       if (!profileResult.success && profileResult.error?.includes('401')) {
         try {
@@ -178,7 +200,12 @@ const HRSelfService = () => {
         }
       }
 
-      // Try to load leave balances
+      if (profileResult.success) {
+        console.log('✓ Profile loaded successfully for employee:', mapping.employee_id);
+      }
+
+      // Step 3: Fetch leave balances using the resolved employee_id
+      console.log('Step 3: Fetching leave balances for employee_id:', mapping.employee_id);
       let leaveBalancesResult = await hrService.getMyLeaveBalances();
       if (!leaveBalancesResult.success && leaveBalancesResult.error?.includes('401')) {
         try {
@@ -192,10 +219,24 @@ const HRSelfService = () => {
         }
       }
 
+      if (leaveBalancesResult.success) {
+        console.log('✓ Leave balances loaded:', leaveBalancesResult.data?.length || 0, 'types');
+      }
+
+      // Step 4: Fetch attendance and holidays in parallel
+      console.log('Step 4: Fetching attendance and holidays for employee_id:', mapping.employee_id);
       const [attendance, holidays] = await Promise.allSettled([
         hrService.getCurrentMonthAttendance(),
         hrService.getUpcomingHolidays()
       ]);
+
+      if (attendance.status === 'fulfilled' && attendance.value.success) {
+        console.log('✓ Attendance loaded:', attendance.value.data?.length || 0, 'records');
+      }
+
+      if (holidays.status === 'fulfilled' && holidays.value.success) {
+        console.log('✓ Holidays loaded:', holidays.value.data?.length || 0, 'holidays');
+      }
 
       setDashboardData({
         profile: profileResult.success ? profileResult.data : null,
@@ -203,8 +244,11 @@ const HRSelfService = () => {
         recentAttendance: attendance.status === 'fulfilled' && attendance.value.success ? attendance.value.data : [],
         upcomingHolidays: holidays.status === 'fulfilled' && holidays.value.success ? holidays.value.data : []
       });
+
+      console.log('✓ All dashboard data loaded successfully');
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
+      throw err;
     }
   }, []);
 
@@ -383,6 +427,22 @@ const HRSelfService = () => {
             HR Self Service
           </Typography>
 
+          {/* Employee ID Display */}
+          {employeeMapping && (
+            <Chip
+              icon={<PersonIcon />}
+              label={`ID: ${employeeMapping.employee_number || employeeMapping.employee_id.substring(0, 8)}`}
+              size="small"
+              sx={{
+                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                color: 'white',
+                fontWeight: 600,
+                border: 'none',
+                '& .MuiChip-icon': { color: 'white' }
+              }}
+            />
+          )}
+
           {/* Status Indicator - Shows HR service status */}
           <Chip
             icon={<CheckIcon />}
@@ -445,11 +505,16 @@ const HRSelfService = () => {
                 </Avatar>
                 <Box>
                   <Typography variant="h4" fontWeight="bold" gutterBottom color="black">
-                    Welcome back!
+                    Welcome back{employeeMapping?.display_name ? `, ${employeeMapping.display_name}` : ''}!
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9, color: 'black' }}>
                     {user?.email || 'user@company.com'}
                   </Typography>
+                  {employeeMapping && (
+                    <Typography variant="caption" sx={{ opacity: 0.8, color: 'black', display: 'block', mt: 0.5 }}>
+                      Employee ID: {employeeMapping.employee_id} {employeeMapping.employee_number && `• #${employeeMapping.employee_number}`}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
             </Box>

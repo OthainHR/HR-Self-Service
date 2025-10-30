@@ -83,6 +83,28 @@ async def test_leave_types():
         return {"success": False, "error": str(e)}
 
 # Employee Profile Endpoints
+@router.get("/employee-id")
+async def get_my_employee_id(user_email: str = Depends(get_user_email)):
+    """Get the authenticated user's keka_employee_id mapping"""
+    try:
+        hr_data_service.set_authenticated_user(user_email)
+        employee_data = await hr_data_service._get_employee_by_email(user_email)
+        return {
+            "success": True,
+            "employee_id": employee_data["keka_employee_id"],
+            "email": employee_data["email"],
+            "display_name": employee_data.get("display_name", ""),
+            "employee_number": employee_data.get("employee_number", "")
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Failed to fetch employee_id for {user_email}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve employee ID mapping"
+        )
+
 @router.get("/profile", response_model=EmployeeProfile)
 async def get_my_profile(user_email: str = Depends(get_user_email)):
     """Get the authenticated user's employee profile"""
