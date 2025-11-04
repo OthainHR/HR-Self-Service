@@ -189,7 +189,7 @@ const CabService = () => {
   }, [setSnackbar]); // Add setSnackbar as a dependency
 
   // Dropdown options
-  const pickupTimes = ['9pm', '11:30pm', '2:30am'];
+  const pickupTimes = ['9pm', '11:30pm', '3:30am'];
   const departments = ['GBT', 'Presidio', 'Othain'];
   // const pickupLocations = ['Building # 9', 'Building # 16']; // deprecated, replaced by dynamic list
   // const dropoffLocations = [ /* many locations */ ]; // deprecated, now dynamic
