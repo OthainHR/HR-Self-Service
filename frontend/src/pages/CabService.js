@@ -1544,7 +1544,7 @@ const CabService = () => {
     }
   };
 
-  // Helper to check if current IST time is before 6:30pm
+  // Helper to check if current IST time is before 8:30pm
   const isBeforeCabCutoff = () => {
     const now = new Date();
     // Convert to IST (UTC+5:30)
@@ -1552,8 +1552,8 @@ const CabService = () => {
     const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
     const hours = ist.getHours();
     const minutes = ist.getMinutes();
-    // 18:30 is the cutoff
-    return hours < 18 || (hours === 18 && minutes < 30);
+    // 20:30 is the cutoff
+    return hours < 20 || (hours === 20 && minutes < 30);
   };
 
   const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isBeforeCabCutoff();
@@ -2388,7 +2388,7 @@ const CabService = () => {
                       mb: 2
                     }}
                   >
-                    Please book your cab before 6:30pm IST or you will not be able to book a cab.
+                    Please book your cab before 8:30pm IST or you will not be able to book a cab.
                   </Typography>
                   <Typography
                     variant="body2"
@@ -2401,7 +2401,7 @@ const CabService = () => {
                       ? 'Schedule a new cab booking with your preferred pickup time and destination'
                       : !cabServiceGlobalVisibility
                         ? 'Cab service is temporarily unavailable.'
-                        : 'Cab booking is currently disabled as it is past 6:30pm IST. Contact HR for assistance.'
+                        : 'Cab booking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
                     }
                   </Typography>
                   <Button
@@ -2473,7 +2473,7 @@ const CabService = () => {
                       {!canUserAccessCabService
                         ? !cabServiceGlobalVisibility
                           ? 'Rebooking is currently unavailable as cab service is temporarily disabled.'
-                          : 'Rebooking is currently disabled as it is past 6:30pm IST. Contact HR for assistance.'
+                          : 'Rebooking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
                         : lastBooking 
                       ? `Quickly rebook your last trip: ${lastBooking.pickup_time} to ${lastBooking.dropoff_location}`
                       : 'No previous bookings found'
