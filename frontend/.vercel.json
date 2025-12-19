@@ -1,0 +1,13 @@
+{
+  "github": {
+    "silent": true
+  },
+  "env": {
+    "REACT_APP_SUPABASE_URL": "",
+    "REACT_APP_SUPABASE_ANON_KEY": "",
+    "REACT_APP_API_URL": ""
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "framework": "create-react-app"
+} 

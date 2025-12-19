@@ -1,0 +1,19 @@
+name: Cab Booking Reminders
+
+on:
+  schedule:
+    # 12:00 PM IST = 06:30 UTC, weekdays
+    - cron: '30 6 * * 1-5'
+    # 06:00 PM IST = 12:30 UTC, weekdays
+    - cron: '30 12 * * 1-5'
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Morning Reminder
+        run: |
+          curl -X GET "${{ secrets.EDGE_FUNCTION_URL }}?reminder=morning" && echo "Morning reminder sent"
+      - name: Evening Reminder
+        run: |
+          curl -X GET "${{ secrets.EDGE_FUNCTION_URL }}?reminder=evening" && echo "Evening reminder sent" 

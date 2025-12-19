@@ -1,0 +1,40 @@
+# Render service definitions for backend and QA Dashboard
+services:
+  - type: web
+    name: backend-api
+    env: python
+    branch: main
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && pip install -e ."
+    startCommand: "gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120 --keep-alive 5 --log-level info --forwarded-allow-ips='*' --proxy-allow-from='*'"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.9.0"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000,https://hr-self-service.vercel.app"
+    autoDeploy: true
+    routes:
+      - path: /api/*
+        service: backend-api
+      - path: /admin/*
+        service: backend-api
+
+  - type: web
+    name: qa-dashboard
+    env: python
+    branch: main
+    rootDir: backend/qa-dashboard
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "streamlit run app.py --server.port $PORT --server.enableCORS false"
+    autoDeploy: true
+    routes:
+      - path: /qa-dashboard/*
+        service: qa-dashboard 

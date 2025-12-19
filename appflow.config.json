@@ -1,0 +1,15 @@
+{
+  "apps": [
+    {
+      "id": "b333fc40",
+      "appId": "b333fc40",
+      "dependencyInstallCommand": "npm ci && npm ci --prefix frontend",
+      "webBuildCommand": "CI=false npm run build --prefix frontend",
+      "iosPath": "ios/App",
+      "androidPath": "android/App"
+    }
+  ],
+  "scripts": {
+    "prebuild": ".appflow/scripts/prebuild.sh"
+  }
+} 

@@ -1,0 +1,4 @@
+# Firebase/Supabase credentials
+keys/
+*firebase*.json
+.env 

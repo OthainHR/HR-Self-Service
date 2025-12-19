@@ -1,0 +1,311 @@
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy.orm import Session
+from app.db.database import get_db
+from app.services import knowledge_service
+from app.services.knowledge_service import Document
+from app.utils.auth_utils import get_current_supabase_user
+from typing import List, Dict, Any, Optional
+import json
+import logging
+from app.utils.openai_utils import get_embeddings, USE_MOCK_EMBEDDINGS
+import os
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# Add a test endpoint that doesn't require authentication
+@router.post("/test-upload", response_model=Dict[str, str])
+async def test_upload_document(
+    document: Document,
+):
+    """
+    Test endpoint to upload a document to the knowledge base.
+    
+    No authentication needed for testing.
+    """
+    print(f"Test upload endpoint called")
+    print(f"Adding document: title={document.title}, source={document.source}, category={document.category}")
+    print(f"Document text (first 50 chars): {document.text[:50]}...")
+    
+    # Add document with no auth check
+    success = knowledge_service.add_document(document)
+    
+    if not success:
+        print("Failed to add document via test endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add document"
+        )
+    
+    print(f"Document added successfully via test endpoint")
+    return {"message": "Document uploaded successfully"}
+
+@router.post("/documents")
+async def add_document(
+    document: Document,
+    current_user: dict = Depends(get_current_supabase_user)
+):
+    logger.info("Entered /documents endpoint")
+    user_email = current_user.get('email')
+    logger.info(f"Auth: User authenticated as: {user_email}")
+    
+    if user_email != "admin@example.com":
+        logger.warning(f"Permission denied for user {user_email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin@example.com can add documents (temporary check)"
+        )
+    
+    # Basic payload blocklist to reduce risk of injection/XSS payloads
+    blocked_substrings = ["<script", "</script>", "onerror=", "onload=", "javascript:", "drop table", "union select", "<iframe", "</iframe>"]
+    lower_text = (document.text or "").lower()
+    if any(b in lower_text for b in blocked_substrings):
+        raise HTTPException(status_code=400, detail="Blocked content detected in document text")
+
+    logger.info(f"Processing document: title={document.title}, source={document.source}")
+    logger.info(f"Document text (first 50 chars): {document.text[:50]}...")
+    
+    logger.info("Calling knowledge_service.add_document...")
+    try:
+        # Await the async service function
+        success = await knowledge_service.add_document(document)
+        logger.info(f"knowledge_service.add_document returned: {success}")
+        
+        if not success:
+            logger.error("Failed to add document - knowledge_service returned False")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add document in service"
+            )
+        
+        logger.info("Document added successfully via /documents endpoint")
+        return {"message": "Document added successfully"}
+    except Exception as e:
+        logger.exception("Exception caught in /documents endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server error adding document: {e}"
+        )
+
+@router.post("/upload", response_model=Dict[str, str])
+async def upload_document(
+    document: Document,
+    current_user: dict = Depends(get_current_supabase_user)
+):
+    logger.info("Entered /upload alias endpoint, calling add_document...")
+    return await add_document(document, current_user)
+
+@router.post("/upload-file", response_model=Dict[str, str])
+async def upload_file(
+    file: UploadFile = File(...),
+    metadata: Optional[str] = Form("{}"),
+    current_user: dict = Depends(get_current_supabase_user)
+):
+    logger.info("Entered /upload-file endpoint")
+    user_email = current_user.get('email')
+    if user_email != "admin@example.com":
+        logger.warning(f"Permission denied for user {user_email} attempting file upload")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin@example.com can upload documents (temporary check)"
+        )
+    
+    logger.info(f"Processing uploaded file: {file.filename}")
+    try:
+        # Basic upload validations: size cap (2MB), extension allowlist, content-type check
+        allowed_extensions = {"txt", "md", "json"}
+        allowed_content_types = {"text/plain", "application/json"}
+        filename = file.filename or ""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if ext not in allowed_extensions:
+            raise HTTPException(status_code=400, detail="Invalid file type. Allowed: txt, md, json")
+        if file.content_type not in allowed_content_types:
+            raise HTTPException(status_code=400, detail="Invalid content type")
+        content = await file.read()
+        if len(content) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large (max 2MB)")
+        # Simple magic-byte check for text/json (reject obvious binaries)
+        if b"\x00" in content[:1024]:
+            raise HTTPException(status_code=400, detail="Binary files are not allowed")
+        text = content.decode("utf-8", errors="strict")
+        logger.info(f"File content decoded (first 50 chars): {text[:50]}...")
+        
+        try:
+            meta_dict = json.loads(metadata)
+        except Exception:
+            meta_dict = {}
+            logger.warning("Could not parse metadata JSON, using defaults.")
+        
+        doc_obj = Document(
+            text=text,
+            title=meta_dict.get("title", file.filename),
+            source=meta_dict.get("source", "File Upload"),
+            category=meta_dict.get("category", "general")
+        )
+        
+        logger.info("Calling knowledge_service.add_document for uploaded file...")
+        # Await the async service function
+        success = await knowledge_service.add_document(doc_obj)
+        logger.info(f"knowledge_service.add_document returned: {success}")
+        
+        if not success:
+            logger.error("Failed to add uploaded file - knowledge_service returned False")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add file in service"
+            )
+        
+        logger.info(f"File {file.filename} processed successfully via /upload-file endpoint")
+        return {"message": f"File {file.filename} uploaded successfully"}
+    except Exception as e:
+        logger.exception("Exception caught in /upload-file endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server error processing file: {str(e)}"
+        )
+
+@router.get("/search", response_model=dict)
+async def search_knowledge(
+    query: str,
+    current_user: dict = Depends(get_current_supabase_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for documents in the knowledge base.
+    
+    The query is processed, embedded, and used to find similar documents.
+    """
+    # The dependency handles auth check. Now perform the search.
+    # Note: Permission checks might be needed here too depending on requirements
+    role = current_user.get('role')
+    print(f"Knowledge search initiated by user: {current_user.get('username')} role: {role}")
+    # Example permission check (optional)
+    # if role not in ["hr", "admin", "employee"]:
+    #    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied for search")
+        
+    results = knowledge_service.search_documents(query, top_k=5)
+    
+    return results
+
+@router.get("/check-openai-availability")
+async def check_openai_availability():
+    """
+    Check if OpenAI API is available for embedding generation.
+    """
+    try:
+        # If mock embeddings are enabled, return success
+        if USE_MOCK_EMBEDDINGS:
+            return {"available": True, "mode": "mock"}
+            
+        # Try a small test embedding asynchronously
+        text = "test"
+        # Await the async utility function
+        embedding = await get_embeddings(text)
+        
+        if embedding is not None:
+            return {"available": True, "mode": "real"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="OpenAI embeddings unavailable"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"OpenAI API unavailable: {str(e)}"
+        )
+
+@router.get("/api/config/mock-embeddings-status")
+async def get_mock_embeddings_status():
+    """
+    Returns the current status of the USE_MOCK_EMBEDDINGS setting.
+    This endpoint is used by the frontend to determine whether to use mock embeddings.
+    """
+    try:
+        # Import the setting from the config
+        from app.utils.openai_utils import USE_MOCK_EMBEDDINGS
+        
+        return {
+            "useMockEmbeddings": USE_MOCK_EMBEDDINGS,
+            "message": f"Mock embeddings are {'enabled' if USE_MOCK_EMBEDDINGS else 'disabled'}"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting mock embeddings status: {str(e)}"
+        )
+
+# Add another route with the same functionality but at the root level for compatibility
+@router.get("/config/mock-embeddings-status")
+async def get_mock_embeddings_status_alt():
+    """Alternative path for the same functionality."""
+    return await get_mock_embeddings_status()
+
+# Simple test endpoint that always returns mock embeddings status = true
+@router.get("/test-mock-embeddings")
+async def test_mock_embeddings_status():
+    """
+    Always returns that mock embeddings are enabled.
+    This is for testing purposes when frontend can't reach the main endpoints.
+    """
+    return {
+        "useMockEmbeddings": True,
+        "message": "Mock embeddings are enabled (test endpoint)"
+    }
+
+@router.get("/test-supabase", response_model=Dict[str, Any])
+async def test_supabase_connection():
+    """Test the Supabase connection and table access."""
+    from ..utils.supabase_config import supabase_client
+    
+    if supabase_client is None:
+        return {
+            "success": False,
+            "message": "Supabase client not initialized",
+            "url_config": os.getenv("SUPABASE_URL", "Not set")
+        }
+    
+    try:
+        # Try a simple query to check table access
+        response = supabase_client.table("knowledge_documents").select("count(*)", count="exact").execute()
+        
+        # Check if there's an error
+        if hasattr(response, 'error') and response.error:
+            return {
+                "success": False,
+                "message": f"Error querying Supabase: {response.error}",
+                "response": str(response)
+            }
+        
+        # Try inserting a test document
+        test_doc = {
+            "text": "Test document from API test endpoint",
+            "metadata": {
+                "title": "Test Document",
+                "source": "API Test",
+                "category": "test"
+            },
+            "embedding": [0.1] * 1536  # Mock embedding
+        }
+        
+        insert_response = supabase_client.table("knowledge_documents").insert(test_doc).execute()
+        
+        # Check if the insert worked
+        insert_success = hasattr(insert_response, 'data') and insert_response.data and len(insert_response.data) > 0
+        
+        return {
+            "success": True,
+            "select_response": str(response),
+            "insert_success": insert_success,
+            "insert_response": str(insert_response),
+            "document_count": getattr(response, 'count', 'Unknown'),
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "message": f"Exception testing Supabase: {str(e)}",
+            "traceback": traceback.format_exc()
+        }

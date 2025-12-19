@@ -1,0 +1,24 @@
+{
+  "appId": "ess.othain.com",
+  "appName": "OthainESS",
+  "webDir": "frontend/build",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false
+    },
+    "BackgroundGeolocation": {}
+  },
+  "server": {
+    "androidScheme": "http",
+    "allowNavigation": [
+      "*"
+    ],
+    "cleartext": true
+  },
+  "ios": {
+    "InfoPlist": {
+      "NSLocationWhenInUseUsageDescription": "We need your location to auto-mark drop-off.",
+      "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location even when the app is in the background."
+    }
+  }
+} 

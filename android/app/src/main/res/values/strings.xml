@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OthainESS</string>
+    <string name="title_activity_main">OthainESS</string>
+    <string name="package_name">ess.othain.com</string>
+    <string name="custom_url_scheme">ess.othain.com</string>
+    <string name="msal_redirect_uri">msauth://ess.othain.com/gbRiCPy01naQwQWu0eTeF21XEhs=</string>
+</resources>

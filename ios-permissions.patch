@@ -1,0 +1,13 @@
+--- a/Info.plist
++++ b/Info.plist
+@@
+ <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+-<string></string>
++<string>Used to auto-confirm your drop-off when you reach the gate.</string>
+ <key>NSLocationWhenInUseUsageDescription</key>
+-<string></string>
++<string>Used to auto-confirm your drop-off when you reach the gate.</string>
+ <key>UIBackgroundModes</key>
+ <array>
+   <string>location</string>
+ </array> 

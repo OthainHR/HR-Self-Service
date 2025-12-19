@@ -1,0 +1,35 @@
+{
+  "framework": "create-react-app",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "env": {
+    "REACT_APP_SUPABASE_URL": "",
+    "REACT_APP_SUPABASE_ANON_KEY": "",
+    "REACT_APP_API_URL": ""
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://hr-self-service.onrender.com/api/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
+} 

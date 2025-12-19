@@ -1,0 +1,40 @@
+# .github/workflows/mobile-tag.yml
+name: Build Mobile Wrapper
+on:
+  push:
+    tags: [ "mobile-v*" ]          # e.g. mobile-v1.0.0
+jobs:
+  build-ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd web && npm ci && npm run build
+      - run: npx cap sync ios
+      - run: patch -p0 < mobile/ios-permissions.patch
+      - run: npx cap open ios --headless        # build and export .ipa
+      - uses: apple-actions/upload-testflight@v1
+        with:
+          app-path: mobile/build/ios/*.ipa
+          apple-id: ${{ secrets.APPLE_ID }}
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd web && npm ci && npm run build
+      - run: npx cap sync android
+      - run: patch -p0 < mobile/android-permissions.patch
+      - run: cd mobile/android && ./gradlew bundleRelease
+      - uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: mobile/android/app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
+          alias: ${{ secrets.ANDROID_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
