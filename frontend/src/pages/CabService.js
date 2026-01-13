@@ -458,6 +458,17 @@ const CabService = () => {
       return;
     }
 
+    // Validate department-specific cutoff time
+    if (!isHrAdmin && !isBeforeCabCutoff(formData.department, formData.dropoffLocation)) {
+      const cutoff = getCutoffTime(formData.department, formData.dropoffLocation);
+      setSnackbarWithLogging({
+        open: true,
+        message: `Cab booking is closed for ${formData.department} department. Cutoff time is ${cutoff.display} IST. Please contact HR for assistance.`,
+        severity: 'error'
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const bookingData = {
@@ -1544,18 +1555,38 @@ const CabService = () => {
     }
   };
 
-  // Helper to check if current IST time is before 8:30pm
-  const isBeforeCabCutoff = () => {
+  // Helper to get cutoff time based on department and dropoff location
+  // GBT members: 4 PM cutoff, but 8 PM if selecting Presidio dropoff
+  // Other departments: 8:30 PM cutoff
+  const getCutoffTime = (department, dropoffLocation) => {
+    if (department === 'GBT') {
+      // Check if dropoff location contains 'Presidio' (case-insensitive)
+      if (dropoffLocation && dropoffLocation.toLowerCase().includes('presidio')) {
+        return { hours: 20, minutes: 0, display: '8pm' }; // 8 PM for GBT + Presidio
+      }
+      return { hours: 16, minutes: 0, display: '4pm' }; // 4 PM for GBT
+    }
+    return { hours: 20, minutes: 30, display: '8:30pm' }; // 8:30 PM for others
+  };
+
+  // Helper to check if current IST time is before the cutoff
+  const isBeforeCabCutoff = (department, dropoffLocation) => {
     const now = new Date();
     // Convert to IST (UTC+5:30)
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
-    const hours = ist.getHours();
-    const minutes = ist.getMinutes();
-    // 20:30 is the cutoff
-    return hours < 20 || (hours === 20 && minutes < 30);
+    const currentHours = ist.getHours();
+    const currentMinutes = ist.getMinutes();
+
+    const cutoff = getCutoffTime(department, dropoffLocation);
+
+    // Check if current time is before cutoff
+    if (currentHours < cutoff.hours) return true;
+    if (currentHours === cutoff.hours && currentMinutes < cutoff.minutes) return true;
+    return false;
   };
 
+  // For initial page access, use the most permissive cutoff (8:30 PM)
   const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isBeforeCabCutoff();
 
 
@@ -2272,7 +2303,7 @@ const CabService = () => {
                       mb: 2
                     }}
                   >
-                    Please book your cab before 8:30pm IST or you will not be able to book a cab.
+                    Please book your cab before the cutoff time (GBT: 4pm, GBT+Presidio: 8pm, Others: 8:30pm IST).
                   </Typography>
                   <Typography
                     variant="body2"
@@ -2285,7 +2316,7 @@ const CabService = () => {
                       ? 'Schedule a new cab booking with your preferred pickup time and destination'
                       : !cabServiceGlobalVisibility
                         ? 'Cab service is temporarily unavailable.'
-                        : 'Cab booking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
+                        : 'Cab booking is currently disabled as it is past the cutoff time. Contact HR for assistance.'
                     }
                   </Typography>
                   <Button
@@ -2357,7 +2388,7 @@ const CabService = () => {
                       {!canUserAccessCabService
                         ? !cabServiceGlobalVisibility
                           ? 'Rebooking is currently unavailable as cab service is temporarily disabled.'
-                          : 'Rebooking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
+                          : 'Rebooking is currently disabled as it is past the cutoff time. Contact HR for assistance.'
                         : lastBooking 
                       ? `Quickly rebook your last trip: ${lastBooking.pickup_time} to ${lastBooking.dropoff_location}`
                       : 'No previous bookings found'
