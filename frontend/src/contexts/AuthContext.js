@@ -40,12 +40,12 @@ export const AuthProvider = ({ children }) => {
     });
 
     // Listen for auth state changes (login, logout, token refresh)
-    const { data: authListener } = auth.onAuthStateChange((event, currentSession) => {
+    const authListener = auth.onAuthStateChange((event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false); // Ensure loading is false after updates
         setError(null); // Clear errors on auth change
-        
+
         if (event === 'SIGNED_IN' && currentSession?.user) {
           localStorage.setItem('pendingDisclaimer', 'true');
           localStorage.removeItem('disclaimerAcknowledgedThisLogin');
@@ -57,8 +57,8 @@ export const AuthProvider = ({ children }) => {
 
     // Cleanup listener on component unmount
     return () => {
-      if (authListener?.subscription) {
-          authListener.subscription.unsubscribe();
+      if (authListener?.unsubscribe) {
+          authListener.unsubscribe();
       }
     };
   }, []);
