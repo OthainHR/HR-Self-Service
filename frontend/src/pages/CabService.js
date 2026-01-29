@@ -459,8 +459,8 @@ const CabService = () => {
     }
 
     // Validate department-specific cutoff time
-    if (!isHrAdmin && !isBeforeCabCutoff(formData.department, formData.dropoffLocation)) {
-      const cutoff = getCutoffTime(formData.department, formData.dropoffLocation);
+    if (!isHrAdmin && !isBeforeCabCutoff(formData.department)) {
+      const cutoff = getCutoffTime(formData.department);
       setSnackbarWithLogging({
         open: true,
         message: `Cab booking is closed for ${formData.department} department. Cutoff time is ${cutoff.display} IST. Please contact HR for assistance.`,
@@ -1555,22 +1555,20 @@ const CabService = () => {
     }
   };
 
-  // Helper to get cutoff time based on department and dropoff location
-  // GBT members: 4 PM cutoff, but 8 PM if selecting Presidio dropoff
-  // Other departments: 8:30 PM cutoff
-  const getCutoffTime = (department, dropoffLocation) => {
+  // Helper to get cutoff time based on department
+  // GBT: 4 PM cutoff, Presidio: 8 PM cutoff, Othain: 8:30 PM cutoff
+  const getCutoffTime = (department) => {
     if (department === 'GBT') {
-      // Check if dropoff location contains 'Presidio' (case-insensitive)
-      if (dropoffLocation && dropoffLocation.toLowerCase().includes('presidio')) {
-        return { hours: 20, minutes: 0, display: '8pm' }; // 8 PM for GBT + Presidio
-      }
       return { hours: 16, minutes: 0, display: '4pm' }; // 4 PM for GBT
     }
-    return { hours: 20, minutes: 30, display: '8:30pm' }; // 8:30 PM for others
+    if (department === 'Presidio') {
+      return { hours: 20, minutes: 0, display: '8pm' }; // 8 PM for Presidio
+    }
+    return { hours: 20, minutes: 30, display: '8:30pm' }; // 8:30 PM for Othain/others
   };
 
   // Helper to check if current IST time is before the cutoff
-  const isBeforeCabCutoff = (department, dropoffLocation) => {
+  const isBeforeCabCutoff = (department) => {
     const now = new Date();
     // Convert to IST (UTC+5:30)
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -1578,7 +1576,7 @@ const CabService = () => {
     const currentHours = ist.getHours();
     const currentMinutes = ist.getMinutes();
 
-    const cutoff = getCutoffTime(department, dropoffLocation);
+    const cutoff = getCutoffTime(department);
 
     // Check if current time is before cutoff
     if (currentHours < cutoff.hours) return true;
@@ -2303,7 +2301,7 @@ const CabService = () => {
                       mb: 2
                     }}
                   >
-                    Please book your cab before the cutoff time (GBT: 4pm, GBT+Presidio: 8pm, Others: 8:30pm IST).
+                    Please book your cab before the cutoff time (GBT: 4pm, Presidio: 8pm, Othain: 8:30pm IST).
                   </Typography>
                   <Typography
                     variant="body2"
