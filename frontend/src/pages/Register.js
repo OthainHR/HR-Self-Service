@@ -142,11 +142,7 @@ const Register = () => {
       await signup({ email, password });
       setSuccessMessage('Signup successful! Please proceed to the login page.');
     } catch (err) {
-      if (err && typeof err.message === 'string' && err.message.includes('emails are allowed')) {
-        setLocalError(err.message);
-      } else {
-        setLocalError('An unexpected error occurred during sign up.');
-      }
+      setLocalError(err?.message || 'An unexpected error occurred during sign up.');
     }
   };
 
