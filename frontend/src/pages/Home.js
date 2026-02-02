@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress, TextField, InputAdornment } from '@mui/material';
+import { Container, Typography, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import { 
   Chat as ChatIcon, 
   QuestionAnswer as QuestionAnswerIcon, 
-  Info as InfoIcon, 
-  OndemandVideo as OndemandVideoIcon, 
+  OndemandVideo as OndemandVideoIcon,
   AdsClick as AdsClickIcon,
   Launch as LaunchIcon,
   Rocket as RocketIcon,

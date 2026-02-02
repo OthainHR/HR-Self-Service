@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
 
-    const { email, password } = credentials;
+    const { email } = credentials;
 
     // Validate email domain
     const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com', '@markenzoworldwide.com'];

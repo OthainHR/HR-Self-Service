@@ -56,8 +56,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   WbSunny as MorningIcon, // Added MorningIcon
   NightsStay as EveningIcon, // Added EveningIcon
-  Delete as DeleteIcon, // Added DeleteIcon
-  Info as InfoIcon // Added InfoIcon for announcement
+  Delete as DeleteIcon // Added DeleteIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
