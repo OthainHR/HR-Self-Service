@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -53,7 +53,6 @@ const FloatingParticle = ({ delay = 0 }) => (
 
 const Register = () => {
   const { signup, isLoading, error: authError } = useAuth();
-  const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

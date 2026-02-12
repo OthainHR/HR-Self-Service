@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Modal, Paper, Typography, Button, Box, useTheme, useMediaQuery } from '@mui/material';
-import { 
-  Warning as WarningIcon,
+import {
   CheckCircle as CheckCircleIcon,
   Info as InfoIcon
 } from '@mui/icons-material';

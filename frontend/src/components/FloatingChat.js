@@ -7,8 +7,6 @@ import {
   Typography,
   CircularProgress,
   IconButton,
-  Fade,
-  Slide,
   Avatar,
   Chip,
   useTheme,

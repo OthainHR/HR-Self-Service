@@ -13,17 +13,14 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Stack,
   Tooltip,
   IconButton,
   CircularProgress
@@ -39,10 +36,6 @@ import {
   Refresh as RefreshIcon,
   Info as InfoIcon,
   Work as WorkIcon,
-  AccessTime as AccessTimeIcon,
-  AttachMoney as AttachMoneyIcon,
-  CalendarToday as CalendarTodayIcon,
-  Group as GroupIcon,
   SupervisorAccount as SupervisorAccountIcon
 } from '@mui/icons-material';
 import { hrService } from '../../services/hrService';
@@ -50,7 +43,6 @@ import { hrService } from '../../services/hrService';
 const HRDashboard = ({ data }) => {
   const { profile, leaveBalances, recentAttendance, upcomingHolidays } = data || {};
   const [rawEmployeeData, setRawEmployeeData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {

@@ -27,14 +27,10 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Switch,
-  FormControlLabel,
   Skeleton,
   Divider,
   List,
-  ListItem,
-  ListItemText,
-  ListItemIcon
+  ListItem
 } from '@mui/material';
 import {
   Add as AddIcon,

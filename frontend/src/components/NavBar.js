@@ -34,8 +34,7 @@ import {
   DirectionsCar,
   Receipt,
   Close,
-  Person,
-  Work
+  Person
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';

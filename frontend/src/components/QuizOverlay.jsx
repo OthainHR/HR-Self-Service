@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
   Quiz as QuizIcon,
   School as SchoolIcon
 } from '@mui/icons-material';
@@ -53,7 +52,6 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
   const [runConfetti, setRunConfetti] = useState(false);
   const [width, height] = useWindowSize();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Enhanced animation variants
   const overlayVariants = {
@@ -135,8 +133,6 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
 
   const canProceed = feedback && (feedback.success === true || feedback.success === 'maxedOut');
   const showQuizContent = !canProceed && quizData && quizData.questions;
-  const showFailureFeedback = feedback && feedback.success === false;
-
   if (!quizData && !canProceed) {
     return null;
   }

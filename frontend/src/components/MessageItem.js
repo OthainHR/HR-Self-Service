@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Paper, Typography, Box, Avatar, Tooltip, Zoom, useTheme, CircularProgress, IconButton, Button } from '@mui/material';
-import { Person as PersonIcon, SmartToy as BotIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon, AutoAwesome as AIIcon } from '@mui/icons-material';
+import { Person as PersonIcon, ThumbUpAltOutlined as ThumbUpIcon, ThumbDownAltOutlined as ThumbDownIcon, CheckCircleOutline as CheckCircleIcon, AutoAwesome as AIIcon } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useDarkMode } from '../contexts/DarkModeContext';

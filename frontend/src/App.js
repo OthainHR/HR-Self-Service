@@ -1,16 +1,12 @@
-import React, { lazy, Suspense, Component, useMemo, useState, useEffect } from 'react';
+import React, { lazy, Suspense, Component, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import {
   Box,
   CssBaseline,
-  Container,
   CircularProgress,
   ThemeProvider,
   createTheme
 } from '@mui/material';
-import { ListItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Link } from 'react-router-dom';
-import { LibraryBooks as LibraryBooksIcon } from '@mui/icons-material';
 import AdminReport from './pages/AdminReport';
 import AdminPage from './pages/AdminPage';
 import { App as CapacitorApp } from '@capacitor/app';

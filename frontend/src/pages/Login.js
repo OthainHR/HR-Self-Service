@@ -16,7 +16,6 @@ import {
   useMediaQuery
 } from '@mui/material';
 import {
-  LockOutlined as LockOutlinedIcon,
   Microsoft as MicrosoftIcon,
   Login as LoginIcon,
   Email as EmailIcon,
@@ -25,7 +24,6 @@ import {
 import { useDarkMode } from '../contexts/DarkModeContext';
 import Avatar from '@mui/material/Avatar';
 import DisclaimerOverlay from '../components/DisclaimerOverlay';
-import { supabase } from '../services/supabase';
 import { recordDisclaimerAcknowledgement } from '../services/supabase';
 
 // Floating particles animation

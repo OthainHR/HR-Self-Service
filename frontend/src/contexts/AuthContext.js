@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
 
-    const { email, password } = credentials;
+    const { email } = credentials;
 
     // Validate email domain
     const allowedDomains = ['@othainsoft.com', '@jerseytechpartners.com', '@markenzoworldwide.com'];
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // Use the Supabase signup from api.js
-      const result = await auth.signup(credentials);
+      await auth.signup(credentials);
 
       // If Supabase requires email confirmation, the user won't have a session yet.
       // The onAuthStateChange listener will handle session updates when the user confirms.
@@ -163,11 +163,13 @@ export const AuthProvider = ({ children }) => {
   const resetUserPasswordById = useCallback(async (userId, newPassword) => {
     if (!isAdmin) throw new Error("Only admins can reset passwords");
     return callResetFunction({ user_id: userId, new_password: newPassword });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, session]);
 
   const resetUserPasswordByEmail = useCallback(async (email, newPassword) => {
     if (!isAdmin) throw new Error("Only admins can reset passwords");
     return callResetFunction({ email, new_password: newPassword });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, session]);
 
   // Value provided to consuming components
