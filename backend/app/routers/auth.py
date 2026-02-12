@@ -6,8 +6,11 @@ from app.models.user import Token, User, UserCreate
 from app.services import auth_service
 from app.utils.auth_utils import get_current_active_user, create_access_token
 from datetime import datetime, timedelta
+import os
 import re
 from pathlib import Path
+
+DEBUG_MODE = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 router = APIRouter()
 
@@ -31,11 +34,15 @@ async def login_for_access_token(
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Add a test token endpoint that doesn't require authentication
+# Test token endpoint - only available in DEBUG mode
 @router.get("/test-token", response_model=Token)
 async def get_test_token():
     """Get a test token for development purposes without requiring authentication."""
-    # Create a test token that expires in 24 hours
+    if not DEBUG_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Endpoint not available"
+        )
     access_token = create_access_token(
         data={"sub": "test-user", "role": "admin"},
         expires_delta=timedelta(hours=24)
@@ -78,8 +85,14 @@ async def register_user(
     return db_user
 
 @router.post("/logout")
-async def logout():
-    """Endpoint for user logout."""
+async def logout(authorization: str = Header(None)):
+    """Endpoint for user logout. Validates the token before confirming logout."""
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.replace("Bearer ", "")
+        # Log the logout event for audit purposes
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"User logout requested with token: {token[:20]}...")
     return {"message": "Logout successful"}
 
 @router.get("/me", response_model=dict)

@@ -127,11 +127,9 @@ export const auth = {
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
-      // You can add options here, like redirect URLs or metadata
-      // options: {
-      //   emailRedirectTo: 'http://localhost:3000/chat',
-      //   data: { full_name: 'Optional Name' } // Example metadata
-      // }
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      }
     });
 
     if (error) {

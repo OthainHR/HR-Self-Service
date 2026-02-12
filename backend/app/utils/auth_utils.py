@@ -17,6 +17,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_for_jwt")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+DEBUG_MODE = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 # Add logger
 logger = logging.getLogger(__name__)
@@ -59,57 +60,27 @@ async def get_current_user(request: Request, token: Optional[str] = Depends(oaut
 
     if not token:
         raise credentials_exception
-    
-    # Handle mock tokens with simple string format
-    if token and token.startswith("MOCK_ADMIN_TOKEN_"):
-        print("Using mock admin token")
-        # This is a special case for admin mock tokens
-        return TokenData(
-            username="admin", 
-            role="admin", 
-            permissions=["chat:access", "knowledge:access", "knowledge:write", "admin:access"],
-            email="admin@example.com"
-        )
-    
-    # Handle user mock tokens
-    if token and token.startswith("MOCK_USER_TOKEN_"):
-        print("Using mock user token")
-        # Create a generic user with chat access
-        return TokenData(
-            username="user",
-            role="employee",
-            permissions=["chat:access"],
-            email="user@example.com"
-        )
-        
-    # Special handling for mock admin tokens used in testing (legacy format)
-    if token and token.startswith("mock_admin_token_with_all_permissions_"):
-        print("Using special mock admin token (legacy format)")
-        # This is a special case for the mock admin token
-        return TokenData(
-            username="admin", 
-            role="admin", 
-            permissions=["chat:access", "knowledge:access", "knowledge:write", "admin:access"],
-            email="admin@example.com"
-        )
-    
-    # Special handling for mock user tokens (legacy format)
-    if token and token.startswith("mock_user_token_with_chat_access_"):
-        print("Using special regular user token (legacy format)")
-        # Extract username from token if available
-        username = "user"
-        if '_' in token:
-            parts = token.split('_')
-            if len(parts) > 4:
-                username = f"user-{parts[-1]}"
-        
-        return TokenData(
-            username=username,
-            role="employee",
-            permissions=["chat:access"],
-            email=f"{username}@example.com"
-        )
-        
+
+    # Mock tokens only allowed when DEBUG mode is explicitly enabled
+    if DEBUG_MODE:
+        if token.startswith("MOCK_ADMIN_TOKEN_"):
+            logger.warning("Mock admin token used - DEBUG mode only")
+            return TokenData(
+                username="admin",
+                role="admin",
+                permissions=["chat:access", "knowledge:access", "knowledge:write", "admin:access"],
+                email="admin@example.com"
+            )
+
+        if token.startswith("MOCK_USER_TOKEN_"):
+            logger.warning("Mock user token used - DEBUG mode only")
+            return TokenData(
+                username="user",
+                role="employee",
+                permissions=["chat:access"],
+                email="user@example.com"
+            )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")

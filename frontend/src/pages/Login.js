@@ -119,7 +119,7 @@ const Login = () => {
     try {
       await login({ email: username, password });
     } catch (err) {
-      
+      setLocalError(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
@@ -150,13 +150,13 @@ const Login = () => {
       try {
         const { error: recordError } = await recordDisclaimerAcknowledgement(user.email);
         if (recordError) {
-          
+          console.warn('Failed to record disclaimer acknowledgement:', recordError.message);
         }
       } catch (e) {
-        
+        console.warn('Error recording disclaimer acknowledgement:', e.message);
       }
     } else {
-      
+      console.warn('Cannot record disclaimer: user or email not available');
     }
 
     setIsDisclaimerVisible(false);

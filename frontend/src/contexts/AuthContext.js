@@ -78,9 +78,7 @@ export const AuthProvider = ({ children }) => {
       setSession(null);
       throw err; // Re-throw for the component to handle
     } finally {
-        // Set loading false only *after* the listener has potentially updated state
-        // A small delay might be needed if listener update isn't immediate
-        setTimeout(() => setIsLoading(false), 100); 
+      setIsLoading(false);
     }
   }, []);
 
@@ -104,22 +102,16 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // Use the Supabase signup from api.js
-      await auth.signup(credentials);
+      const result = await auth.signup(credentials);
 
-      // --- Log the user out immediately after successful signup --- 
-      await auth.logout(); 
-      // --- End immediate logout ---
-
-      // Supabase might automatically sign the user in, or require confirmation.
-      // The onAuthStateChange listener should handle the session update.
-      // You might want to show a message asking the user to check their email for confirmation.
+      // If Supabase requires email confirmation, the user won't have a session yet.
+      // The onAuthStateChange listener will handle session updates when the user confirms.
+      // Don't force logout - let Supabase manage the auth state naturally.
     } catch (err) {
       setError(err.message || "Sign up failed. Please try again.");
-      // Don't set user/session to null here, as the user might be partially signed up (e.g., awaiting confirmation)
       throw err; // Re-throw for the component to handle
     } finally {
-      // Set loading false after a short delay to allow listener to potentially update
-      setTimeout(() => setIsLoading(false), 100);
+      setIsLoading(false);
     }
   }, []);
 
@@ -136,11 +128,9 @@ export const AuthProvider = ({ children }) => {
       // No need to manually set state here, listener will handle it
     } catch (err) {
       setError(err.message || "Logout failed.");
-      // Keep user/session state as is, let listener handle the update
       throw err; // Re-throw for the component to handle
     } finally {
-       // Set loading false only *after* the listener has potentially updated state
-       setTimeout(() => setIsLoading(false), 100);
+      setIsLoading(false);
     }
   }, []);
 
