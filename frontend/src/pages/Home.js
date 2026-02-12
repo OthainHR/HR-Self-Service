@@ -1,23 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Typography, Paper, Box, Button, Grid, Card, CardContent, Avatar, Chip, Fade, Slide, CircularProgress, TextField, InputAdornment } from '@mui/material';
-import { 
-  Chat as ChatIcon, 
-  QuestionAnswer as QuestionAnswerIcon, 
-  Info as InfoIcon, 
-  OndemandVideo as OndemandVideoIcon, 
+import { Container, Typography, Box, Button, Grid, Card, CardContent, Avatar, Chip, CircularProgress, TextField, InputAdornment } from '@mui/material';
+import {
+  OndemandVideo as OndemandVideoIcon,
   AdsClick as AdsClickIcon,
-  Launch as LaunchIcon,
-  Rocket as RocketIcon,
   SmartToy as SmartToyIcon,
   Business as BusinessIcon,
   School as SchoolIcon,
-  Assignment as AssignmentIcon,
   MenuBook as MenuBookIcon,
   BeachAccess as BeachAccessIcon,
   AccountBalance as AccountBalanceIcon,
   Security as SecurityIcon,
   Support as SupportIcon,
-  Dashboard as DashboardIcon,
   ConfirmationNumber as TicketIcon,
   DirectionsCar as DirectionsCarIcon,
   Send as SendIcon,

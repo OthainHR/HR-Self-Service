@@ -43,16 +43,16 @@ import { supabase } from '../services/supabase';
 import { profileService } from '../services/profileService';
 
 const NavBar = () => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isAuthenticated = !!user;
   const location = useLocation();
 
   const isHrAdmin = user?.email === 'hr@othainsoft.com';
   const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
-  const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
+  const [, setLoadingWhitelistStatus] = useState(true);
   const [cabServiceGlobalVisibility, setCabServiceGlobalVisibility] = useState(true);
-  const [loadingCabServiceGlobalVisibility, setLoadingCabServiceGlobalVisibility] = useState(true);
+  const [, setLoadingCabServiceGlobalVisibility] = useState(true);
   const [userProfilePicture, setUserProfilePicture] = useState(null);
   const [showProfileTooltip, setShowProfileTooltip] = useState(false);
   const [profileTooltipHovered, setProfileTooltipHovered] = useState(false);

@@ -10,9 +10,7 @@ import {
   RadioGroup, 
   Paper, 
   Button,
-  Chip,
-  useMediaQuery,
-  useTheme
+  Chip
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -51,8 +49,6 @@ const QuizOverlay = ({ quizData, onSubmit, onClose, feedback, onProceed, isFulls
   const [userAnswers, setUserAnswers] = useState({});
   const [runConfetti, setRunConfetti] = useState(false);
   const [width, height] = useWindowSize();
-  const theme = useTheme();
-
   // Enhanced animation variants
   const overlayVariants = {
     hidden: { opacity: 0 },

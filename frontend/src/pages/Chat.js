@@ -5,17 +5,12 @@ import {
   Paper,
   Typography,
   List,
-  ListItem,
   ListItemButton,
-  ListItemText,
-  Divider,
   Box,
   Alert,
   IconButton,
-  Fade,
   Chip,
   Button,
-  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -29,21 +24,15 @@ import {
   useTheme,
   useMediaQuery,
   Avatar,
-  Tooltip,
-  Badge
+  Tooltip
 } from '@mui/material';
-import { 
-  Add as AddIcon, 
+import {
+  Add as AddIcon,
   Message as MessageIcon,
   Login as LoginIcon,
-  Logout as LogoutIcon,
   Delete as DeleteIcon,
-  Menu as MenuIcon,
   History as HistoryIcon,
   AutoAwesome as AIIcon,
-  Settings as SettingsIcon,
-  FilterList as FilterIcon,
-  MoreVert as MoreVertIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
   Star as StarIcon,
@@ -62,7 +51,7 @@ const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
 });
 
 function Chat() {
-  const { user, isLoading: authLoading, logout } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const isAuthenticated = !!user;
 
@@ -269,14 +258,6 @@ function Chat() {
     } finally {
       setIsDeleting(false);
       setSessionToDelete(null);
-    }
-  };
-  
-  const handleLogoutClick = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      alert("Logout failed. Please try again.");
     }
   };
   

@@ -9,7 +9,6 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Divider,
   IconButton,
   LinearProgress,
   Stack,
@@ -21,12 +20,9 @@ import {
   alpha,
   useMediaQuery,
   useTheme,
-  Fade,
-  Slide,
-  Zoom
+  Fade
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
   Person as PersonIcon,
   EventAvailable as LeaveIcon,
   Schedule as AttendanceIcon,
@@ -35,11 +31,7 @@ import {
   Refresh as RefreshIcon,
   Warning as WarningIcon,
   CheckCircle as CheckIcon,
-  Notifications as NotificationsIcon,
-  Settings as SettingsIcon,
-  Security as SecurityIcon,
-  TrendingUp as TrendingUpIcon,
-  Link as LinkIcon
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { hrService } from '../services/hrService';
@@ -51,27 +43,24 @@ const HRAttendance = React.lazy(() => import('../components/hr/HRAttendance'));
 const HRPayslips = React.lazy(() => import('../components/hr/HRPayslips'));
 const HRHolidays = React.lazy(() => import('../components/hr/HRHolidays'));
 const HRDashboard = React.lazy(() => import('../components/hr/HRDashboard'));
-const KekaAuthCard = React.lazy(() => import('../components/hr/KekaAuthCard'));
 const HRTestData = React.lazy(() => import('../components/hr/HRTestData'));
 
 const HRSelfService = () => {
   const theme = useTheme();
   const { user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [hrHealthStatus, setHrHealthStatus] = useState(null);
+  const [, setHrHealthStatus] = useState(null);
   const [dashboardData, setDashboardData] = useState({
     profile: null,
     leaveBalances: [],
     recentAttendance: [],
     upcomingHolidays: []
   });
-  const [employeeId, setEmployeeId] = useState(null);
+  const [, setEmployeeId] = useState(null);
   const [employeeMapping, setEmployeeMapping] = useState(null);
 
   // Modern gradient themes for each tab
@@ -136,6 +125,7 @@ const HRSelfService = () => {
 
   useEffect(() => {
     initializeService();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeService = async () => {

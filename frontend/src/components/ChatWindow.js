@@ -13,15 +13,9 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { 
-  Send as SendIcon, 
-  SmartToy as BotIcon,
-  SignalWifiOff as OfflineIcon,
-  WifiTethering as OnlineIcon,
-  SentimentSatisfiedAlt as EmojiIcon,
+import {
+  Send as SendIcon,
   SignalWifiOff as SignalWifiOffIcon,
-  SupportAgent as SupportAgentIcon,
-  AutoAwesome as AIIcon,
   CheckCircle as OnlineCheckIcon
 } from '@mui/icons-material';
 import MessageItem from './MessageItem';
@@ -33,7 +27,6 @@ import { motion } from 'framer-motion';
 
 const ChatWindow = ({ sessionId, onSessionChange }) => {
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);

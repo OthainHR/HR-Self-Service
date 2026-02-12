@@ -151,8 +151,7 @@ function MessageItem({ message, isLast, isMobile }) {
   const isUser = message.role === 'user';
   const isLoading = !isUser && message.isLoading === true;
   const isError = !isUser && message.isError === true;
-  const isLongWait = !isUser && message.isLongWait === true;
-  
+
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);

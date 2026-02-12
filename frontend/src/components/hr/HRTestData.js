@@ -7,12 +7,10 @@ import {
   Alert,
   Skeleton,
   Grid,
-  Paper,
   Chip,
-  Button,
-  CircularProgress
+  Button
 } from '@mui/material';
-import { Schedule as AttendanceIcon, Person as PersonIcon, EventAvailable as LeaveIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
+import { Person as PersonIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
 
 const HRTestData = () => {
   const [testData, setTestData] = useState(null);

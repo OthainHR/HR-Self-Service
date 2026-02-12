@@ -216,11 +216,6 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 const AdminRoute = ({ children }) => {
   const authContext = useAuth();
   const { user, isLoading, isAdmin } = authContext;
-  const [renderCount, setRenderCount] = React.useState(0); // Add render count state
-
-  React.useEffect(() => { // Increment render count on mount/update
-      setRenderCount(prev => prev + 1);
-  }, [user, isLoading]);
 
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
@@ -244,18 +239,11 @@ const AdminRoute = ({ children }) => {
   );
 };
 
-// Loading Indicator Component (Example)
-const LoadingIndicator = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-    <CircularProgress />
-  </Box>
-);
-
-// --- CORE APP STRUCTURE --- 
+// --- CORE APP STRUCTURE ---
 
 // Main app content with theme provider
 const AppContent = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const theme = useMemo(() => createAppTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode]);

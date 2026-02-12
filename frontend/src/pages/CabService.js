@@ -28,8 +28,6 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  Fade,
-  Slide,
   TextField,
   Checkbox,
   FormControlLabel,
@@ -42,7 +40,6 @@ import {
   LocationOn as LocationIcon,
   Business as BusinessIcon,
   Refresh as RefreshIcon,
-  History as HistoryIcon,
   Add as AddIcon,
   CheckCircle as CheckCircleIcon,
   Email as EmailIcon,
@@ -56,8 +53,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   WbSunny as MorningIcon, // Added MorningIcon
   NightsStay as EveningIcon, // Added EveningIcon
-  Delete as DeleteIcon, // Added DeleteIcon
-  Info as InfoIcon // Added InfoIcon for announcement
+  Delete as DeleteIcon // Added DeleteIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -114,7 +110,6 @@ const CabService = () => {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastBooking, setLastBooking] = useState(null);
   const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
@@ -284,6 +279,7 @@ const CabService = () => {
     } else if (user) { // Regular user
       loadBookings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAdmin, isHrAdmin]);
 
   // Load user's booking history
@@ -384,14 +380,6 @@ const CabService = () => {
     } finally {
       setLoadingBookings(false);
     }
-  };
-
-  // Filter bookings by selected date
-  const filterBookingsByDate = (allBookingsData, date) => {
-    const filteredBookings = allBookingsData.filter(booking => 
-      booking.booking_date === date
-    );
-    setBookings(filteredBookings);
   };
 
   // Enhanced filtering function for multiple criteria
@@ -1495,6 +1483,7 @@ const CabService = () => {
       fetchAvailableLocations();
       fetchLocationGroups();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isHrAdmin]);
 
   // Compute unbooked users for selected date (admin only)
@@ -1609,6 +1598,7 @@ const CabService = () => {
     // If dialog closes, reset part of form potentially affected by userCabConfig if not rebooking.
     // This part might need refinement based on how rebook interacts.
     // For now, let's assume rebook directly sets formData, overriding this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showBookingDialog, userCabConfig, isHrAdmin]);
 
 
@@ -1909,13 +1899,8 @@ const CabService = () => {
             watchIdRef.current = null;
         }
     };
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [autoDropoffEnabled]); // Only depend on autoDropoffEnabled
-
-  const handleAutoDropoffToggle = (event) => {
-    const isEnabled = event.target.checked;
-    localStorage.setItem('autoDropoff', isEnabled);
-    setAutoDropoffEnabled(isEnabled);
-  };
 
   const [locations, setLocations] = useState({ pickup: [], dropoff: [] });
 

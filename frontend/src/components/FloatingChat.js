@@ -13,10 +13,9 @@ import {
   useMediaQuery,
   Tooltip
 } from '@mui/material';
-import { 
+import {
   Send as SendIcon,
   Close as CloseIcon,
-  SmartToy as BotIcon,
   CheckCircle as OnlineCheckIcon,
   SignalWifiOff as SignalWifiOffIcon
 } from '@mui/icons-material';
@@ -32,7 +31,7 @@ const FloatingChat = () => {
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [serverError, setServerError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);

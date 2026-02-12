@@ -23,10 +23,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Stack,
-  Tooltip,
-  IconButton
+  TableRow
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -37,18 +34,10 @@ import {
   Badge as BadgeIcon,
   LocationOn as LocationIcon,
   Work as WorkIcon,
-  School as SchoolIcon,
-  Timeline as TimelineIcon,
   ExpandMore as ExpandMoreIcon,
   Info as InfoIcon,
   ContactPhone as ContactPhoneIcon,
-  Home as HomeIcon,
-  Bloodtype as BloodtypeIcon,
-  Flag as FlagIcon,
-  Group as GroupIcon,
   SupervisorAccount as SupervisorAccountIcon,
-  AccessTime as AccessTimeIcon,
-  AttachMoney as AttachMoneyIcon,
   Policy as PolicyIcon
 } from '@mui/icons-material';
 import { hrService } from '../../services/hrService';

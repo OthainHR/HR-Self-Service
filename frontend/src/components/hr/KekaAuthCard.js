@@ -12,8 +12,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Link
+  DialogActions
 } from '@mui/material';
 import {
   AccountCircle as AccountIcon,
@@ -33,6 +32,7 @@ const KekaAuthCard = ({ onAuthStatusChange }) => {
 
   useEffect(() => {
     checkAuthStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuthStatus = async () => {

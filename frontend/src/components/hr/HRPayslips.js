@@ -37,6 +37,7 @@ const HRPayslips = () => {
     window.addEventListener('hrRefresh', handleRefresh);
     
     return () => window.removeEventListener('hrRefresh', handleRefresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth, selectedYear]);
 
   const loadPayslip = async () => {

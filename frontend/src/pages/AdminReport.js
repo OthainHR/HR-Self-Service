@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Button, Typography, TextField, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, TableSortLabel, Divider, Container,
+  TableRow, TableSortLabel, Container,
   Card, CardContent, Grid, Chip, Fade, Slide, useMediaQuery,
-  IconButton, Tooltip, useTheme, alpha
+  useTheme, alpha
 } from '@mui/material';
 import { 
   Analytics as AnalyticsIcon,
@@ -66,8 +66,6 @@ const FloatingParticle = ({ delay = 0 }) => (
 export default function AdminReport() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-
   const [startDate, setStartDate] = useState(formatDate(new Date(Date.now() - 7*24*3600*1000)));
   const [endDate,   setEndDate]   = useState(formatDate(new Date()));
   const [loading,   setLoading]   = useState(false);
