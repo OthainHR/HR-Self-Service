@@ -901,10 +901,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
                   </TableHead>
                   <TableBody>
                     {paginatedTickets.map((ticket, index) => {
-                      const statusColors = getStatusColor(ticket.status);
-                      const priorityColors = getPriorityColor(ticket.priority);
-                      const dueDateUrgency = getDueDateUrgency(ticket.due_at, ticket.status);
-                      
                       return (
                         <Fade key={ticket.id} in={true} timeout={400} style={{ transitionDelay: `${index * 50}ms` }}>
                           <TableRow 
