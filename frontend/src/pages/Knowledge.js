@@ -15,10 +15,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
   useTheme,
   Skeleton,
   Card,
@@ -31,9 +27,8 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { 
-  Search as SearchIcon, 
-  Add as AddIcon, 
-  Upload as UploadIcon,
+  Search as SearchIcon,
+  Add as AddIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Description as DescriptionIcon,
@@ -72,11 +67,10 @@ function TabPanel(props) {
 }
 
 function Knowledge() {
-  const { user, isLoading: authIsLoading } = useAuth();
+  const { isLoading: authIsLoading } = useAuth();
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');

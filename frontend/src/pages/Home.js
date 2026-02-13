@@ -21,7 +21,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '@mui/material/styles';
 import { supabase } from '../services/supabase';
 import { profileService } from '../services/profileService';
 
@@ -29,8 +28,6 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isDarkMode } = useDarkMode();
-  const theme = useTheme();
-  const isAdmin = user?.user_metadata?.role === 'admin';
   const isHrAdmin = user?.email === 'hr@othainsoft.com';
   const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
   const [loadingWhitelistStatus, setLoadingWhitelistStatus] = useState(true);
@@ -41,7 +38,7 @@ const Home = () => {
   // Mini chat state
   const [miniChatInput, setMiniChatInput] = useState('');
   const [isSubmittingMiniChat, setIsSubmittingMiniChat] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [, setCurrentQuestionIndex] = useState(0);
   const miniChatInputRef = useRef(null);
 
   // Animation states

@@ -2,31 +2,20 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/TicketList.css';
 import { supabase } from '../../../services/supabase';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, FormControl, InputLabel, Select, MenuItem, Box, Typography,
-  Chip, Grid, IconButton, TextField, InputAdornment, Tooltip, Divider,
-  useTheme, Button, Card, CardContent, Fade, Slide, Avatar, CircularProgress, Pagination
+import {
+  Table, TableBody, TableCell, TableHead, TableRow,
+  FormControl, InputLabel, Select, MenuItem, Box, Typography,
+  IconButton,
+  useTheme, Card, Fade, Slide, Avatar, CircularProgress, Pagination
 } from '@mui/material';
-import { 
-  FilterAlt as FilterIcon,
-  Search as SearchIcon,
-  AccessTime as TimeIcon,
-  Download as DownloadIcon,
-  Warning as WarningIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Pending as PendingIcon,
-  HourglassEmpty as HourglassIcon,
+import {
   Edit as EditIcon,
   Check as CheckIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faTicketAlt, faUser, faUserTie, faClock,
-  faExclamationTriangle, faInfoCircle, faCheckCircle,
+import {
+  faTicketAlt,
   faFilter, faDownload, faSearch, faHeadset, faArrowRight, faCheck, faTimesCircle
 } from '@fortawesome/free-solid-svg-icons';
 import ExcelJS from 'exceljs';
@@ -36,17 +25,6 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
 
 const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED', 'REJECTED'];
-
-const getStatusIcon = (status) => {
-  switch(status) {
-    case 'WAITING FOR APPROVAL 1': return faHeadset;
-    case 'WAITING FOR APPROVAL 2': return faArrowRight;
-    case 'WAITING FOR APPROVAL 3': return faCheck;
-    case 'APPROVED': return faTimesCircle;
-    case 'REJECTED': return faTimesCircle;
-    default: return faTicketAlt;
-  }
-};
 
 // Add approval workflow logic
 const getApprovalWorkflow = (currentStatus, userEmail, expenseAmount) => {
@@ -430,18 +408,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   // Add state for admin comment modal
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
-  const [pendingStatusChange, setPendingStatusChange] = useState(null); // { ticketId, newStatus }
 
-  
 
-  // Replace handleUpdateTicketStatus for admins:
-  const handleAdminStatusChange = (ticketId, newStatus) => {
-    if (["RESOLVED", "CLOSED"].includes(newStatus)) {
-      setAdminCommentModal({ open: true, ticketId, newStatus, loading: false });
-    } else {
-      handleUpdateTicketStatus(ticketId, newStatus);
-    }
-  };
 
   // Modal submit handler
   const handleAdminCommentSubmit = async (comment) => {

@@ -2,38 +2,32 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/TicketList.css';
 import { supabase } from '../../../services/supabase';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, FormControl, InputLabel, Select, MenuItem, Box, Typography,
-  Chip, Grid, IconButton, TextField, InputAdornment, Tooltip, Divider,
-  useTheme, Button, Card, CardContent, Fade, Slide, Avatar, CircularProgress, Pagination
+import {
+  Table, TableBody, TableCell, TableHead, TableRow,
+  FormControl, InputLabel, Select, MenuItem, Box, Typography,
+  IconButton,
+  useTheme, Card, Fade, Avatar, CircularProgress, Pagination
 } from '@mui/material';
-import { 
-  FilterAlt as FilterIcon,
-  Search as SearchIcon,
-  AccessTime as TimeIcon,
-  Download as DownloadIcon,
+import {
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Pending as PendingIcon,
   HourglassEmpty as HourglassIcon,
   Edit as EditIcon,
   Check as CheckIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faTicketAlt, faUser, faUserTie, faClock,
-  faExclamationTriangle, faInfoCircle, faCheckCircle,
+import {
+  faTicketAlt,
   faFilter, faDownload, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import AdminCommentModal from './AdminCommentModal';
 import { useAuth } from '../../../contexts/AuthContext';
-import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
+import { generateTicketNumber } from '../../../utils/ticketUtils';
 
 
 const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpdateTicketAssignee, currentUserRole, onDataRefresh, ticketNumberMap }) => {
@@ -497,10 +491,8 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       let newDueDate = null;
       if (currentTicket.due_at) {
         // Adjust existing due date based on priority change
-        const currentDue = new Date(currentTicket.due_at);
         const now = new Date();
-        const timeDiff = currentDue.getTime() - now.getTime();
-        
+
         // Base hours for each priority from now
         const priorityHours = {
           'Urgent': 4,
@@ -528,9 +520,9 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       }
 
       // Update both priority and due date
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tickets')
-        .update({ 
+        .update({
           priority: newPriority,
           due_at: newDueDate
         })
@@ -558,7 +550,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
 
   // Add state for admin comment modal
   const [adminCommentModal, setAdminCommentModal] = useState({ open: false, ticketId: null, newStatus: '', loading: false });
-  const [pendingStatusChange, setPendingStatusChange] = useState(null); // { ticketId, newStatus }
 
   // Replace handleUpdateTicketStatus for admins:
   const handleAdminStatusChange = (ticketId, newStatus) => {
@@ -602,7 +593,7 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
   };
 
   // After fetching tickets and getting user/role
-  const { user } = useAuth();
+  useAuth();
   
 
   let visibleTickets = tickets;

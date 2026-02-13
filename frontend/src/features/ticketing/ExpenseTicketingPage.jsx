@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Tabs, Tab, Typography, Button, Fade, Slide, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Tabs, Tab, Typography, Fade, Slide } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTicketAlt, faList, faPlus, faColumns, faThList, faSpinner, faChartLine, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
+import { faTicketAlt, faColumns, faThList, faSpinner, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 
 import ExpenseKanbanBoard from './components/ExpenseKanbanBoard';
@@ -34,8 +33,6 @@ function TabPanel(props) {
   );
 }
 
-const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITING FOR APPROVAL 3', 'APPROVED'];
-
 /*  ───────────── e-mails allowed to open Expense Portal ───────────── */
 const EXPENSE_APPROVER_EMAILS = [
   'accounts@othainsoft.com',
@@ -46,11 +43,9 @@ const EXPENSE_APPROVER_EMAILS = [
 export default function ExpenseTicketingPage() {
   const [tabValue, setTabValue] = useState(0);
   const [viewMode, setViewMode] = useState('list');
-  const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [allTickets, setAllTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -89,7 +84,6 @@ export default function ExpenseTicketingPage() {
     }
     
     setCurrentUserRole(role);
-    setCurrentUserEmail(email);
 
     const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
     const isAdmin = adminRolesForDefaultView.includes(role);
@@ -135,9 +129,6 @@ export default function ExpenseTicketingPage() {
   const handleChange = (event, newValue) => {
     setTabValue(newValue);
   };
-
-  const adminRoles = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
-  const isAdminUser = adminRoles.includes(currentUserRole);
 
   const handleToggleViewMode = () => {
     setViewMode((prevMode) => (prevMode === 'list' ? 'kanban' : 'list'));

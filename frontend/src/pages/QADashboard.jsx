@@ -1,6 +1,6 @@
 /* eslint‑disable react/prop‑types */
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell, Legend
@@ -8,7 +8,7 @@ import {
 import { parseISO } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  Box, Paper, Typography, Divider, Grid, Card, CardContent,
+  Box, Typography, Grid, Card, CardContent,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Chip, useTheme, useMediaQuery
 } from '@mui/material';
@@ -166,10 +166,9 @@ const defaultState = {
 export default function QaDashboard({ rows }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [kpi, setKpi] = useState(defaultState.kpi);
-  const [hourSeries, setHourSeries] = useState(defaultState.hourSeries);
+  const [, setHourSeries] = useState(defaultState.hourSeries);
   const [topicCounts, setTopicCounts] = useState(defaultState.topicCounts);
   const [unansweredTable, setUnansweredTable] = useState(defaultState.unansweredTable);
   const [slowestTable, setSlowestTable] = useState(defaultState.slowestTable);
@@ -380,9 +379,6 @@ export default function QaDashboard({ rows }) {
       shadowColor: 'rgba(239, 68, 68, 0.3)'
     }
   ];
-
-  // Custom chart colors
-  const chartColors = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
 
   return (
     <Box sx={{

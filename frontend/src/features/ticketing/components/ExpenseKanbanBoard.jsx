@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSearch, faFilter, faSync, faTicketAlt, 
-  faInfoCircle, faExclamationTriangle, faCheck, 
-  faUserClock, faArrowRight, faTimesCircle, faSpinner,
-  faHeadset, faExternalLinkAlt, faClock, faCalendarAlt,
+  faSearch, faFilter, faSync, faTicketAlt,
+  faInfoCircle, faExclamationTriangle, faCheck,
+  faArrowRight, faTimesCircle, faSpinner,
+  faHeadset, faClock, faCalendarAlt,
   faUser, faBuilding, faLaptopCode, faUserTie, 
   faFileInvoiceDollar, faTools, faMoneyCheckAlt,
   faRobot
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Select, MenuItem, FormControl, InputLabel, Chip, 
+  Select, MenuItem, FormControl, InputLabel,
   Box, Typography, useTheme, Fade, Slide
 } from '@mui/material';
 import AdminCommentModal from './AdminCommentModal';
@@ -28,16 +28,6 @@ const getStatusIcon = (status) => {
     case 'APPROVED': return faTimesCircle;
     case 'REJECTED': return faTimesCircle;
     default: return faTicketAlt;
-  }
-};
-
-const getPriorityIcon = (priority) => {
-  switch(priority) {
-    case 'Urgent': return faExclamationTriangle;
-    case 'High': return faExclamationTriangle;
-    case 'Medium': return faInfoCircle;
-    case 'Low': return faInfoCircle;
-    default: return faInfoCircle;
   }
 };
 

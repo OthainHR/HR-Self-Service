@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Tabs, Tab, Typography, Button, Fade, Slide, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Tabs, Tab, Typography, Fade } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTicketAlt, faList, faPlus, faColumns, faThList, faSpinner, faChartLine, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
+import { faTicketAlt, faPlus, faColumns, faThList, faSpinner, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 
 import KanbanBoard from './components/KanbanBoard';
@@ -48,7 +47,6 @@ const EXPENSE_APPROVER_EMAILS = [
 export default function TicketingPage() {
   const [tabValue, setTabValue] = useState(0);
   const [viewMode, setViewMode] = useState('kanban');
-  const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [allTickets, setAllTickets] = useState([]);
@@ -56,8 +54,6 @@ export default function TicketingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
-  const [isExpenseApprover, setIsExpenseApprover] = useState(false);
 
   // ✅ NEW: Centralized ticket number map for consistent numbering across all views
   const ticketNumberMap = useMemo(() => {
@@ -113,11 +109,9 @@ export default function TicketingPage() {
     }
     
     setCurrentUserRole(role);
-    setCurrentUserEmail(email);
 
     const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
     const isAdmin = adminRolesForDefaultView.includes(role);
-    setIsExpenseApprover(EXPENSE_APPROVER_EMAILS.includes(email));
     
     // Only set default tab value on initial load, not on subsequent session updates
     if (isInitialLoad) {

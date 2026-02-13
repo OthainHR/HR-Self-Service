@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../services/supabase';
 import { Box, Typography, Button, TextField, Paper, CircularProgress, Alert, Divider, List, ListItem, ListItemText, Avatar, Chip, Grid, Card, CardContent, CardHeader, Fade, Slide, LinearProgress, Autocomplete } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, AccountCircle, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon, Email as EmailIcon, PersonAdd as PersonAddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, NoteAdd as NoteAddIcon, Reply as ReplyIcon, Schedule as ScheduleIcon, Person as PersonIcon, Category as CategoryIcon, Business as BusinessIcon, PriorityHigh as PriorityIcon, Timeline as TimelineIcon, InsertDriveFile as InsertDriveFileIcon, Email as EmailIcon, PersonAdd as PersonAddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import '../styles/TicketDetailPage.css';
 import Snackbar from '@mui/material/Snackbar';
 import Container from '@mui/material/Container';
@@ -49,7 +49,7 @@ const TicketDetailPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isAddingEmail, setIsAddingEmail] = useState(false);
 
-  const { user } = useAuth();
+  useAuth();
 
   // Generate the proper ticket number
   const getTicketNumber = useCallback(() => {

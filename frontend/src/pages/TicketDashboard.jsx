@@ -27,7 +27,6 @@ import {
 } from '@mui/material';
 import {
   ConfirmationNumber as TicketIcon,
-  Speed as SpeedIcon,
   Assessment as AssessmentIcon,
   DonutLarge as DonutLargeIcon,
   AccessTime as AccessTimeIcon
@@ -51,22 +50,6 @@ const CHART_COLORS = [
 //------------------------------------------------------------------
 // Helper utilities
 //------------------------------------------------------------------
-const capitalize = (s = '') => s.charAt(0).toUpperCase() + s.slice(1);
-const formatNameFromEmail = (email = '') => {
-  if (!email) return 'User';
-  const lower = email.toLowerCase();
-  if (lower === 'hr@othainsoft.com') return 'HR Admin';
-  if (lower === 'it@othainsoft.com') return 'IT Admin';
-  if (lower === 'accounts@othainsoft.com') return 'Accounts Admin';
-  if (lower === 'operations@othainsoft.com') return 'Operations Admin';
-  if (lower === 'ai@othainsoft.com') return 'AI Admin';
-
-  const [local] = lower.split('@');
-  const parts = local.split('.');
-  if (parts.length >= 2) return `${capitalize(parts[0])} ${capitalize(parts[1])}`;
-  return capitalize(parts[0]);
-};
-
 //------------------------------------------------------------------
 // Tiny floating particles in the background – purely cosmetic
 //------------------------------------------------------------------

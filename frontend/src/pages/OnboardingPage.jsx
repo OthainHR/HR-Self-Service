@@ -73,7 +73,6 @@ const OnboardingPage = () => {
   const { isDarkMode } = useDarkMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const [quizAttempts, setQuizAttempts] = useState(0);
 
   // Enhanced animation variants
@@ -207,7 +206,6 @@ const OnboardingPage = () => {
 
   const checkOverallCompletion = (currentChapterIdx) => {
     const lastChapterIndex = chapters.length - 1;
-    const isLastChapter = currentChapterIdx === lastChapterIndex;
     const lastChapter = chapters[lastChapterIndex];
     const isLastChapterVideoViewed = completedChapters.has(lastChapterIndex);
     const isLastChapterQuizCompleted = !lastChapter.quiz || chapterQuizCompleted.has(lastChapterIndex);

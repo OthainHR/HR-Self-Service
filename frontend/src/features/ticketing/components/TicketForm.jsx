@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabase'; // Updated import path
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faTicketAlt, faTags, faLayerGroup, faClipboardList, 
+  faTicketAlt, faLayerGroup, faClipboardList,
   faBuilding, faExclamationTriangle, faPaperPlane,
   faExclamationCircle, faCheckCircle, faInfoCircle,
   faChevronLeft, // For 'Change Category' button

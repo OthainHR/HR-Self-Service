@@ -171,7 +171,7 @@ const CabService = () => {
   });
 
   // Auto drop-off feature (Capacitor background geofence) – coming soon
-  const [autoDropoffEnabled, setAutoDropoffEnabled] = useState(() => localStorage.getItem('autoDropoff') === 'true');
+  const [autoDropoffEnabled] = useState(() => localStorage.getItem('autoDropoff') === 'true');
 
   const setSnackbarWithLogging = React.useCallback((newState) => {
     // console.log('[CabService - setSnackbarWithLogging] Called with:', newState); // Optional: keep for debugging

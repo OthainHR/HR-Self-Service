@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 // Debug the environment variables
 
@@ -75,57 +74,6 @@ const getUserId = async () => {
   return `guest-${guestId}`;
 };
 
-// Get the API URL from environment variables - support both prefixes
-const apiUrl = process.env.REACT_APP_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
-
-// Generate UUIDs for message IDs
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
-// Helper function to validate UUID format
-const isValidUUID = (uuid) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
-
-// Helper function to safely convert a string to UUID
-const toUUID = (id) => {
-  // If it's already a valid UUID, return it
-  if (isValidUUID(id)) {
-    return id;
-  }
-  
-  // If input is invalid, throw a detailed error
-  if (!id || typeof id !== 'string') {
-    throw new Error('Invalid session ID: Must be a string');
-  }
-  
-  // If it's a local ID (starts with 'local-'), it can't be converted to UUID
-  if (id.startsWith('local-')) {
-    throw new Error('Local session IDs cannot be converted to UUID format');
-  }
-  
-  // If it's a user ID (starts with 'user-'), it can't be converted to UUID
-  if (id.startsWith('user-')) {
-    throw new Error('User session IDs cannot be converted to UUID format');
-  }
-  
-  // Try to convert string to UUID format if possible
-  try {
-    // If it's all hex without dashes, try to format it as a UUID
-    if (/^[0-9a-f]{32}$/i.test(id)) {
-      return `${id.slice(0,8)}-${id.slice(8,12)}-${id.slice(12,16)}-${id.slice(16,20)}-${id.slice(20)}`;
-    }
-    
-    throw new Error(`Cannot convert to UUID: invalid format "${id}"`);
-  } catch (error) {
-    throw new Error('Invalid session ID format. Must be a valid UUID.');
-  }
-};
 
 // Knowledge Base services using direct Supabase connection
 const supabaseService = {
@@ -358,8 +306,3 @@ const supabaseService = {
 
 // Export the supabase service
 export default supabaseService;
-
-const checkAuth = async () => {
-  const { data: { session } } = await supabase.auth.getSession()
-  return session
-}

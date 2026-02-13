@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faFilter, faSync, faTicketAlt, 
   faInfoCircle, faExclamationTriangle, faCheck, 
-  faUserClock, faArrowRight, faTimesCircle, faSpinner,
-  faHeadset, faExternalLinkAlt, faClock, faCalendarAlt,
+  faArrowRight, faTimesCircle, faSpinner,
+  faHeadset, faClock, faCalendarAlt,
   faUser, faBuilding, faLaptopCode, faUserTie, 
   faFileInvoiceDollar, faTools, faMoneyCheckAlt,
   faRobot, faDownload
@@ -18,7 +18,7 @@ import {
   Box, Typography, useTheme, Fade, Slide
 } from '@mui/material';
 import AdminCommentModal from './AdminCommentModal';
-import { createTicketNumberMap, generateTicketNumber } from '../../../utils/ticketUtils';
+import { generateTicketNumber } from '../../../utils/ticketUtils';
 
 const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
@@ -29,16 +29,6 @@ const getStatusIcon = (status) => {
     case 'RESOLVED': return faCheck;
     case 'CLOSED': return faTimesCircle;
     default: return faTicketAlt;
-  }
-};
-
-const getPriorityIcon = (priority) => {
-  switch(priority) {
-    case 'Urgent': return faExclamationTriangle;
-    case 'High': return faExclamationTriangle;
-    case 'Medium': return faInfoCircle;
-    case 'Low': return faInfoCircle;
-    default: return faInfoCircle;
   }
 };
 
@@ -779,7 +769,6 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomDateRange, setShowCustomDateRange] = useState(false);
   
-  const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
@@ -1121,7 +1110,6 @@ export default function KanbanBoard({ ticketNumberMap, tickets: propTickets, onD
       // Calculate new due date based on priority change
       let newDueDate = null;
       if (currentTicket.due_at) {
-        const currentDueDate = new Date(currentTicket.due_at);
         const now = new Date();
         
         // Calculate days to add based on priority
