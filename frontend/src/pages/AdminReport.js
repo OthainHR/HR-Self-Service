@@ -109,7 +109,8 @@ export default function AdminReport() {
   };
 
   /* auto‑load last 7 days on mount */
-  useEffect(() => { fetchReport(); /* eslint-disable-next-line */ }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchReport(); }, []);
 
   /* csv export */
   const downloadCSV = () => {

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../services/supabase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
+import {
   faSearch, faFilter, faSync, faTicketAlt,
-  faInfoCircle, faExclamationTriangle, faCheck,
+  faExclamationTriangle, faCheck,
   faArrowRight, faTimesCircle, faSpinner,
   faHeadset, faClock, faCalendarAlt,
-  faUser, faBuilding, faLaptopCode, faUserTie, 
+  faUser, faBuilding, faLaptopCode, faUserTie,
   faFileInvoiceDollar, faTools, faMoneyCheckAlt,
   faRobot
 } from '@fortawesome/free-solid-svg-icons';

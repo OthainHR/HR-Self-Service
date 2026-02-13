@@ -16,7 +16,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faTicketAlt,
-  faFilter, faDownload, faSearch, faHeadset, faArrowRight, faCheck, faTimesCircle
+  faFilter, faDownload, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -165,93 +165,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
     return capitalize(parts[0]);
   };
   
-  // Enhanced helper to get modern colors for priority and status with gradients
-  const getPriorityColor = (priority) => {
-    switch(priority?.toLowerCase()) {
-      case 'low': return { 
-        bg: 'linear-gradient(135deg, #9333ea 0%, #a855f7 100%)', 
-        shadow: 'rgba(147, 51, 234, 0.3)',
-        text: 'white'
-      };
-      case 'medium': return { 
-        bg: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)', 
-        shadow: 'rgba(245, 158, 11, 0.3)',
-        text: '#1f2937'
-      };
-      case 'high': return { 
-        bg: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', 
-        shadow: 'rgba(234, 88, 12, 0.3)',
-        text: 'white'
-      };
-      case 'urgent': return { 
-        bg: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)', 
-        shadow: 'rgba(220, 38, 38, 0.3)',
-        text: 'white'
-      };
-      default: return { 
-        bg: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 
-        shadow: 'rgba(107, 114, 128, 0.3)',
-        text: 'white'
-      };
-    }
-  };
-
-  const getStatusColor = (status) => {
-    if (!status) return { 
-      bg: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 
-      shadow: 'rgba(107, 114, 128, 0.3)',
-      text: 'white'
-    };
-    
-    switch(status) {
-      case 'WAITING FOR APPROVAL 1': return { 
-        bg: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 
-        shadow: 'rgba(230, 230, 230, 0.3)',
-        text: 'white'
-      };
-      case 'WAITING FOR APPROVAL 2': return { 
-        bg: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', 
-        shadow: 'rgba(37, 235, 96, 0.3)',
-        text: 'white'
-      };
-      case 'WAITING FOR APPROVAL 3': return { 
-        bg: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)', 
-        shadow: 'rgba(234, 88, 12, 0.3)',
-        text: 'white'
-      };
-      case 'APPROVED': return { 
-        bg: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', 
-        shadow: 'rgba(5, 150, 105, 0.3)',
-        text: 'white'
-      };
-      case 'REJECTED': return { 
-        bg: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)', 
-        shadow: 'rgba(220, 38, 38, 0.3)',
-        text: 'white'
-      };
-
-      default: return { 
-        bg: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 
-        shadow: 'rgba(107, 114, 128, 0.3)',
-        text: 'white'
-      };
-    }
-  };
-
-  // Get urgency level for due dates
-  const getDueDateUrgency = (dueAt, status) => {
-    if (!dueAt || status === 'RESOLVED' || status === 'CLOSED') return null;
-    
-    const due = new Date(dueAt);
-    const now = new Date();
-    const diffHours = (due - now) / (1000 * 60 * 60);
-    
-    if (diffHours < 0) return 'overdue';
-    if (diffHours < 2) return 'urgent';
-    if (diffHours < 24) return 'soon';
-    return 'normal';
-  };
-
   // Unique categories from tickets
   const categories = useMemo(() => [...new Set(tickets.map(t => t.category_name).filter(Boolean))], [tickets]);
   

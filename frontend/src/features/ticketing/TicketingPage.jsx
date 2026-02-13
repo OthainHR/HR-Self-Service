@@ -37,13 +37,6 @@ function TabPanel(props) {
 
 const statusOrder = ['WAITING FOR SUPPORT', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
-/*  ───────────── e-mails allowed to open Expense Portal ───────────── */
-const EXPENSE_APPROVER_EMAILS = [
-  'accounts@othainsoft.com',
-  'praveen.omprakash@othainsoft.com',
-  'ps@jerseytechpartners.com'
-].map(e => e.toLowerCase());
-
 export default function TicketingPage() {
   const [tabValue, setTabValue] = useState(0);
   const [viewMode, setViewMode] = useState('kanban');

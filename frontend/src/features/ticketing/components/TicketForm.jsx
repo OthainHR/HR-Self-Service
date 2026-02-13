@@ -28,13 +28,14 @@ const sanitizeFilename = (name) => {
   const parts = name.split('.');
   const ext = parts.length > 1 ? parts.pop() : '';
   const base = parts.join('.')
-    .replace(/[^a-zA-Z0-9-_\.]/g, '_')
+    .replace(/[^a-zA-Z0-9-_.]/g, '_')
     .slice(0, 100) || 'file';
   const safeExt = (ext || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   return safeExt ? `${base}.${safeExt}` : base;
 };
 
 // Simple payload blocklist (F1) to prevent obviously dangerous input
+// eslint-disable-next-line no-script-url
 const blockedSubstrings = ["<script", "</script>", "onerror=", "onload=", "javascript:", "data:text/html", "<iframe", "</iframe>", "drop table", "union select"];
 const hasBlockedPayload = (text) => {
   const t = (text || '').toString().toLowerCase();
@@ -252,6 +253,7 @@ export default function TicketForm({ onTicketCreated }) {
       setIsLoading(false);
     };
     fetchSubCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.category_id]);
 
   // Restore category name when form.category_id is loaded from localStorage

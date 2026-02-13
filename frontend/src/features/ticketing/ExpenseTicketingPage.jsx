@@ -45,7 +45,6 @@ export default function ExpenseTicketingPage() {
   const [viewMode, setViewMode] = useState('list');
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [currentUserRole, setCurrentUserRole] = useState(null);
   const [allTickets, setAllTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,8 +82,6 @@ export default function ExpenseTicketingPage() {
       }
     }
     
-    setCurrentUserRole(role);
-
     const adminRolesForDefaultView = ['admin', 'it_admin', 'hr_admin', 'payroll_admin', 'operations_admin', 'ai_admin'];
     const isAdmin = adminRolesForDefaultView.includes(role);
     setIsExpenseApprover(EXPENSE_APPROVER_EMAILS.includes(email));

@@ -291,7 +291,7 @@ const TicketDetailPage = () => {
       
       setIsLoading(false);
     }
-  }, [ticketId, currentUser]);
+  }, [ticketId]);
 
   // Load current user on mount
   useEffect(() => {
@@ -403,6 +403,7 @@ const TicketDetailPage = () => {
       }
       setCommentAttachmentMap(map);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket, communications]);
 
   const handleReplyAttachmentChange = (e, isAdmin) => {

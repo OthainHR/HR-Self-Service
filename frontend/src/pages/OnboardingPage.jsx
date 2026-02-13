@@ -336,7 +336,7 @@ const OnboardingPage = () => {
       } else {
         setQuizFeedback({
           success: 'maxedOut',
-          message: `That was the last try for this one. No worries, the main thing is to stay engaged! Let\'s move on.`,
+          message: `That was the last try for this one. No worries, the main thing is to stay engaged! Let's move on.`,
           incorrectIds: incorrectQuestionIds
         });
       }

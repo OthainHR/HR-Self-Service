@@ -491,7 +491,6 @@ const TicketList = ({ tickets, statusOrder, handleUpdateTicketStatus, handleUpda
       let newDueDate = null;
       if (currentTicket.due_at) {
         // Adjust existing due date based on priority change
-        const now = new Date();
 
         // Base hours for each priority from now
         const priorityHours = {
