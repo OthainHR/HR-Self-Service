@@ -7,6 +7,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const AI_HANDLER_EMAIL = 'sunhith.reddy@othainsoft.com';
+const HR_EMAIL = 'hr@othainsoft.com';
 // ─── MS Graph helpers ────────────────────────────────────────────────────────
 async function getMicrosoftGraphToken(tenant, id, secret) {
   const url = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
@@ -109,6 +110,10 @@ serve(async (req)=>{
       'ai requests',
       'general ai request'
     ].includes((categoryName ?? '').toLowerCase().trim());
+    const isOpsCategory = [
+      'operations',
+      'ops'
+    ].includes((categoryName ?? '').toLowerCase().trim());
     switch((categoryName ?? '').toLowerCase().trim()){
       case 'it':
       case 'it support':
@@ -142,7 +147,7 @@ serve(async (req)=>{
       case 'operations':
       case 'ops':
         prefix = 'OTH-OPS';
-        fromEmail = 'it@othainsoft.com';
+        fromEmail = 'hr@othainsoft.com';
         break;
       case 'ai':
       case 'ai request':
@@ -164,9 +169,10 @@ serve(async (req)=>{
     const sequenceNumber = String(count || 1).padStart(3, '0');
     const shortId = `${prefix}${sequenceNumber}`;
     const link = `${Deno.env.get('APP_BASE_URL')}/ticket/${ticket.id}`;
-    const ccRecipients = isAiCategory ? [
-      AI_HANDLER_EMAIL
-    ] : [];
+    const ccRecipients = [
+      ...(isAiCategory ? [AI_HANDLER_EMAIL] : []),
+      ...(isOpsCategory ? [HR_EMAIL] : [])
+    ];
     // Fetch additional email members for this ticket (excluding expense tickets)
     let additionalEmails = [];
     if (!isExpenseCategory) {
@@ -216,6 +222,7 @@ serve(async (req)=>{
             headers
           });
       }
+      if (isOpsCategory) recipients.add(HR_EMAIL);
       if (recipients.size > 0) {
         const htmlBody = `
           <p><strong>Category:</strong> ${categoryName ?? 'N/A'}</p><hr/>
@@ -233,6 +240,7 @@ serve(async (req)=>{
       const recipients = new Set();
       if (requesterEmail) recipients.add(requesterEmail);
       if (assigneeEmail) recipients.add(assigneeEmail);
+      if (isOpsCategory) recipients.add(HR_EMAIL);
       // Add additional email members for new tickets
       additionalEmails.forEach((email)=>recipients.add(email));
       const displayStatus = isExpenseCategory ? ticket.expense_status ?? ticket.status : ticket.status;
@@ -268,6 +276,7 @@ serve(async (req)=>{
         const recipients = new Set();
         if (requesterEmail) recipients.add(requesterEmail);
         if (assigneeEmail) recipients.add(assigneeEmail);
+        if (isOpsCategory) recipients.add(HR_EMAIL);
         // Add additional email members for ticket updates
         additionalEmails.forEach((email)=>recipients.add(email));
         const subject = `[Ticket Update #${shortId}] ${ticket.title}`;

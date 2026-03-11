@@ -28,8 +28,6 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  Fade,
-  Slide,
   TextField,
   Checkbox,
   FormControlLabel,
@@ -42,7 +40,6 @@ import {
   LocationOn as LocationIcon,
   Business as BusinessIcon,
   Refresh as RefreshIcon,
-  History as HistoryIcon,
   Add as AddIcon,
   CheckCircle as CheckCircleIcon,
   Email as EmailIcon,
@@ -56,8 +53,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   WbSunny as MorningIcon, // Added MorningIcon
   NightsStay as EveningIcon, // Added EveningIcon
-  Delete as DeleteIcon, // Added DeleteIcon
-  Info as InfoIcon // Added InfoIcon for announcement
+  Delete as DeleteIcon // Added DeleteIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -114,7 +110,6 @@ const CabService = () => {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastBooking, setLastBooking] = useState(null);
   const [isUserWhitelisted, setIsUserWhitelisted] = useState(false);
@@ -189,7 +184,7 @@ const CabService = () => {
   }, [setSnackbar]); // Add setSnackbar as a dependency
 
   // Dropdown options
-  const pickupTimes = ['9pm', '11:30pm', '3:30am'];
+  const pickupTimes = ['9pm', '11:30pm', '2:30am'];
   const departments = ['GBT', 'Presidio', 'Othain'];
   // const pickupLocations = ['Building # 9', 'Building # 16']; // deprecated, replaced by dynamic list
   // const dropoffLocations = [ /* many locations */ ]; // deprecated, now dynamic
@@ -384,14 +379,6 @@ const CabService = () => {
     } finally {
       setLoadingBookings(false);
     }
-  };
-
-  // Filter bookings by selected date
-  const filterBookingsByDate = (allBookingsData, date) => {
-    const filteredBookings = allBookingsData.filter(booking => 
-      booking.booking_date === date
-    );
-    setBookings(filteredBookings);
   };
 
   // Enhanced filtering function for multiple criteria
@@ -1544,19 +1531,33 @@ const CabService = () => {
     }
   };
 
-  // Helper to check if current IST time is before 8:30pm
-  const isBeforeCabCutoff = () => {
+  // Booking window: 3:30 AM – 2:30 AM IST (closed only 2:30 AM – 3:30 AM)
+  const isWithinCabBookingWindow = () => {
     const now = new Date();
     // Convert to IST (UTC+5:30)
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
     const hours = ist.getHours();
     const minutes = ist.getMinutes();
-    // 20:30 is the cutoff
-    return hours < 20 || (hours === 20 && minutes < 30);
+    // Closed window: 2:30 AM to 3:30 AM
+    const isInClosedWindow =
+      (hours === 2 && minutes >= 30) ||
+      (hours === 3 && minutes < 30);
+    return !isInClosedWindow;
   };
 
-  const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isBeforeCabCutoff();
+  // Presidio-specific cutoff: bookings for Presidio close at 7:00 PM IST
+  const isBeforePresidioCutoff = () => {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
+    const hours = ist.getHours();
+    const minutes = ist.getMinutes();
+    // 19:00 is the Presidio cutoff
+    return hours < 19 || (hours === 19 && minutes === 0);
+  };
+
+  const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isWithinCabBookingWindow();
 
 
   // Effect to pre-fill form data based on userCabConfig when booking dialog opens
@@ -1881,12 +1882,6 @@ const CabService = () => {
         }
     };
 }, [autoDropoffEnabled]); // Only depend on autoDropoffEnabled
-
-  const handleAutoDropoffToggle = (event) => {
-    const isEnabled = event.target.checked;
-    localStorage.setItem('autoDropoff', isEnabled);
-    setAutoDropoffEnabled(isEnabled);
-  };
 
   const [locations, setLocations] = useState({ pickup: [], dropoff: [] });
 
@@ -2272,7 +2267,7 @@ const CabService = () => {
                       mb: 2
                     }}
                   >
-                    Please book your cab before 8:30pm IST or you will not be able to book a cab.
+                    Cab booking is available from 3:30 AM to 2:30 AM IST. Bookings are closed between 2:30 AM – 3:30 AM IST.
                   </Typography>
                   <Typography
                     variant="body2"
@@ -2285,7 +2280,7 @@ const CabService = () => {
                       ? 'Schedule a new cab booking with your preferred pickup time and destination'
                       : !cabServiceGlobalVisibility
                         ? 'Cab service is temporarily unavailable.'
-                        : 'Cab booking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
+                        : 'Cab booking is unavailable between 2:30 AM – 3:30 AM IST. Please try again after 3:30 AM.'
                     }
                   </Typography>
                   <Button
@@ -2357,7 +2352,7 @@ const CabService = () => {
                       {!canUserAccessCabService
                         ? !cabServiceGlobalVisibility
                           ? 'Rebooking is currently unavailable as cab service is temporarily disabled.'
-                          : 'Rebooking is currently disabled as it is past 8:30pm IST. Contact HR for assistance.'
+                          : 'Rebooking is unavailable between 2:30 AM – 3:30 AM IST. Please try again after 3:30 AM.'
                         : lastBooking 
                       ? `Quickly rebook your last trip: ${lastBooking.pickup_time} to ${lastBooking.dropoff_location}`
                       : 'No previous bookings found'
@@ -3550,12 +3545,25 @@ const CabService = () => {
                   Department*
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  {departments.map((dept) => (
+                  {departments.map((dept) => {
+                    // GBT closes at 4:00 PM IST; Presidio and Othain close at 7:00 PM IST
+                    const gbtCutoff = dept === 'GBT' && (() => {
+                      const now = new Date();
+                      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+                      const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
+                      return ist.getHours() >= 16;
+                    })();
+                    const has7pmCutoff = dept === 'Presidio' || dept === 'Othain';
+                    const isDeptDisabled = gbtCutoff || (has7pmCutoff && !isBeforePresidioCutoff());
+                    const cutoffLabel = dept === 'GBT' ? '4:00 PM' : '7:00 PM';
+                    return (
                     <Button
                       key={dept}
                       variant={formData.department === dept ? 'contained' : 'outlined'}
-                      onClick={() => handleInputChange('department', dept)}
+                      onClick={() => !isDeptDisabled && handleInputChange('department', dept)}
+                      disabled={isDeptDisabled}
                       startIcon={<BusinessIcon sx={{ fontSize: 18 }} />}
+                      title={isDeptDisabled ? `${dept} bookings are closed after ${cutoffLabel} IST` : ''}
                       sx={{
                         minWidth: 140,
                         height: 56,
@@ -3608,10 +3616,14 @@ const CabService = () => {
                         }
                       }}
                     >
-                      {dept}
+                      {dept}{isDeptDisabled ? ' (Closed)' : ''}
                     </Button>
-                  ))}
+                    );
+                  })}
                 </Box>
+                <Typography variant="caption" sx={{ color: 'warning.main', mt: 1, display: 'block' }}>
+                  GBT bookings close at 4:00 PM IST. Presidio and Othain bookings close at 7:00 PM IST.
+                </Typography>
               </Box>
             </Grid>
 

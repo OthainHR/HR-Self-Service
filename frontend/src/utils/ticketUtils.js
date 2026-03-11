@@ -56,23 +56,30 @@ export const generateTicketNumber = (ticketId, categoryId, allTickets = []) => {
  * @returns {string} - Formatted ticket number
  */
 export const generateTicketNumberFromName = (categoryName, ticketId) => {
-  const category = categoryName?.toLowerCase() || '';
+  const category = (categoryName || '').toLowerCase().trim();
   let prefix = 'OTH-GEN';
-  
-  if (category.includes('it') || category.includes('technical')) {
+
+  const IT_NAMES   = ['it', 'it support', 'it requests', 'technical'];
+  const HR_NAMES   = ['hr', 'hr support', 'hr requests', 'human resources', 'leave applications', 'benefits inquiries'];
+  const EXP_NAMES  = ['expense', 'expense management', 'expenses'];
+  const PAY_NAMES  = ['payroll', 'payroll requests', 'accounts', 'accounts support', 'accounts requests', 'tax payments'];
+  const OPS_NAMES  = ['operations', 'ops'];
+  const AI_NAMES   = ['ai', 'ai request', 'ai requests', 'general ai request'];
+
+  if (IT_NAMES.includes(category)) {
     prefix = 'OTH-IT';
-  } else if (category.includes('hr') || category.includes('human')) {
+  } else if (HR_NAMES.includes(category)) {
     prefix = 'OTH-HR';
-  } else if (category.includes('expense')) {
+  } else if (EXP_NAMES.includes(category)) {
     prefix = 'OTH-EXP';
-  } else if (category.includes('payroll') || category.includes('account')) {
+  } else if (PAY_NAMES.includes(category)) {
     prefix = 'OTH-PAY';
-  } else if (category.includes('op') || category.includes('operation')) {
+  } else if (OPS_NAMES.includes(category)) {
     prefix = 'OTH-OPS';
-  } else if (category.includes('ai')) {
+  } else if (AI_NAMES.includes(category)) {
     prefix = 'OTH-AI';
   }
-  
+
   return `${prefix}${ticketId.slice(0, 8)}`;
 };
 

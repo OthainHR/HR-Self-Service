@@ -17,7 +17,7 @@ import { Box, Typography, List, ListItem, ListItemText, IconButton, Button } fro
 import { Delete as DeleteIcon } from '@mui/icons-material';
 
 const CLIENT_OPTIONS = ["IQVIA", "GBT", "Presidio", "Othain"];
-const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com', 'operations@othainsoft.com', 'ai@othainsoft.com'];
+const ADMIN_EMAILS = ['it@othainsoft.com', 'hr@othainsoft.com', 'accounts@othainsoft.com', 'ai@othainsoft.com'];
 
 // Upload hardening per VAPT plan (F4): limit types, sizes, sanitize names
 const ALLOWED_FILE_EXTENSIONS = new Set(['pdf','doc','docx','txt','jpg','jpeg','png','gif','xls','xlsx','csv']);
@@ -301,23 +301,28 @@ export default function TicketForm({ onTicketCreated }) {
     setSuccessMessage('');
 
     try {
-      // Determine default assignee based on category name
+      // Determine default assignee based on category name — use exact match
+      // to prevent broad substring checks (e.g. 'it') from catching unrelated names.
       const categoryObj = cats.find(cat => cat.id === form.category_id);
       let defaultAssigneeEmail = null;
       if (categoryObj) {
-        const name = categoryObj.name.toLowerCase();
-        if (name.includes('it requests') || name.includes('it')) {
+        const name = categoryObj.name.toLowerCase().trim();
+        const IT_CATEGORIES = ['it', 'it support', 'it requests'];
+        const HR_CATEGORIES = ['hr', 'hr support', 'hr requests', 'leave applications', 'benefits inquiries'];
+        const ACCOUNTS_CATEGORIES = ['accounts', 'accounts support', 'accounts requests', 'payroll', 'payroll requests', 'tax payments', 'expense', 'expense management', 'expenses'];
+        const OPS_CATEGORIES = ['operations', 'ops'];
+        const AI_CATEGORIES = ['ai', 'ai request', 'ai requests', 'general ai request'];
+
+        if (IT_CATEGORIES.includes(name)) {
           defaultAssigneeEmail = 'it@othainsoft.com';
-        } else if (name.includes('hr') || name.includes('hr requests')) {
+        } else if (HR_CATEGORIES.includes(name)) {
           defaultAssigneeEmail = 'hr@othainsoft.com';
-        } else if (name.includes('expense management') || name.includes('expense')) {
+        } else if (ACCOUNTS_CATEGORIES.includes(name)) {
           defaultAssigneeEmail = 'accounts@othainsoft.com';
-        } else if (name.includes('payroll') || name.includes('expense') || name.includes('account')) {
-          // Payroll tickets also go to accounts team
-          defaultAssigneeEmail = 'accounts@othainsoft.com';
-        } else if (name.includes('operations')) {
-          defaultAssigneeEmail = 'it@othainsoft.com';
-        } else if (name.includes('ai') || name.includes('ai requests')) {
+        } else if (OPS_CATEGORIES.includes(name)) {
+          // All Operations sub-categories (lighting, AC, stationary, printing, supply) → HR
+          defaultAssigneeEmail = 'hr@othainsoft.com';
+        } else if (AI_CATEGORIES.includes(name)) {
           defaultAssigneeEmail = 'sunhith.reddy@othainsoft.com';
         }
       }
