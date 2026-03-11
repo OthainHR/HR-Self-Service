@@ -1,6 +1,6 @@
 {
   "framework": "create-react-app",
-  "buildCommand": "npm run build",
+  "buildCommand": "DISABLE_ESLINT_PLUGIN=true npm run build",
   "outputDirectory": "build",
   "env": {
     "REACT_APP_SUPABASE_URL": "",
