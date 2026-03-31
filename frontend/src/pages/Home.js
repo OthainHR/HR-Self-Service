@@ -201,6 +201,23 @@ const Home = () => {
     }, 100);
   };
 
+  // Awards & Recognition link should only work during specific windows:
+  // Jan 1–15, Apr 1–15, Jul 1–15, Oct 1–15 (IST) every year
+  const isWithinAwardsWindow = () => {
+    const now = new Date();
+    // Convert to IST
+    const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const ist = new Date(istString);
+
+    const month = ist.getMonth(); // 0–11
+    const day = ist.getDate();    // 1–31
+
+    const isQuarterMonth = month === 0 || month === 3 || month === 6 || month === 9; // Jan, Apr, Jul, Oct
+    const isFirstHalf = day >= 1 && day <= 15;
+
+    return isQuarterMonth && isFirstHalf;
+  };
+
   // Enhanced quick links with better categorization
   const quickLinks = [
     { 
@@ -1197,8 +1214,12 @@ const Home = () => {
                     }} />
             </Typography>
             
-                  <Grid container spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }} sx={{ position: 'relative', zIndex: 1 }}>
-              {quickLinks.map((link, index) => (
+          <Grid container spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }} sx={{ position: 'relative', zIndex: 1 }}>
+              {quickLinks.map((link, index) => {
+                const isAwardsLink = link.label === 'Awards & Recognition';
+                const awardsActive = isAwardsLink ? isWithinAwardsWindow() : true;
+
+                return (
                 <Grid item xs={12} sm={6} md={3} key={link.url}>
                   <motion.div
                           initial={{ opacity: 0, y: 30 }}
@@ -1208,7 +1229,13 @@ const Home = () => {
                           whileTap={{ scale: 0.98 }}
                   >
                     <Button
-                      onClick={() => window.open(link.url, '_blank')}
+                      disabled={!awardsActive}
+                      onClick={() => {
+                        if (!awardsActive) {
+                          return;
+                        }
+                        window.open(link.url, '_blank');
+                      }}
                       sx={{
                         width: '100%',
                               height: { xs: '100px', sm: '110px', md: '120px', lg: '130px' },
@@ -1253,7 +1280,7 @@ const Home = () => {
                                 transition: 'all 0.3s ease'
                         }} 
                       />
-                      <Typography 
+                        <Typography 
                         className="link-text"
                         variant="body2" 
                         sx={{ 
@@ -1268,7 +1295,7 @@ const Home = () => {
                       </Typography>
                       <Chip 
                         className="link-category"
-                        label={link.category}
+                        label={isAwardsLink ? (awardsActive ? link.category : 'Not Active Now') : link.category}
                         size="small"
                         sx={{
                                 fontSize: { xs: '0.7rem', sm: '0.725rem', md: '0.75rem', lg: '0.775rem' },
@@ -1283,7 +1310,8 @@ const Home = () => {
                     </Button>
                   </motion.div>
                 </Grid>
-              ))}
+                );
+              })}
             </Grid>
           </Box>
         </motion.div>
