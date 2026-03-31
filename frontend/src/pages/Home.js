@@ -204,7 +204,7 @@ const Home = () => {
   // Enhanced quick links with better categorization
   const quickLinks = [
     { 
-      label: 'Awards & Recognisation',
+      label: 'Awards & Recognition',
       url: 'https://teams.microsoft.com/l/entity/a6b63365-31a4-4f43-92ec-710b71557af9/_djb2_msteams_prefix_3709712407?context=%7B%22channelId%22%3A%2219%3Aq5Lg3ZSnMhxT_r7V5vGFjdpPSEVXsJ67qhhtBICCv3I1%40thread.tacv2%22%7D&tenantId=a31b1b30-8a5f-4c70-bc9b-c97bfa79031c',
       icon: SupportIcon,
       category: 'appraisal',
