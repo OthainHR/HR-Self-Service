@@ -218,13 +218,29 @@ const Home = () => {
     return isQuarterMonth && isFirstHalf;
   };
 
+  // One-day blackout (IST). Link should not work for "today" only.
+  // Format: YYYY-MM-DD in IST.
+  const isAwardsBlackoutToday = () => {
+    const now = new Date();
+    const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const ist = new Date(istString);
+
+    const yyyy = ist.getFullYear();
+    const mm = String(ist.getMonth() + 1).padStart(2, '0');
+    const dd = String(ist.getDate()).padStart(2, '0');
+    const todayIst = `${yyyy}-${mm}-${dd}`;
+
+    // Blackout only for 2026-04-01 (IST)
+    return todayIst === '2026-04-01';
+  };
+
   // Enhanced quick links with better categorization
   const quickLinks = [
     { 
       label: 'Rewards & Recognition',
       url: 'https://teams.microsoft.com/l/entity/a6b63365-31a4-4f43-92ec-710b71557af9/_djb2_msteams_prefix_3709712407?context=%7B%22channelId%22%3A%2219%3Aq5Lg3ZSnMhxT_r7V5vGFjdpPSEVXsJ67qhhtBICCv3I1%40thread.tacv2%22%7D&tenantId=a31b1b30-8a5f-4c70-bc9b-c97bfa79031c',
       icon: SupportIcon,
-      category: 'appraisal',
+      category: 'Appraisal',
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       hoverGradient: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)'
     },
@@ -1217,7 +1233,7 @@ const Home = () => {
           <Grid container spacing={{ xs: 2, sm: 3, md: 4, lg: 5 }} sx={{ position: 'relative', zIndex: 1 }}>
               {quickLinks.map((link, index) => {
                 const isAwardsLink = link.label === 'Rewards & Recognition';
-                const awardsActive = isAwardsLink ? isWithinAwardsWindow() : true;
+                const awardsActive = isAwardsLink ? (isWithinAwardsWindow() && !isAwardsBlackoutToday()) : true;
 
                 return (
                 <Grid item xs={12} sm={6} md={3} key={link.url}>
