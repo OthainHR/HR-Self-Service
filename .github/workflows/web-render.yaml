@@ -1,15 +1,38 @@
-# .github/workflows/web-render.yml
+# Deploy backend to Render after frontend/backend changes
 name: Deploy Web to Render
+
 on:
   push:
-    paths: [ "frontend/**", "backend/**" ]
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - ".github/workflows/web-render.yaml"
+
 jobs:
   render:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: cd frontend && npm ci && npm run build
-      - run: cd backend && pip install -r requirements.txt
-      - run: curl "$RENDER_DEPLOY_HOOK"    # Render’s Deploy Hook URL (secret)
+        with:
+          node-version: 20
+
+      - name: Build frontend
+        run: cd frontend && npm ci && DISABLE_ESLINT_PLUGIN=true npm run build
+
+      - name: Install backend dependencies
+        run: cd backend && pip install -r requirements.txt
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK secret is not set in GitHub Actions. Skipping Render deploy trigger."
+            echo "Add it in GitHub: Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "Value: Render Dashboard -> your service -> Settings -> Deploy Hook"
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
