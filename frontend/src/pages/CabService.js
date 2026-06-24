@@ -186,6 +186,34 @@ const CabService = () => {
   // Dropdown options
   const pickupTimes = ['9pm', '11:30pm', '2:30am'];
   const departments = ['GBT', 'Presidio', 'Othain'];
+
+  const getIstNow = () => {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    return new Date(utc + (5.5 * 60 * 60 * 1000));
+  };
+
+  const isBefore4pmCutoff = () => getIstNow().getHours() < 16;
+
+  const isBeforePresidioCutoff = () => {
+    const ist = getIstNow();
+    const hours = ist.getHours();
+    const minutes = ist.getMinutes();
+    return hours < 19 || (hours === 19 && minutes === 0);
+  };
+
+  const isDepartmentBookingOpen = (dept) => {
+    if (dept === 'GBT' || dept === 'Othain') return isBefore4pmCutoff();
+    if (dept === 'Presidio') return isBeforePresidioCutoff();
+    return true;
+  };
+
+  const getDepartmentCutoffLabel = (dept) => {
+    if (dept === 'GBT' || dept === 'Othain') return '4:00 PM';
+    if (dept === 'Presidio') return '7:00 PM';
+    return '';
+  };
+
   // const pickupLocations = ['Building # 9', 'Building # 16']; // deprecated, replaced by dynamic list
   // const dropoffLocations = [ /* many locations */ ]; // deprecated, now dynamic
 
@@ -440,6 +468,15 @@ const CabService = () => {
       setSnackbarWithLogging({
         open: true,
         message: 'Please fill in all required fields',
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (!isDepartmentBookingOpen(formData.department)) {
+      setSnackbarWithLogging({
+        open: true,
+        message: `${formData.department} bookings are closed after ${getDepartmentCutoffLabel(formData.department)} IST`,
         severity: 'error'
       });
       return;
@@ -1544,17 +1581,6 @@ const CabService = () => {
       (hours === 2 && minutes >= 30) ||
       (hours === 3 && minutes < 30);
     return !isInClosedWindow;
-  };
-
-  // Presidio-specific cutoff: bookings for Presidio close at 7:00 PM IST
-  const isBeforePresidioCutoff = () => {
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
-    const hours = ist.getHours();
-    const minutes = ist.getMinutes();
-    // 19:00 is the Presidio cutoff
-    return hours < 19 || (hours === 19 && minutes === 0);
   };
 
   const canUserAccessCabService = cabServiceGlobalVisibility && (isUserWhitelisted || isHrAdmin) && isWithinCabBookingWindow();
@@ -3546,16 +3572,9 @@ const CabService = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   {departments.map((dept) => {
-                    // GBT closes at 4:00 PM IST; Presidio and Othain close at 7:00 PM IST
-                    const gbtCutoff = dept === 'GBT' && (() => {
-                      const now = new Date();
-                      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                      const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
-                      return ist.getHours() >= 16;
-                    })();
-                    const has7pmCutoff = dept === 'Presidio' || dept === 'Othain';
-                    const isDeptDisabled = gbtCutoff || (has7pmCutoff && !isBeforePresidioCutoff());
-                    const cutoffLabel = dept === 'GBT' ? '4:00 PM' : '7:00 PM';
+                    // GBT and Othain close at 4:00 PM IST; Presidio closes at 7:00 PM IST
+                    const isDeptDisabled = !isDepartmentBookingOpen(dept);
+                    const cutoffLabel = getDepartmentCutoffLabel(dept);
                     return (
                     <Button
                       key={dept}
@@ -3622,7 +3641,7 @@ const CabService = () => {
                   })}
                 </Box>
                 <Typography variant="caption" sx={{ color: 'warning.main', mt: 1, display: 'block' }}>
-                  GBT bookings close at 4:00 PM IST. Presidio and Othain bookings close at 7:00 PM IST.
+                  GBT and Othain bookings close at 4:00 PM IST. Presidio bookings close at 7:00 PM IST.
                 </Typography>
               </Box>
             </Grid>
