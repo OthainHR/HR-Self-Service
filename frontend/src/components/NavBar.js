@@ -62,7 +62,7 @@ const NavBar = () => {
 
   const EXPENSE_APPROVER_EMAILS = [
     'accounts@othainsoft.com',
-    'praveen.omprakash@othainsoft.com',
+    'anil.jyoti@othainsoft.com',
     'ps@jerseytechpartners.com'
   ].map(e => e.toLowerCase());
   const isExpenseApprover = EXPENSE_APPROVER_EMAILS.includes((user?.email || '').toLowerCase());

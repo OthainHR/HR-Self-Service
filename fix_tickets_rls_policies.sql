@@ -68,7 +68,7 @@ CREATE POLICY "Role-based ticket updates" ON tickets
         OR
         -- Payroll admin for payroll/expense tickets
         (
-            (get_user_role() = ANY (ARRAY['payroll_admin'::text, 'payroll_agent'::text]) OR (auth.jwt() ->> 'email'::text) = ANY (ARRAY['accounts@othainsoft.com'::text, 'praveen.omprakash@othainsoft.com'::text, 'ps@jerseytechpartners.com'::text]))
+            (get_user_role() = ANY (ARRAY['payroll_admin'::text, 'payroll_agent'::text]) OR (auth.jwt() ->> 'email'::text) = ANY (ARRAY['accounts@othainsoft.com'::text, 'anil.jyoti@othainsoft.com'::text, 'ps@jerseytechpartners.com'::text]))
             AND (category_id = ANY (ARRAY[get_category_id_by_name('Payroll Requests'::text), get_category_id_by_name('Expense Management'::text)]))
         )
         OR

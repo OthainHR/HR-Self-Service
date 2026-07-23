@@ -263,7 +263,7 @@ SELECT
         )
     ) as user_has_access
 FROM tickets t
-LEFT JOIN ticket_categories tc ON t.category_id = tc.id
+LEFT JOIN categories tc ON t.category_id = tc.id
 LEFT JOIN v_user_emails assignee ON t.assignee = assignee.id
 LEFT JOIN v_user_emails requester ON t.requested_by = requester.id;
 
@@ -299,7 +299,7 @@ CREATE POLICY "Allow users to view relevant tickets" ON tickets
         (get_user_role() = 'admin'::text) 
         OR (((get_user_role() = ANY (ARRAY['hr_admin'::text, 'hr_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = 'hr@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('HR Requests'::text))) 
         OR (((get_user_role() = ANY (ARRAY['it_admin'::text, 'it_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = 'it@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('IT Requests'::text))) 
-        OR (((get_user_role() = ANY (ARRAY['payroll_admin'::text, 'payroll_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['accounts@othainsoft.com'::text, 'praveen.omprakash@othainsoft.com'::text, 'ps@jerseytechpartners.com'::text]))) AND (category_id = ANY (ARRAY[get_category_id_by_name('Payroll Requests'::text), get_category_id_by_name('Expense Management'::text)]))) 
+        OR (((get_user_role() = ANY (ARRAY['payroll_admin'::text, 'payroll_agent'::text])) OR ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['accounts@othainsoft.com'::text, 'anil.jyoti@othainsoft.com'::text, 'ps@jerseytechpartners.com'::text]))) AND (category_id = ANY (ARRAY[get_category_id_by_name('Payroll Requests'::text), get_category_id_by_name('Expense Management'::text)]))) 
         OR (requested_by = auth.uid()) 
         OR (((get_user_role() = ANY (ARRAY['ai_admin'::text])) OR ((auth.jwt() ->> 'email'::text) = 'ai@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('AI Requests'::text))) 
         OR (((get_user_role() = ANY (ARRAY['operations_admin'::text])) OR ((auth.jwt() ->> 'email'::text) = 'operations@othainsoft.com'::text)) AND (category_id = get_category_id_by_name('Operations'::text)))

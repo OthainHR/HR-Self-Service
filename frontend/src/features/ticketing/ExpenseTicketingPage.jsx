@@ -39,7 +39,7 @@ const statusOrder = ['WAITING FOR APPROVAL 1', 'WAITING FOR APPROVAL 2', 'WAITIN
 /*  ───────────── e-mails allowed to open Expense Portal ───────────── */
 const EXPENSE_APPROVER_EMAILS = [
   'accounts@othainsoft.com',
-  'praveen.omprakash@othainsoft.com',
+  'anil.jyoti@othainsoft.com',
   'ps@jerseytechpartners.com'
 ].map(e => e.toLowerCase());
 

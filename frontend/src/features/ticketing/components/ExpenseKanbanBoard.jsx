@@ -146,7 +146,7 @@ const getApprovalWorkflow = (currentStatus, userEmail, expenseAmount) => {
       nextStatus: 'WAITING FOR APPROVAL 2'
     },
     'WAITING FOR APPROVAL 2': {
-      approver: 'praveen.omprakash@othainsoft.com',
+      approver: 'anil.jyoti@othainsoft.com',
       nextStatus: 'WAITING FOR APPROVAL 3' // may be overridden for small amounts
     },
     'WAITING FOR APPROVAL 3': {
